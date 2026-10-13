@@ -1,0 +1,8 @@
+{
+  "paid": {
+    "phase": "initial",
+    "top_n": 10,
+    "random_n": 0,
+    "note": "最初の1週間は上位10ホストのみ。挙動を確認したら phase=full, top_n=50, random_n=20 に変更する（§5）。"
+  }
+}
