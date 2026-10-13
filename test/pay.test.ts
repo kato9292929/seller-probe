@@ -53,5 +53,5 @@ test("self-check refuses any host that is not ours", () => {
   process.env.OSD_PAID_URL = "https://third-party.example/paid";
   assert.throws(() => selfTargets(), /not on an own host/);
   delete process.env.OSD_PAID_URL;
-  assert.deepEqual(selfTargets().map((s) => s.name), ["JIN"]);
+  assert.deepEqual(selfTargets().map((s) => s.url), ["https://jin.x402jp.com/api/jin/series", "https://osd.x402jp.com/api/alpha/portfolio/current"]);
 });

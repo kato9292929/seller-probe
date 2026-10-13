@@ -12,7 +12,7 @@ export const SELF_HOSTS = ["jin.x402jp.com", "osd.x402jp.com"] as const;
 
 export function selfTargets(): { name: string; url: string }[] {
   const out: { name: string; url: string }[] = [];
-  for (const [name, v] of [["JIN", process.env.JIN_PAID_URL || "https://jin.x402jp.com/api/jin/series"], ["OSD", process.env.OSD_PAID_URL]] as const) {
+  for (const [name, v] of [["JIN", process.env.JIN_PAID_URL || "https://jin.x402jp.com/api/jin/series"], ["OSD", process.env.OSD_PAID_URL || "https://osd.x402jp.com/api/alpha/portfolio/current"]] as const) {
     if (!v) continue;
     const h = hostKey(v);
     if (!h || !(SELF_HOSTS as readonly string[]).includes(h)) throw new Error(`${name} self-check URL ${v} is not on an own host (${SELF_HOSTS.join(", ")})`);

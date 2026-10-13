@@ -61,6 +61,8 @@ GET が 405 のときだけ空の JSON 本文で POST して 402 を取る（`me
 2. 200 以外が返ったら、その署名を含む tx をチェーンで探す（Solana：自分のアドレスに触れた直近 tx の署名一覧を照合、Base：USDC の `AuthorizationUsed(自分, nonce)` イベント）。
 3. 見つかった tx が 402 の提示どおりの送金なら `not_delivered: true`（RFQ の理由コード 5 と同じ）。
 
+**tx 署名の記録**：署名した支払いはすべて、送信前の `paid_attempt` と結果の `paid` の両方に自分の署名（`payer_signature`、Base は `authorization_nonce` と `authorization_signature`）を持つ。チェーン上の tx が判明したもの（settle 応答、または上の検索で発見）は `tx` にその署名／ハッシュと出所（`tx_source`）を入れる。送金が着地しなかった場合だけ `tx: null` になり、そのときも自分の署名は残る。
+
 有料で買うのは GET で 402 を返す、`exact`・公式 USDC・Solana/Base 本番の提示だけです（Base は EIP-3009 のみ、Permit2 は買わない）。買わなかった理由は `skipped` に残し、スコアには数えません。
 
 ## スコア（§4）
@@ -114,8 +116,8 @@ GitHub Actions：
   - Solana：`solana-keygen new -o probe.json` → 秘密鍵を Secrets `PROBE_SOLANA_SECRET_KEY` に。USDC を少額（例 $6）入れる。手数料はファシリテーターが払うので SOL はほぼ不要。
   - Base：新規の鍵を Secrets `PROBE_EVM_PRIVATE_KEY` に。USDC を少額入れる（EIP-3009 なので ETH は不要）。
 - Secrets：`SOLANA_RPC_URL`、`BASE_RPC_URL`（公開 RPC は `getSignaturesForAddress` / `eth_getLogs` の制限が厳しいので専用 RPC 推奨）
-- Variables：`JIN_PAID_URL`（既定 `https://jin.x402jp.com/api/jin/series`）、`OSD_PAID_URL`（OSD の有料エンドポイント。未設定なら OSD は試験しない）、`RFQ_INDEXER_URL`（公開されている RFQ indexer。未設定なら RFQ 参考値は出さない）
-- 自社ホストの許可リストは `src/self-check.ts` の `SELF_HOSTS`（`jin.x402jp.com`、`osd.x402jp.com`）。OSD が別ホストで公開されている場合はここを変える。それ以外のホストに再送・キャッシュ試験は当たらない（テストあり）。
+- Variables：`JIN_PAID_URL`（既定 `https://jin.x402jp.com/api/jin/series`）、`OSD_PAID_URL`（既定 `https://osd.x402jp.com/api/alpha/portfolio/current`）、`RFQ_INDEXER_URL`（公開されている RFQ indexer。未設定なら RFQ 参考値は出さない）
+- 自社ホストの許可リストは `src/self-check.ts` の `SELF_HOSTS`（`jin.x402jp.com`、`osd.x402jp.com`）。それ以外のホストに再送・キャッシュ試験は当たらない（テストあり）。
 
 ### デプロイ（Vercel + XServer DNS）
 
@@ -144,8 +146,8 @@ GET /scores/:host     （ホストは小文字・ポートなし・先頭の www
 
 - 仕様 JSON の任意項目 `min_probe_score`（0〜100）。
 - 買い手は見積もりを集めたあと、売り手のエンドポイントのホストで `GET {PROBE_URL}/scores/:host` を引き、スコアが `min_probe_score` 未満の見積もりを除外してから採択する。除外と理由はログ（`quotes_collected.excluded`、`probe_filter`）に残す。
-  - 未測定のホスト（404）も「スコアなし」として除外する（`probe_unscored`）。
-  - Probe の API が応答しないときは除外せず、`probe_unavailable` を記録して従来どおり選ぶ。
+  - 未測定のホスト（404）は「未満」ではないので除外しない。`probe_unscored` を記録して従来どおり選ぶ。
+  - Probe の API が応答しないときも除外せず、`probe_unavailable` を記録して従来どおり選ぶ。
 - indexer の `GET /sellers` の各行に `endpoint_hosts` を追加（既存の項目は変えない）。Probe はこれでホストと突き合わせ、成立・拒否・not_delivered を参考値として公開ページに並べる（スコアには入れない）。
 
 ## やらないこと
