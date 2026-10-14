@@ -110,6 +110,14 @@ GitHub Actions：
 
 3 つとも `concurrency: probe-data` で直列に実行する。
 
+### 初回の手順（順番が大事）
+
+1. 本ブランチを `main` にする（schedule トリガーはデフォルトブランチでしか動かないので、3 つのワークフローすべての前提）。
+2. Secrets（ウォレット・RPC）と Variables を登録する（下の「用意するもの」）。
+3. **free-probe を Actions 画面から手動実行（workflow_dispatch）して 1 回通す。** paid-probe は free-probe が作る `targets/YYYY-MM-DD.json` を読むので、これがないと `no targets` で止まる。
+4. その後は定期実行に任せてよい。最初の有料の測定を早く見たいときは paid-probe も手動実行する。
+5. 初週の結果を確認してから `config/probe.json` を `phase: "full", top_n: 50, random_n: 20` に変える（§5）。
+
 ### 用意するもの
 
 - **Probe 専用ウォレット**（Autonomous Agent の鍵は使わない）
