@@ -1,0 +1,4 @@
+{
+  "_note": "402 の extra から使われたファシリテーターを判定するための対応表。extra.facilitator / extra.facilitatorUrl があればそれを優先し、無ければ Solana の extra.feePayer をここで引く。出典を確認できたアドレスだけ追加する（推測で埋めない）。",
+  "fee_payers": {}
+}

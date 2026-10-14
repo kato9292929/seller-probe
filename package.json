@@ -1,0 +1,35 @@
+{
+  "name": "seller-probe",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "targets": "tsx src/cli/targets.ts",
+    "probe:free": "tsx src/cli/probe-free.ts",
+    "probe:paid": "tsx src/cli/probe-paid.ts",
+    "self-check": "tsx src/cli/self-check.ts",
+    "score": "tsx src/cli/score.ts",
+    "test": "node --import tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsx src/cli/score.ts",
+    "rfq:snapshot": "tsx src/cli/rfq-snapshot.ts"
+  },
+  "dependencies": {
+    "@solana/kit": "^5.5.1",
+    "@x402/core": "^2.28.0",
+    "@x402/evm": "^2.28.0",
+    "@x402/svm": "^2.28.0",
+    "bs58": "^6.0.0",
+    "dotenv": "^18.0.7",
+    "viem": "^2.57.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  }
+}

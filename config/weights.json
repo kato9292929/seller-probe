@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "effective_from": "2026-10-13",
+  "window_days": 30,
+  "latency_ms": { "full_marks_at_or_below": 1000, "zero_at_or_above": 10000 },
+  "free": {
+    "reachable": 10,
+    "status_402": 15,
+    "fields_valid": 15,
+    "asset_known": 10,
+    "payto_stable": 10,
+    "latency_402": 5
+  },
+  "paid": {
+    "settle_ok": 10,
+    "onchain_ok": 10,
+    "delivered": 15,
+    "not_delivered": 15,
+    "latency_paid": 5,
+    "cache_header": 0
+  },
+  "history": [
+    { "version": 1, "date": "2026-10-13", "change": "初版。cache_header は記録のみ（重み 0）。" }
+  ]
+}

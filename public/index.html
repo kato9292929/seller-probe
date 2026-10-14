@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>x402 Seller Probe</title>
+<meta name="description" content="x402 の売り手が正しく動くかを外から測ったスコア。402 応答の形式、決済、納品を検査します。">
+<style>
+  :root {
+    --bg: #fafaf9; --fg: #1c1917; --muted: #78716c; --line: #e7e5e4; --card: #ffffff;
+    --good: #15803d; --mid: #b45309; --bad: #b91c1c; --accent: #1d4ed8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0c0a09; --fg: #f5f5f4; --muted: #a8a29e; --line: #292524; --card: #1c1917;
+      --good: #4ade80; --mid: #fbbf24; --bad: #f87171; --accent: #93c5fd; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.6 system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 18px; margin: 40px 0 8px; }
+  p, li { color: var(--fg); }
+  .muted { color: var(--muted); }
+  .note { border-left: 3px solid var(--accent); padding: 8px 12px; background: var(--card); margin: 16px 0; }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 16px 0 8px; }
+  input, select, button { font: inherit; color: var(--fg); background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+  .wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--card); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+  th { font-weight: 600; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .score { font-weight: 700; }
+  .g { color: var(--good); } .m { color: var(--mid); } .b { color: var(--bad); }
+  .tag { font-size: 12px; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; color: var(--muted); }
+  .tag.full { color: var(--accent); border-color: var(--accent); }
+  a { color: var(--accent); }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  pre { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px; overflow-x: auto; }
+  dialog { max-width: 760px; width: calc(100% - 32px); background: var(--card); color: var(--fg); border: 1px solid var(--line); border-radius: 10px; }
+  dialog::backdrop { background: rgba(0,0,0,.4); }
+</style>
+</head>
+<body>
+<main>
+  <h1>x402 Seller Probe</h1>
+  <p class="muted">x402 の売り手が「正しく動くか」を外から測り、ホストごとのスコアにしています。</p>
+  <div class="note">
+    この測定は本サイト運営者（x402jp.com）の自社エージェントが行っています（支払いには Probe 専用のウォレットを使用）。
+    第三者の売り手には、通常の買い手と同じ 1 回の閲覧と、最小額での 1 回の購入しか行いません。再送・キャッシュ・負荷の試験は自社の売り手にだけ行い、結果はスコアに入れていません。
+  </div>
+  <p class="muted" id="meta">読み込み中…</p>
+
+  <div class="bar">
+    <input id="q" type="search" placeholder="ホストで絞り込み" aria-label="ホストで絞り込み">
+    <select id="cov" aria-label="測定範囲">
+      <option value="">すべて</option>
+      <option value="full">有料の測定あり（full）</option>
+      <option value="free_only">無料の測定のみ（free_only）</option>
+    </select>
+  </div>
+  <div class="wrap">
+    <table>
+      <thead><tr>
+        <th>#</th><th>ホスト</th><th>スコア</th><th>範囲</th><th>測定数（無料/有料）</th><th>ネットワーク</th><th>最終測定</th>
+        <th title="x402 RFQ Market の成績。参考値でありスコアには入っていません">RFQ 参考（成立/拒否/未納品）</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <p><button id="more" hidden>さらに表示</button></p>
+
+  <h2>スコアの算出式</h2>
+  <p>ホストごとに直近 <span id="win">30</span> 日の測定から、項目ごとの合格率（0〜1）を出し、重み付き平均を 100 倍します。</p>
+  <pre>score = 100 × Σ(重み × 合格率) ÷ Σ(重み)    ※ 観測のない項目は分子・分母から除く</pre>
+  <ul>
+    <li>前段で失敗した項目は後段も不合格として数えます（応答なし → 402 なし → 形式・asset も不合格）。</li>
+    <li><code>payto_stable</code> は前回の測定と比べられるときだけ数えます（初回は数えない）。</li>
+    <li>応答時間は 1 回ごとに、<span id="lat"></span> の範囲を 1〜0 に線形で換算します。<code>latency_paid</code> は納品できた回だけ数えます。</li>
+    <li><code>not_delivered</code> は悪い結果なので <code>1 − 発生率</code> で数えます。</li>
+    <li>有料の測定がないホストは無料の項目だけで計算し、<span class="tag">free_only</span> と表示します。</li>
+  </ul>
+  <div class="wrap"><table><thead><tr><th>項目</th><th>種別</th><th class="num">重み</th><th>内容</th></tr></thead><tbody id="weights"></tbody></table></div>
+  <p class="muted" id="whist"></p>
+
+  <h2>測定方法</h2>
+  <ul>
+    <li><b>対象</b>：<a href="https://github.com/kato9292929/endpoint">x402 Endpoint</a> の公開カタログから、Solana か Base の USDC を受け付けるエンドポイントを抽出し、ホストごとに最も安いものを 1 つ選びます。</li>
+    <li><b>無料の測定（毎日）</b>：支払わずに GET（405 なら空の JSON で POST）し、402 の形式（x402 v1/v2、scheme・network・asset・payTo・金額・resource）、asset が公式 USDC か、payTo が前回から変わっていないか、402 までの時間を見ます。タイムアウトは 10 秒です。</li>
+    <li><b>有料の測定（週 1 回）</b>：直近 7 日のコール数上位のホストと無作為に選んだホストから、価格 $0.01 以下のものを 1 コール購入します。/settle の結果、チェーン上の送金（金額・送金先が 402 の提示と一致するか）、200 と空でない本文が返るか、応答時間を見ます。送金が成立したのに 200 が返らなかった場合を <code>not_delivered</code> とします（x402 RFQ Market の理由コード 5 と同じ判定）。</li>
+    <li><b>支払いの上限</b>：1 コール $0.01、7 日間で $5。コードで強制し、超える購入は送信前に止めます。</li>
+    <li><b>記録</b>：すべての測定は <a href="https://github.com/kato9292929/seller-probe/tree/main/log">log/</a> に追記しています（上書き・削除なし）。有料の測定には tx 署名を含めています。</li>
+  </ul>
+
+  <h2>API</h2>
+  <pre>GET /scores          全ホストのスコア一覧
+GET /scores/:host    ホスト別の詳細と直近の測定履歴（未測定のホストは 404）</pre>
+</main>
+
+<dialog id="detail"><pre id="detail-body"></pre><form method="dialog"><button>閉じる</button></form></dialog>
+
+<script>
+(async () => {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const cls = (s) => (s === null ? "" : s >= 80 ? "g" : s >= 50 ? "m" : "b");
+  let data, w;
+  try {
+    [data, w] = await Promise.all([fetch("/scores").then((r) => r.json()), fetch("/data/weights.json").then((r) => r.json())]);
+  } catch (e) {
+    $("meta").textContent = "スコアを読み込めませんでした。";
+    return;
+  }
+  const full = data.scores.filter((s) => s.coverage === "full").length;
+  $("meta").textContent = `${data.hosts} ホスト（有料の測定あり ${full}）・直近 ${data.window_days} 日・重み v${data.weights_version}・更新 ${data.generated_at}`
+    + (data.rfq && data.rfq.status !== "not_configured" ? `・RFQ 参考値 ${data.rfq.fetched_at ?? "—"}（スコアには不使用）` : "");
+  $("win").textContent = w.window_days;
+  $("lat").textContent = `${w.latency_ms.full_marks_at_or_below} ms 以下を 1、${w.latency_ms.zero_at_or_above} ms 以上を 0`;
+  const desc = {
+    reachable: "HTTP 応答が返るか（10 秒）", status_402: "支払いなしで 402 を返すか", fields_valid: "402 の必須項目が揃っているか",
+    asset_known: "asset が公式 USDC か", payto_stable: "payTo が前回から変わっていないか", latency_402: "402 が返るまでの時間",
+    settle_ok: "/settle が成功を返したか", onchain_ok: "チェーン上の送金が 402 の提示と一致するか", delivered: "支払い後に 200 と空でない本文",
+    not_delivered: "送金成立後に 200 が返らなかった（1 − 発生率）", latency_paid: "支払い付きリクエストから 200 まで", cache_header: "Cache-Control: no-store（記録のみ）",
+  };
+  $("weights").innerHTML = [...Object.entries(w.free).map(([k, v]) => [k, "無料", v]), ...Object.entries(w.paid).map(([k, v]) => [k, "有料", v])]
+    .map(([k, t, v]) => `<tr><td><code>${k}</code></td><td>${t}</td><td class="num">${v}</td><td>${esc(desc[k])}</td></tr>`).join("");
+  $("whist").textContent = "重みの変更履歴: " + w.history.map((h) => `v${h.version} (${h.date}) ${h.change}`).join(" / ");
+
+  let shown = 200;
+  const render = () => {
+    const q = $("q").value.trim().toLowerCase();
+    const cov = $("cov").value;
+    const list = data.scores.filter((s) => (!q || s.host.includes(q)) && (!cov || s.coverage === cov));
+    $("rows").innerHTML = list.slice(0, shown).map((s, i) => {
+      const r = s.rfq;
+      return `<tr>
+        <td class="num">${i + 1}</td>
+        <td><a href="#" data-host="${esc(s.host)}">${esc(s.host)}</a></td>
+        <td class="num score ${cls(s.score)}">${s.score ?? "—"}</td>
+        <td><span class="tag ${s.coverage === "full" ? "full" : ""}">${s.coverage}</span></td>
+        <td class="num">${s.n_free} / ${s.n_paid}</td>
+        <td>${esc(s.latest.network ?? "—")}</td>
+        <td class="muted">${esc((s.last_paid_at ?? s.last_free_at ?? "").slice(0, 10))}</td>
+        <td class="muted">${r ? `${r.fulfilled} / ${r.rejected} / ${r.not_delivered}` : "—"}</td>
+      </tr>`;
+    }).join("");
+    $("more").hidden = list.length <= shown;
+  };
+  $("q").addEventListener("input", () => { shown = 200; render(); });
+  $("cov").addEventListener("change", () => { shown = 200; render(); });
+  $("more").addEventListener("click", () => { shown += 500; render(); });
+  $("rows").addEventListener("click", async (e) => {
+    const a = e.target.closest("a[data-host]");
+    if (!a) return;
+    e.preventDefault();
+    const d = await fetch(`/scores/${encodeURIComponent(a.dataset.host)}`).then((r) => r.json()).catch(() => null);
+    $("detail-body").textContent = d ? JSON.stringify(d, null, 2) : "読み込めませんでした";
+    $("detail").showModal();
+  });
+  render();
+})();
+</script>
+</body>
+</html>

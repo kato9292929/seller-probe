@@ -1,0 +1,18 @@
+HTTP/1.1 200 Connection Established
+
+HTTP/2 402 
+access-control-allow-headers: Content-Type, X-PAYMENT, PAYMENT-SIGNATURE
+access-control-allow-methods: GET, OPTIONS
+access-control-allow-origin: *
+access-control-expose-headers: PAYMENT-REQUIRED, PAYMENT-RESPONSE, X-PAYMENT-RESPONSE
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-type: application/json
+date: Tue, 13 Oct 2026 12:36:50 GMT
+payment-required: eyJ4NDAyVmVyc2lvbiI6MiwiZXJyb3IiOiJQYXltZW50IHJlcXVpcmVkIiwicmVzb3VyY2UiOnsidXJsIjoiaHR0cHM6Ly9qaW4ueDQwMmpwLmNvbS9hcGkvamluL3NlcmllcyIsImRlc2NyaXB0aW9uIjoiSklOIGRhaWx5IGZvb2QgaW5kZXggc2VyaWVzIChleGNsL2luY2wsIG1hdGNoZWQgU0tVIGNvdW50KS4gU2luZ2xlLXN0b3JlIG9ic2VydmF0aW9uLCBub3Qgb2ZmaWNpYWwgQ1BJLCBub3QgYSBmb3JlY2FzdC4iLCJtaW1lVHlwZSI6IiJ9LCJhY2NlcHRzIjpbeyJzY2hlbWUiOiJleGFjdCIsIm5ldHdvcmsiOiJzb2xhbmE6NWV5a3Q0VXNGdjhQOE5KZFRSRXBZMXZ6cUtxWkt2ZHAiLCJhbW91bnQiOiIxMDAwMCIsImFzc2V0IjoiRVBqRldkZDVBdWZxU1NxZU0ycU4xeHp5YmFwQzhHNHdFR0drWnd5VER0MXYiLCJwYXlUbyI6IjRzOFhRQzJXelJmZ0g4WGllcDd5Ym5DVzExVktSQ013eFFGNmprbngzVlBmIiwibWF4VGltZW91dFNlY29uZHMiOjMwMCwiZXh0cmEiOnsicmVzb3VyY2UiOiJodHRwczovL2ppbi54NDAyanAuY29tL2FwaS9qaW4vc2VyaWVzIiwiZmVlUGF5ZXIiOiJDak5GVGp2QmhiSkpkMkI1ZVBQTUhSTHgxRUxacGE4ZHdRZ0dMNzI3ZUt3dyJ9fV19
+server: Vercel
+strict-transport-security: max-age=63072000
+x-matched-path: /api/jin/series
+x-vercel-cache: MISS
+x-vercel-id: iad1::iad1::np2g9-1791895010451-84cf1abdffc7
+

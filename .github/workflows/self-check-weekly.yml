@@ -1,0 +1,40 @@
+name: self-check (weekly, own sellers only)
+on:
+  schedule:
+    - cron: "53 5 * * 1"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: probe-data
+  cancel-in-progress: false
+jobs:
+  self-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Replay and cache checks against OSD / JIN
+        run: npm run self-check
+        env:
+          PROBE_SOLANA_SECRET_KEY: ${{ secrets.PROBE_SOLANA_SECRET_KEY }}
+          PROBE_EVM_PRIVATE_KEY: ${{ secrets.PROBE_EVM_PRIVATE_KEY }}
+          SOLANA_RPC_URL: ${{ secrets.SOLANA_RPC_URL }}
+          BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
+          JIN_PAID_URL: ${{ vars.JIN_PAID_URL }}
+          OSD_PAID_URL: ${{ vars.OSD_PAID_URL }}
+      - name: Commit
+        if: always()
+        run: |
+          git config user.name "seller-probe[bot]"
+          git config user.email "seller-probe@users.noreply.github.com"
+          git add self-check
+          git diff --cached --quiet && exit 0
+          git commit -m "self-check $(date -u +%F)"
+          for i in 1 2 3; do git pull --rebase origin main && git push origin HEAD:main && exit 0; sleep $((i*5)); done
+          exit 1

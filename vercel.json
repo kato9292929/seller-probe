@@ -1,0 +1,25 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build",
+  "outputDirectory": "public",
+  "rewrites": [
+    { "source": "/scores", "destination": "/data/scores.json" },
+    { "source": "/scores/:host", "destination": "/data/hosts/:host.json" }
+  ],
+  "headers": [
+    {
+      "source": "/scores/:path*",
+      "headers": [
+        { "key": "access-control-allow-origin", "value": "*" },
+        { "key": "cache-control", "value": "public, max-age=300" }
+      ]
+    },
+    {
+      "source": "/data/:path*",
+      "headers": [
+        { "key": "access-control-allow-origin", "value": "*" },
+        { "key": "cache-control", "value": "public, max-age=300" }
+      ]
+    }
+  ]
+}
