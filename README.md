@@ -87,6 +87,17 @@ score = 100 × Σ(重み × 合格率) ÷ Σ(重み)    （観測のない項目
 使った額は `log/` と `self-check/` の `*_attempt` レコード（送信前に書く）を直近 7 日分足して求めるので、決済されなかった試行も使ったものとして数える（安全側）。
 支払いライブラリ側にも `$0.01` の上限を重ねている。
 
+**1 コール $0.01 の上限を強制している箇所**（行番号はテスト `test/readme-refs.test.ts` が実ファイルと照合する。コードを動かして行がずれると `npm test` が落ちる）：
+
+| 順 | ファイル:行 | 内容 |
+|---|---|---|
+| 定義 | `src/config.ts:37` | `perCall: 10_000n`（USDC 6 桁で $0.01）。env や設定ファイルからは変えられない |
+| 1 | `src/pay.ts:54` | `refuseReason`：402 の金額が `LIMITS.perCall` を超える提示は買わない（`src/probe-paid.ts:74` で呼ぶ） |
+| 2 | `src/budget.ts:29` | `assertWithinBudget`：同じ上限を再検査し、7 日間 $5（`src/budget.ts:30`）も見る。署名の前に `src/probe-paid.ts:85` で呼ぶ |
+| 3 | `src/pay.ts:22` | 支払いライブラリ（`@x402/core`）の `spendControls.maxAmountPerPayment: "$0.01"`。上の 2 つを抜けても署名しない二重の柵 |
+
+署名は 1・2 を通った後の `src/probe-paid.ts:94`（`signFor`）でだけ行う。対象選定時のカタログ価格の上限（`src/config.ts:41` の `catalogMaxPriceUsd`）は対象を絞るためのもので、支払いの強制ではない。
+
 ## 実行
 
 ```bash
