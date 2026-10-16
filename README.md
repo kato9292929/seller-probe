@@ -25,9 +25,10 @@ src/
   chains/base.ts     EIP-3009 の nonce、receipt の照会、USDC Transfer の照合
   facilitator.ts     402 の extra からファシリテーターを判定
   self-check.ts      §3.3（自社ホストの許可リストはコードに固定）
+  wallet-env.ts      鍵の読み込み（env → .keys/）と Secret 名、未設定の判定
   score.ts           §4 スコア
   rfq.ts             RFQ indexer の GET /sellers（参考値。スコアには入れない）
-  cli/               npm scripts の入口
+  cli/               npm scripts の入口（wallet-new.ts はウォレット生成）
 config/
   weights.json       スコアの重み（version と history で変更履歴を残す）
   probe.json         有料の測定の対象数（初週は top 10 のみ）
@@ -36,6 +37,7 @@ log/                 全測定（YYYY-MM-DD.jsonl、追記のみ）
 self-check/          §3.3 の結果（追記のみ）
 targets/             日ごとの対象
 data/rfq-sellers.json RFQ の売り手成績のスナップショット
+docs/wallet.md       Probe 専用ウォレットの公開アドレス（npm run wallet:new が書く）
 public/index.html    公開ページ（public/data/ はビルド時に log/ から生成、コミットしない）
 ```
 
@@ -61,7 +63,7 @@ GET が 405 のときだけ空の JSON 本文で POST して 402 を取る（`me
 2. 200 以外が返ったら、その署名を含む tx をチェーンで探す（Solana：自分のアドレスに触れた直近 tx の署名一覧を照合、Base：USDC の `AuthorizationUsed(自分, nonce)` イベント）。
 3. 見つかった tx が 402 の提示どおりの送金なら `not_delivered: true`（RFQ の理由コード 5 と同じ）。
 
-**tx 署名の記録**：署名した支払いはすべて、送信前の `paid_attempt` と結果の `paid` の両方に自分の署名（`payer_signature`、Base は `authorization_nonce` と `authorization_signature`）を持つ。チェーン上の tx が判明したもの（settle 応答、または上の検索で発見）は `tx` にその署名／ハッシュと出所（`tx_source`）を入れる。送金が着地しなかった場合だけ `tx: null` になり、そのときも自分の署名は残る。
+**tx 署名の記録**：署名した支払いはすべて、送信前の `paid_attempt` と結果の `paid` の両方に自分の署名（`payer_signature`、Base は `authorization_nonce` と署名の SHA-256 `authorization_signature_sha256`）を持つ。Base の署名そのものはログに書かない（署名済み authorization は誰でも `transferWithAuthorization` で実行できるため）。チェーン上の tx が判明したもの（settle 応答、または上の検索で発見）は `tx` にその署名／ハッシュと出所（`tx_source`）を入れる。送金が着地しなかった場合だけ `tx: null` になり、そのときも自分の署名は残る。
 
 有料で買うのは GET で 402 を返す、`exact`・公式 USDC・Solana/Base 本番の提示だけです（Base は EIP-3009 のみ、Permit2 は買わない）。買わなかった理由は `skipped` に残し、スコアには数えません。
 
@@ -87,55 +89,129 @@ score = 100 × Σ(重み × 合格率) ÷ Σ(重み)    （観測のない項目
 使った額は `log/` と `self-check/` の `*_attempt` レコード（送信前に書く）を直近 7 日分足して求めるので、決済されなかった試行も使ったものとして数える（安全側）。
 支払いライブラリ側にも `$0.01` の上限を重ねている。
 
+**1 コール $0.01 の上限を強制している箇所**（行番号はテスト `test/readme-refs.test.ts` が実ファイルと照合する。コードを動かして行がずれると `npm test` が落ちる）：
+
+| 順 | ファイル:行 | 内容 |
+|---|---|---|
+| 定義 | `src/config.ts:37` | `perCall: 10_000n`（USDC 6 桁で $0.01）。env や設定ファイルからは変えられない |
+| 1 | `src/pay.ts:55` | `refuseReason`：402 の金額が `LIMITS.perCall` を超える提示は買わない（`src/probe-paid.ts:79` で呼ぶ） |
+| 2 | `src/budget.ts:30` | `assertWithinBudget`：同じ上限を再検査し、7 日間 $5（`src/budget.ts:31`）も見る。署名の前に `src/probe-paid.ts:90` で呼ぶ |
+| 3 | `src/pay.ts:23` | 支払いライブラリ（`@x402/core`）の `spendControls.maxAmountPerPayment: "$0.01"`。上の 2 つを抜けても署名しない二重の柵 |
+
+署名は 1・2 を通った後の `src/probe-paid.ts:100`（`signFor`）でだけ行う。対象選定時のカタログ価格の上限（`src/config.ts:41` の `catalogMaxPriceUsd`）は対象を絞るためのもので、支払いの強制ではない。
+
 ## 実行
 
 ```bash
 npm ci
-cp .env.example .env    # Probe 専用ウォレットの鍵と RPC を入れる（コミットしない）
-npm test                # 単体テスト（ネットワーク不要）
-npm run targets         # targets/YYYY-MM-DD.json
-npm run probe:free      # 無料の測定 → log/
-npm run probe:paid      # 有料の測定 → log/（鍵が必要）
-npm run self-check      # 自社の OSD / JIN だけ → self-check/（鍵が必要）
-npm run score           # public/data/ を生成（Vercel のビルドでも実行）
+npm test                    # 単体テスト（ネットワーク不要）
+npm run wallet:new          # Probe 専用ウォレットを作る（下の「ウォレット」）
+npm run targets             # targets/YYYY-MM-DD.json
+npm run probe:free          # 無料の測定 → log/
+npm run probe:dry-run       # 有料の測定の確認モード：402・上限判定・署名まで。送信しない → log/（dry_run: true）
+npm run probe:paid          # 有料の測定（本番の支払い）→ log/
+npm run self-check          # 自社の OSD / JIN だけ → self-check/
+npm run score               # public/data/ を生成（Vercel のビルドでも実行）
 ```
 
-GitHub Actions：
+鍵は環境変数（`.env` または Actions の Secrets）から読み、無ければ `npm run wallet:new` が書いた `.keys/` から読む。
 
-| workflow | 時刻（UTC） | 内容 |
+## ウォレット（Probe 専用）
+
+```bash
+npm run wallet:new
+```
+
+- Solana と Base の鍵を新規に作り、`.keys/probe-solana.json`（solana-keygen と同じ 64 バイトの JSON 配列）と `.keys/probe-base.key`（0x hex）に書く（権限 600、`.keys/` は .gitignore 済み）。既にあれば上書きせずに止まる。
+- 公開アドレスだけを `docs/wallet.md` に書く。こちらはコミットしてよい。
+- 最後に「Secret 名 → 貼り付ける値」を表示する（Solana は base58、Base は 0x hex）。名前は下の Secrets 一覧と同じ。
+- Autonomous Agent の鍵・ウォレットは使わない（AA の購入記録と混ぜないため）。
+
+**入金の目安**（7 日 $5 の上限に合わせる）：
+
+| チェーン | USDC | ガス代 |
 |---|---|---|
-| `free-daily.yml` | 毎日 03:17 | targets → 無料の測定 → RFQ スナップショット → log/targets/data をコミット |
-| `paid-weekly.yml` | 月曜 04:41 | 有料の測定 → log をコミット |
-| `self-check-weekly.yml` | 月曜 05:53 | 自社への再送・キャッシュ試験 → self-check をコミット |
+| Solana | $5 | SOL 少額（例 0.01 SOL。手数料は通常ファシリテーターが払うので予備） |
+| Base | $5 | ETH 少額（例 0.0005 ETH。EIP-3009 なので通常は不要、予備） |
 
-3 つとも `concurrency: probe-data` で直列に実行する。
+## 本番前の確認（--dry-run）
+
+`npm run probe:dry-run`（= `probe:paid --dry-run`）は、402 の取得 → 提示額の上限判定 → 署名までを行い、**送信しない**。結果は `log/` に `kind: "paid"`, `dry_run: true` で残る。
+
+| 記録する | 記録しない |
+|---|---|
+| host / url / network / 提示額（`amount`）/ payTo | 支払いヘッダ（`PAYMENT-SIGNATURE` / `X-PAYMENT`）本体 |
+| 上限判定の結果 `cap_check: {pass, reason}` | 署名済みの authorization / tx |
+| Solana：`payer_signature` | Base の署名そのもの |
+| Base：`authorization_nonce` と署名の SHA-256（`authorization_signature_sha256`） | |
+
+署名済みのものを書かないのは、Base の署名済み authorization は誰でも `transferWithAuthorization` で実行でき、Solana の署名済み tx も blockhash が有効な間は送信できるため。
+
+`dry_run: true` の行は、スコア（`src/score.ts` の 30 日窓）と使用額（`src/budget.ts` の 7 日集計）の両方で読み飛ばす。dry-run は `paid_attempt` も書かない（`test/dry-run.test.ts`）。
+
+## 定期実行（GitHub Actions）
+
+| workflow | 時刻（UTC） | 手動起動 | 内容 |
+|---|---|---|---|
+| `free-daily.yml` | 毎日 03:17 | ○ | targets → 無料の測定 → RFQ スナップショット → `log/` `targets/` `data/` を main にコミット |
+| `paid-weekly.yml` | 月曜 04:41 | ○（`dry_run` 入力、既定 true） | 有料の測定 → `log/` を main にコミット |
+| `self-check-weekly.yml` | 月曜 05:53 | ○ | 自社への再送・キャッシュ試験 → `self-check/` を main にコミット |
+
+- 3 つとも `permissions: contents: write`、`concurrency: probe-data`（直列）、checkout は `ref: main`。
+- **本番の支払いのスイッチ**：リポジトリ変数 `PROBE_PAID_ENABLED` が `true` のときだけ paid-probe は実際に支払い、self-check も動く。それまでは paid-probe は定期実行でも dry-run になり、self-check は「paid runs not enabled」と記録して終わる。dry-run の結果を確認してから `true` にする。
+- **Secrets が無いとき**：paid-probe と self-check はエラーで落とさず、`kind: "run_skipped"`, `reason: "secrets not configured (未設定)"`, `missing: [...]` を記録して正常終了する（片方のチェーンだけ設定されていれば、そのチェーンだけ測る）。
+
+### Secrets と Variables
+
+GitHub → Settings → Secrets and variables → Actions。
+
+| 種類 | 名前 | 値 | どこで作るか | 必須 |
+|---|---|---|---|---|
+| Secret | `PROBE_SOLANA_SECRET_KEY` | base58 の 64 バイト秘密鍵 | `npm run wallet:new` の表示 | paid / self-check（Solana） |
+| Secret | `PROBE_EVM_PRIVATE_KEY` | 0x で始まる 32 バイト秘密鍵 | `npm run wallet:new` の表示 | paid / self-check（Base） |
+| Secret | `SOLANA_RPC_URL` | Solana mainnet の RPC URL | RPC 事業者（Helius など） | 任意（無ければ公開 RPC。`getSignaturesForAddress` の制限が厳しいので推奨） |
+| Secret | `BASE_RPC_URL` | Base mainnet の RPC URL | RPC 事業者（Alchemy など） | 任意（無ければ `mainnet.base.org`。`eth_getLogs` の範囲制限があるので推奨） |
+| Variable | `PROBE_PAID_ENABLED` | `true` | 手で設定 | dry-run 確認後に設定 |
+| Variable | `JIN_PAID_URL` | 既定 `https://jin.x402jp.com/api/jin/series` | — | 任意 |
+| Variable | `OSD_PAID_URL` | 既定 `https://osd.x402jp.com/api/alpha/portfolio/current` | — | 任意 |
+| Variable | `RFQ_INDEXER_URL` | 公開されている RFQ indexer の URL | — | 任意（未設定なら RFQ 参考値の列が空） |
+
+自社ホストの許可リストは `src/self-check.ts` の `SELF_HOSTS`（`jin.x402jp.com`、`osd.x402jp.com`）。それ以外のホストに再送・キャッシュ試験は当たらない（テストあり）。
 
 ### 初回の手順（順番が大事）
 
-1. 本ブランチを `main` にする（schedule トリガーはデフォルトブランチでしか動かないので、3 つのワークフローすべての前提）。
-2. Secrets（ウォレット・RPC）と Variables を登録する（下の「用意するもの」）。
-3. **free-probe を Actions 画面から手動実行（workflow_dispatch）して 1 回通す。** paid-probe は free-probe が作る `targets/YYYY-MM-DD.json` を読むので、これがないと `no targets` で止まる。
-4. その後は定期実行に任せてよい。最初の有料の測定を早く見たいときは paid-probe も手動実行する。
-5. 初週の結果を確認してから `config/probe.json` を `phase: "full", top_n: 50, random_n: 20` に変える（§5）。
+1. 既定ブランチを `main` にする（GitHub → Settings → General → Default branch）。schedule トリガーは既定ブランチのワークフローで動く。
+2. `npm run wallet:new` → 表示された 2 つの値を Secrets に登録 → 入金（上の目安）→ `docs/wallet.md` をコミット。
+3. **free-probe を手動実行して 1 回通す。** paid-probe は free-probe が作る `targets/YYYY-MM-DD.json` を読むので、これがないと `no targets` で止まる。
+4. **paid-probe を `dry_run: true` で手動実行**し、上位 10 ホストの提示額・`cap_check`・署名を `log/` で確認する（Actions のログにも 1 ホスト 1 行で出る）。
+5. 問題なければ変数 `PROBE_PAID_ENABLED=true` を設定。以後、月曜の定期実行で本番の支払いと self-check が動く。
+6. 初週の結果を確認してから `config/probe.json` を `phase: "full", top_n: 50, random_n: 20` に変える（§5）。
 
-### 用意するもの
+## デプロイ（Vercel + XServer DNS）
 
-- **Probe 専用ウォレット**（Autonomous Agent の鍵は使わない）
-  - Solana：`solana-keygen new -o probe.json` → 秘密鍵を Secrets `PROBE_SOLANA_SECRET_KEY` に。USDC を少額（例 $6）入れる。手数料はファシリテーターが払うので SOL はほぼ不要。
-  - Base：新規の鍵を Secrets `PROBE_EVM_PRIVATE_KEY` に。USDC を少額入れる（EIP-3009 なので ETH は不要）。
-- Secrets：`SOLANA_RPC_URL`、`BASE_RPC_URL`（公開 RPC は `getSignaturesForAddress` / `eth_getLogs` の制限が厳しいので専用 RPC 推奨）
-- Variables：`JIN_PAID_URL`（既定 `https://jin.x402jp.com/api/jin/series`）、`OSD_PAID_URL`（既定 `https://osd.x402jp.com/api/alpha/portfolio/current`）、`RFQ_INDEXER_URL`（公開されている RFQ indexer。未設定なら RFQ 参考値は出さない）
-- 自社ホストの許可リストは `src/self-check.ts` の `SELF_HOSTS`（`jin.x402jp.com`、`osd.x402jp.com`）。それ以外のホストに再送・キャッシュ試験は当たらない（テストあり）。
+`vercel.json`：
 
-### デプロイ（Vercel + XServer DNS）
+```json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "public",
+  "rewrites": [
+    { "source": "/scores", "destination": "/data/scores.json" },
+    { "source": "/scores/:host", "destination": "/data/hosts/:host.json" }
+  ]
+}
+```
 
-1. Vercel で本リポジトリを Import（Framework Preset: Other。`vercel.json` の `buildCommand: npm run build`、`outputDirectory: public` が使われる）。
+（実ファイルには CORS 許可と 5 分キャッシュのヘッダ設定もある）
+
+1. Vercel で本リポジトリを Import（Framework Preset: Other）。Production Branch は `main`。
 2. 必要なら Vercel の Environment Variables に `RFQ_INDEXER_URL`。
 3. Vercel の Domains に `probe.x402jp.com` を追加。
-4. XServer の DNS レコード設定で `probe` に `CNAME cname.vercel-dns.com.` を追加。
-5. 以後、Actions が `log/` をコミットするたびに Vercel が再ビルドし、スコアが更新される。
+4. XServer の DNS レコード設定で、ホスト名 `probe`、種別 `CNAME`、内容 `cname.vercel-dns.com.` を追加。
 
-`/scores` と `/scores/:host` は `vercel.json` の rewrite で `public/data/` の静的 JSON を返す（CORS 許可、5 分キャッシュ）。未測定のホストは 404。
+**更新の仕組み**：ページのデータはコミットしない。`main` への push（定期実行のコミットを含む）が Vercel の再ビルドの引き金になり、ビルド時に `npm run build`（`src/cli/score.ts`）が `log/` から `public/data/scores.json` と `public/data/hosts/*.json` を作る。つまり毎日の free-probe のコミットで 1 日 1 回スコアが更新される。
+
+測定データが 0 件でもビルドは通り、`GET /scores` は `{"hosts":0,"scores":[]}` を返し、公開ページは「まだ測定データがありません」と表示する。未測定のホストの `GET /scores/:host` は 404。
 
 ## API
 

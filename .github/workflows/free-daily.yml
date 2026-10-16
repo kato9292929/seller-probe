@@ -14,6 +14,8 @@ jobs:
     timeout-minutes: 330
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main # commits go to main even before the default branch is switched
       - uses: actions/setup-node@v4
         with:
           node-version: 22
