@@ -3,6 +3,11 @@ on:
   schedule:
     - cron: "41 4 * * 1"
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "402 の取得・上限判定・署名までで止め、送信しない（log/ に dry_run: true で記録）"
+        type: boolean
+        default: true
 permissions:
   contents: write
 concurrency:
@@ -14,15 +19,22 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main # commits go to main even before the default branch is switched
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
       - run: npm test
+      # Without the wallet secrets this records "secrets not configured (未設定)" and exits 0.
+      # Real payments only when the repository variable PROBE_PAID_ENABLED is "true"
+      # (set it after a dry run has been checked). Until then every run is a dry run,
+      # and a manual run with dry_run ticked is always one.
       - name: Paid probe (caps $0.01/call, $5/7 days, enforced in code)
         run: npm run probe:paid
         env:
+          PROBE_DRY_RUN: ${{ (vars.PROBE_PAID_ENABLED != 'true' || (github.event_name == 'workflow_dispatch' && inputs.dry_run)) && '1' || '0' }}
           PROBE_SOLANA_SECRET_KEY: ${{ secrets.PROBE_SOLANA_SECRET_KEY }}
           PROBE_EVM_PRIVATE_KEY: ${{ secrets.PROBE_EVM_PRIVATE_KEY }}
           SOLANA_RPC_URL: ${{ secrets.SOLANA_RPC_URL }}

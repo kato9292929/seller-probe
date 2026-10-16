@@ -22,6 +22,10 @@ export type PaidResult = {
   pay_to: string | null;
   payer: string | null;
   payer_key: Record<string, string> | null;
+  /** --dry-run: 402, cap checks and signing only; nothing is sent. Ignored by score and budget. */
+  dry_run?: true;
+  /** Result of the per-call and 7-day caps (null when no payable 402 was offered). */
+  cap_check?: { pass: boolean; reason: string | null } | null;
   http_status: number | null;
   settle_ok: boolean | null;
   settle_error: string | null;
@@ -45,7 +49,7 @@ export type PaidResult = {
 
 export type PaidRun = PaidResult & { /** Kept for the self-check (replay of the same header). */ _payment_headers?: Record<string, string>; _body?: Buffer };
 
-type Ctx = { payer: Payer; logDir: string; attemptKind: Kind; resultKind: "paid" | "self_check"; extra?: Record<string, unknown> };
+type Ctx = { payer: Payer; logDir: string; attemptKind: Kind; resultKind: "paid" | "self_check"; extra?: Record<string, unknown>; dryRun?: boolean };
 
 function empty(kind: PaidResult["kind"], t: Target): PaidResult {
   return {
@@ -57,7 +61,7 @@ function empty(kind: PaidResult["kind"], t: Target): PaidResult {
 }
 
 export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
-  const out: PaidRun = empty(ctx.resultKind, t);
+  const out: PaidRun = { ...empty(ctx.resultKind, t), ...(ctx.dryRun ? { dry_run: true as const, cap_check: null } : {}) };
   // 1. unpaid GET → 402
   let parsed: Parsed402;
   let a: Accept | undefined;
@@ -71,8 +75,9 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
   } catch (e) {
     return { ...out, skipped: `unreachable: ${errMsg(e)}` };
   }
+  if (a) Object.assign(out, { network: a.network ?? null, chain: a.chain, amount: a.amount ?? null, pay_to: a.payTo ?? null });
   const refuse = refuseReason(a, ctx.payer.address);
-  if (refuse || !a) return { ...out, skipped: `not paid: ${refuse}` };
+  if (refuse || !a) return { ...out, skipped: `not paid: ${refuse}`, ...(ctx.dryRun ? { cap_check: { pass: false, reason: refuse } } : {}) };
   const amount = BigInt(a.amount!);
   const fac = facilitatorFromExtra(a.extra, loadFeePayerMap());
   Object.assign(out, {
@@ -84,9 +89,10 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
   try {
     assertWithinBudget(amount, spentLast7Days());
   } catch (e) {
-    if (e instanceof BudgetError) return { ...out, skipped: `budget: ${e.message}` };
+    if (e instanceof BudgetError) return { ...out, skipped: `budget: ${e.message}`, ...(ctx.dryRun ? { cap_check: { pass: false, reason: e.message } } : {}) };
     throw e;
   }
+  if (ctx.dryRun) out.cap_check = { pass: true, reason: null };
 
   // 3. sign, and log our own signature/nonce BEFORE sending (counts against the budget from here on)
   let signed;
@@ -96,6 +102,10 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
     return { ...out, skipped: `could not sign: ${errMsg(e)}` };
   }
   out.payer_key = signed.payer_key;
+  // Dry run stops here: the signed header is never sent and never written anywhere
+  // (a signed EIP-3009 authorization can be submitted by anyone, a signed Solana tx
+  // while its blockhash is valid). Only the payer-side identifiers above are kept.
+  if (ctx.dryRun) return { ...out, skipped: "dry_run: signed, not sent" };
   append(ctx.logDir, {
     kind: ctx.attemptKind, host: t.host, url: t.url, network: a.network, chain: a.chain, amount: a.amount, pay_to: a.payTo,
     payer: out.payer, ...signed.payer_key, ...(ctx.extra ?? {}),

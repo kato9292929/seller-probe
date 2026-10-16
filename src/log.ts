@@ -3,7 +3,7 @@ import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from
 import { resolve } from "node:path";
 import { ROOT } from "./config.js";
 
-export type Kind = "free" | "paid" | "paid_attempt" | "self_check" | "self_check_attempt";
+export type Kind = "free" | "paid" | "paid_attempt" | "self_check" | "self_check_attempt" | "run_skipped";
 
 export type LogRecord = { ts: string; kind: Kind; host: string; [k: string]: unknown };
 

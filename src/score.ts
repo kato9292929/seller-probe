@@ -77,6 +77,8 @@ export function scoreHosts(records: LogRecord[], w: Weights, now = new Date()): 
   for (const r of records) {
     if (Date.parse(r.ts) < cutoff) continue;
     const isFree = r.kind === "free";
+    // Dry-run rows never paid anything: they are not measurements.
+    if (r.dry_run) continue;
     const isPaid = r.kind === "paid" && !r.skipped;
     if (!isFree && !isPaid) continue;
     const g = by.get(r.host) ?? { free: [], paid: [] };

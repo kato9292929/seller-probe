@@ -14,14 +14,18 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main # commits go to main even before the default branch is switched
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Without the wallet secrets this records "secrets not configured (未設定)" and exits 0.
       - name: Replay and cache checks against OSD / JIN
         run: npm run self-check
         env:
+          PROBE_PAID_ENABLED: ${{ vars.PROBE_PAID_ENABLED }}
           PROBE_SOLANA_SECRET_KEY: ${{ secrets.PROBE_SOLANA_SECRET_KEY }}
           PROBE_EVM_PRIVATE_KEY: ${{ secrets.PROBE_EVM_PRIVATE_KEY }}
           SOLANA_RPC_URL: ${{ secrets.SOLANA_RPC_URL }}

@@ -7,13 +7,13 @@ import { test } from "node:test";
 const REFS: [string, number, string][] = [
   ["src/config.ts", 37, "perCall: 10_000n"],
   ["src/config.ts", 41, "catalogMaxPriceUsd: 0.01"],
-  ["src/pay.ts", 22, 'maxAmountPerPayment: "$0.01"'],
-  ["src/pay.ts", 54, "BigInt(a.amount) > LIMITS.perCall"],
-  ["src/budget.ts", 29, "amount > LIMITS.perCall"],
-  ["src/budget.ts", 30, "spent + amount > LIMITS.perWeek"],
-  ["src/probe-paid.ts", 74, "refuseReason(a, ctx.payer.address)"],
-  ["src/probe-paid.ts", 85, "assertWithinBudget(amount, spentLast7Days())"],
-  ["src/probe-paid.ts", 94, "signFor(ctx.payer, parsed, a)"],
+  ["src/pay.ts", 23, 'maxAmountPerPayment: "$0.01"'],
+  ["src/pay.ts", 55, "BigInt(a.amount) > LIMITS.perCall"],
+  ["src/budget.ts", 30, "amount > LIMITS.perCall"],
+  ["src/budget.ts", 31, "spent + amount > LIMITS.perWeek"],
+  ["src/probe-paid.ts", 79, "refuseReason(a, ctx.payer.address)"],
+  ["src/probe-paid.ts", 90, "assertWithinBudget(amount, spentLast7Days())"],
+  ["src/probe-paid.ts", 100, "signFor(ctx.payer, parsed, a)"],
 ];
 
 const root = new URL("../", import.meta.url);

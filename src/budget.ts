@@ -13,6 +13,7 @@ export function spentFrom(records: LogRecord[], now = new Date()): bigint {
   let sum = 0n;
   for (const r of records) {
     if (r.kind !== "paid_attempt" && r.kind !== "self_check_attempt") continue;
+    if (r.dry_run) continue; // nothing was sent
     if (Date.parse(r.ts) < cutoff) continue;
     sum += BigInt(String(r.amount ?? "0"));
   }

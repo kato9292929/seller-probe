@@ -143,7 +143,7 @@ GET /scores/:host    ホスト別の詳細と直近の測定履歴（未測定�
         <td class="muted">${esc((s.last_paid_at ?? s.last_free_at ?? "").slice(0, 10))}</td>
         <td class="muted">${r ? `${r.fulfilled} / ${r.rejected} / ${r.not_delivered}` : "—"}</td>
       </tr>`;
-    }).join("");
+    }).join("") || `<tr><td colspan="8" class="muted">${data.scores.length ? "条件に合うホストがありません。" : "まだ測定データがありません。最初の無料の測定（毎日 03:17 UTC）のあとに表示されます。"}</td></tr>`;
     $("more").hidden = list.length <= shown;
   };
   $("q").addEventListener("input", () => { shown = 200; render(); });

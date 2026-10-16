@@ -1,5 +1,6 @@
 // The probe's paying client: official USDC on Solana/Base mainnet, `exact` only,
 // one requirement at a time, and never above the hard caps in config.ts.
+import { createHash } from "node:crypto";
 import { x402Client, x402HTTPClient } from "@x402/core/client";
 import { ExactSvmScheme } from "@x402/svm/exact/client";
 import { ExactSvmSchemeV1 } from "@x402/svm/v1";
@@ -62,7 +63,9 @@ export async function signFor(payer: Payer, parsed: Parsed402, a: Accept): Promi
   const payer_key =
     a.chain === "solana"
       ? { payer_signature: payerSignature(payload, payer.address.solana!) }
-      : (({ nonce, signature }) => ({ authorization_nonce: nonce, authorization_signature: signature }))(evmAuthorization(payload));
+      : // The raw authorization signature is never logged: with it anyone could submit the
+        // transfer. Its SHA-256 identifies it; the nonce is what the chain search uses.
+        (({ nonce, signature }) => ({ authorization_nonce: nonce, authorization_signature_sha256: createHash("sha256").update(signature).digest("hex") }))(evmAuthorization(payload));
   return { payload, headers: payer.http.encodePaymentSignatureHeader(payload), payer_key };
 }
 

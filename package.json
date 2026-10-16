@@ -16,7 +16,9 @@
     "test": "node --import tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsx src/cli/score.ts",
-    "rfq:snapshot": "tsx src/cli/rfq-snapshot.ts"
+    "rfq:snapshot": "tsx src/cli/rfq-snapshot.ts",
+    "wallet:new": "tsx src/cli/wallet-new.ts",
+    "probe:dry-run": "tsx src/cli/probe-paid.ts --dry-run"
   },
   "dependencies": {
     "@solana/kit": "^5.5.1",
