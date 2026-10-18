@@ -38,7 +38,7 @@ self-check/          §3.3 の結果（追記のみ）
 targets/             日ごとの対象
 data/rfq-sellers.json RFQ の売り手成績のスナップショット
 docs/wallet.md       Probe 専用ウォレットの公開アドレス（npm run wallet:new が書く）
-public/index.html    公開ページ（public/data/ はビルド時に log/ から生成、コミットしない）
+web/                 公開ページ（React + Vite + Tailwind + shadcn/ui）。ビルド先は dist/、dist/data/ はビルド時に log/ から生成（どちらもコミットしない）
 ```
 
 ## 対象の選び方（§2）
@@ -111,7 +111,9 @@ npm run probe:free          # 無料の測定 → log/
 npm run probe:dry-run       # 有料の測定の確認モード：402・上限判定・署名まで。送信しない → log/（dry_run: true）
 npm run probe:paid          # 有料の測定（本番の支払い）→ log/
 npm run self-check          # 自社の OSD / JIN だけ → self-check/
-npm run score               # public/data/ を生成（Vercel のビルドでも実行）
+npm run score               # dist/data/ を生成（log/ → scores.json と hosts/*.json）
+npm run dev                 # 公開ページの開発サーバー（先に npm run score。/scores は dist/data から返す）
+npm run build               # 公開ページのビルド（vite build → score）。Vercel もこれを実行
 ```
 
 鍵は環境変数（`.env` または Actions の Secrets）から読み、無ければ `npm run wallet:new` が書いた `.keys/` から読む。
@@ -194,7 +196,7 @@ GitHub → Settings → Secrets and variables → Actions。
 ```json
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "public",
+  "outputDirectory": "dist",
   "rewrites": [
     { "source": "/scores", "destination": "/data/scores.json" },
     { "source": "/scores/:host", "destination": "/data/hosts/:host.json" }
@@ -209,7 +211,7 @@ GitHub → Settings → Secrets and variables → Actions。
 3. Vercel の Domains に `probe.x402jp.com` を追加。
 4. XServer の DNS レコード設定で、ホスト名 `probe`、種別 `CNAME`、内容 `cname.vercel-dns.com.` を追加。
 
-**更新の仕組み**：ページのデータはコミットしない。`main` への push（定期実行のコミットを含む）が Vercel の再ビルドの引き金になり、ビルド時に `npm run build`（`src/cli/score.ts`）が `log/` から `public/data/scores.json` と `public/data/hosts/*.json` を作る。つまり毎日の free-probe のコミットで 1 日 1 回スコアが更新される。
+**更新の仕組み**：ページのデータはコミットしない。`main` への push（定期実行のコミットを含む）が Vercel の再ビルドの引き金になり、ビルド時に `npm run build` が、`web/` の公開ページを `dist/` にビルドしたあと、`src/cli/score.ts` で `log/` から `dist/data/scores.json` と `dist/data/hosts/*.json` を作る。つまり毎日の free-probe のコミットで 1 日 1 回スコアが更新される。
 
 測定データが 0 件でもビルドは通り、`GET /scores` は `{"hosts":0,"scores":[]}` を返し、公開ページは「まだ測定データがありません」と表示する。未測定のホストの `GET /scores/:host` は 404。
 

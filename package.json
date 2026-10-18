@@ -14,24 +14,41 @@
     "self-check": "tsx src/cli/self-check.ts",
     "score": "tsx src/cli/score.ts",
     "test": "node --import tsx --test test/*.test.ts",
-    "typecheck": "tsc --noEmit",
-    "build": "tsx src/cli/score.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p web/tsconfig.json",
+    "build": "vite build --config web/vite.config.ts && tsx src/cli/score.ts",
     "rfq:snapshot": "tsx src/cli/rfq-snapshot.ts",
     "wallet:new": "tsx src/cli/wallet-new.ts",
-    "probe:dry-run": "tsx src/cli/probe-paid.ts --dry-run"
+    "probe:dry-run": "tsx src/cli/probe-paid.ts --dry-run",
+    "dev": "vite --config web/vite.config.ts"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.3.1",
+    "@radix-ui/react-slot": "^1.5.0",
     "@solana/kit": "^5.5.1",
     "@x402/core": "^2.28.0",
     "@x402/evm": "^2.28.0",
     "@x402/svm": "^2.28.0",
     "bs58": "^6.0.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "dotenv": "^18.0.7",
+    "lucide-react": "^1.59.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.6.1",
     "viem": "^2.57.5"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "autoprefixer": "^10.6.1",
+    "postcss": "^8.5.30",
+    "tailwindcss": "^3.4.19",
+    "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.23.15",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite": "^6.4.4"
   }
 }
