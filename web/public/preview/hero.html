@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seller Probe</title>
+<meta name="description" content="x402 の売り手が本当に動くかを、自社エージェントが毎日外から測り、算出式ごと公開します。">
+<link rel="preload" href="fonts/dm-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/782a4a52-4c1e-4471-bb0c-aa232927f4a6.webp" as="image">
+<style>
+  @font-face { font-family: "DM Sans"; src: url("fonts/dm-sans-latin-wght-normal.woff2") format("woff2"); font-weight: 100 1000; font-style: normal; font-display: swap; }
+  @font-face { font-family: "DM Sans"; src: url("fonts/dm-sans-latin-wght-italic.woff2") format("woff2"); font-weight: 100 1000; font-style: italic; font-display: swap; }
+  @font-face { font-family: "Inter"; src: url("fonts/inter-latin-wght-normal.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+
+  :root {
+    --bg: #0d0c11;
+    --ink: #ffffff;
+    --nav: #b9b8bb;
+    --muted: #d3d3d7;
+    --word: #bdbdc1;
+    --sup: #9ff0ec;
+    --kicker: #bdf7ee;
+    --logo: #bcbcbf;
+    --v1: #4d19b1;
+    --v2: #6f5adc;
+    --glass-fill: rgba(255, 255, 255, .02);
+    --glass-line: rgba(255, 255, 255, .16);
+    /* one design unit: the 2048×1455 canvas is scaled to the viewport height */
+    --u: max(.468px, calc(100vh / 1455));
+    --display: "DM Sans", "Hiragino Sans", "Noto Sans JP", sans-serif;
+    --body: "Inter", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--body);
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+
+  /* faint square grid over the whole page */
+  .page {
+    position: relative;
+    min-height: 100vh;
+    background-image:
+      linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+    background-size: calc(96 * var(--u)) calc(96 * var(--u));
+    background-position: center top;
+    overflow: hidden;
+  }
+
+  .glass {
+    background: var(--glass-fill);
+    border: 1px solid var(--glass-line);
+    -webkit-backdrop-filter: blur(8px) brightness(1.15) saturate(.8);
+    backdrop-filter: blur(8px) brightness(1.15) saturate(.8);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08), inset 0 0 calc(24 * var(--u)) rgba(255,255,255,.035);
+  }
+
+  /* ---------- desktop canvas ---------- */
+  .canvas {
+    position: relative;
+    width: calc(2048 * var(--u));
+    height: max(100vh, calc(1455 * var(--u)));
+    margin: 0 auto;
+  }
+
+  .header {
+    position: absolute; left: 0; right: 0; top: 0;
+    height: calc(148 * var(--u));
+    display: flex; align-items: center;
+    padding: 0 calc(150 * var(--u));
+    z-index: 5;
+  }
+  .brand { display: flex; align-items: center; gap: calc(18 * var(--u)); }
+  .tile {
+    width: calc(70 * var(--u)); height: calc(69 * var(--u));
+    border-radius: calc(16 * var(--u));
+    background: linear-gradient(135deg, var(--v1), var(--v2));
+    display: grid; place-items: center;
+    font-family: var(--display); font-weight: 700; font-size: calc(40 * var(--u)); color: #fff;
+    box-shadow: 0 0 calc(40 * var(--u)) rgba(111, 90, 220, .55), inset 0 1px 0 rgba(255,255,255,.25);
+  }
+  .wordmark {
+    font-family: var(--display); font-weight: 420; font-size: calc(42 * var(--u));
+    color: var(--word); letter-spacing: -.01em; position: relative; line-height: 1;
+  }
+  .wordmark sup {
+    position: absolute; right: calc(-6 * var(--u)); top: calc(-20 * var(--u));
+    font-family: var(--body); font-weight: 560; font-size: calc(15 * var(--u)); color: var(--sup); letter-spacing: .02em;
+  }
+  .nav {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    display: flex; gap: calc(48 * var(--u));
+    font-size: calc(22 * var(--u)); color: var(--nav); font-weight: 400;
+  }
+  .nav a { transition: color .2s; white-space: nowrap; }
+  .nav a:hover { color: var(--ink); }
+  .actions { margin-left: auto; display: flex; align-items: center; gap: calc(34 * var(--u)); font-size: calc(22 * var(--u)); }
+  .actions .login { color: var(--nav); transition: color .2s; }
+  .actions .login:hover { color: var(--ink); }
+  .pill {
+    display: inline-grid; place-items: center;
+    width: calc(202 * var(--u)); height: calc(63 * var(--u));
+    border-radius: 999px; font-weight: 500; transition: transform .2s, border-color .2s;
+  }
+  .pill:hover { transform: scale(1.03); border-color: rgba(255,255,255,.3); }
+
+  .left { position: absolute; left: calc(150 * var(--u)); top: calc(316 * var(--u)); width: calc(900 * var(--u)); z-index: 3; }
+  .headline {
+    font-family: var(--display); font-weight: 380;
+    font-size: calc(104 * var(--u)); line-height: calc(122 * var(--u));
+    letter-spacing: -.035em;
+  }
+  .line { display: block; overflow: hidden; white-space: nowrap; padding-bottom: .04em; }
+  .line > span {
+    display: inline-block;
+    background: linear-gradient(90deg, #fff 0%, #fff 55%, #a9a8b0 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub {
+    margin-top: calc(40 * var(--u));
+    font-size: calc(29.5 * var(--u)); line-height: 1.55; color: var(--muted); font-weight: 340;
+    max-width: calc(820 * var(--u));
+  }
+  .buttons { margin-top: calc(56 * var(--u)); display: flex; gap: calc(22 * var(--u)); }
+  .btn {
+    height: calc(85 * var(--u)); padding: 0 calc(52 * var(--u));
+    border-radius: 999px; display: inline-flex; align-items: center;
+    font-size: calc(26 * var(--u)); font-weight: 500; transition: transform .2s, filter .2s;
+  }
+  .btn:hover { transform: scale(1.03); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--v1), var(--v2));
+    box-shadow: 0 calc(10 * var(--u)) calc(40 * var(--u)) rgba(111, 90, 220, .35), inset 0 1px 0 rgba(255,255,255,.22);
+  }
+  .btn-primary:hover { filter: brightness(1.1); }
+  .stats { margin-top: calc(70 * var(--u)); display: flex; align-items: stretch; }
+  .stat { padding: 0 calc(40 * var(--u)); border-left: 1px solid rgba(255,255,255,.14); }
+  .stat:first-child { padding-left: 0; border-left: 0; }
+  .stat b { display: block; font-family: var(--display); font-weight: 380; font-size: calc(50 * var(--u)); letter-spacing: -.02em; line-height: 1.1; }
+  .stat span { display: block; margin-top: calc(6 * var(--u)); font-size: calc(25 * var(--u)); color: #8f8e96; }
+
+  .art {
+    position: absolute;
+    width: calc(1120 * var(--u)); height: calc(1120 * var(--u));
+    left: calc((1550 - 560) * var(--u)); top: calc(160 * var(--u));
+    -webkit-mask-image: radial-gradient(closest-side, #000 62%, transparent 100%);
+    mask-image: radial-gradient(closest-side, #000 62%, transparent 100%);
+    z-index: 1;
+  }
+  .art img, .art video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+  .card {
+    position: absolute; z-index: 4;
+    width: calc(451 * var(--u)); height: calc(201 * var(--u));
+    border-radius: calc(18 * var(--u));
+    padding: calc(30 * var(--u));
+    display: flex; gap: calc(24 * var(--u)); align-items: flex-start;
+  }
+  .card .icon {
+    flex: none; width: calc(63 * var(--u)); height: calc(63 * var(--u));
+    border-radius: calc(14 * var(--u));
+    display: grid; place-items: center;
+    background: rgba(159, 240, 236, .07); border: 1px solid rgba(159, 240, 236, .22);
+  }
+  .card .icon svg { width: 62%; height: 62%; }
+  .kicker { font-size: calc(21 * var(--u)); color: var(--kicker); font-weight: 500; letter-spacing: .01em; }
+  .card h3 { margin-top: calc(12 * var(--u)); font-size: calc(24 * var(--u)); line-height: 1.38; font-weight: 500; }
+  .card-a { left: calc(1112 * var(--u)); top: calc(300 * var(--u)); }
+  .card-b { left: calc(1560 * var(--u)); top: calc(980 * var(--u)); }
+
+  .logos {
+    position: absolute; left: 0; right: 0; bottom: calc(52 * var(--u));
+    display: flex; justify-content: center; align-items: baseline; gap: calc(110 * var(--u));
+    color: var(--logo); z-index: 3;
+  }
+  .logos span { font-family: var(--display); font-size: calc(34 * var(--u)); white-space: nowrap; }
+  .lg-1, .lg-2 { font-weight: 700; font-style: italic; letter-spacing: -.02em; }
+  .lg-3 { font-weight: 400; letter-spacing: .22em; }
+  .lg-4 { font-weight: 700; font-style: italic; text-transform: uppercase; letter-spacing: .02em; }
+
+  .menu-btn, .menu-panel { display: none; }
+
+  /* ---------- smaller screens: one centred column ---------- */
+  @media (max-width: 1023px), (max-aspect-ratio: 1/1) {
+    :root { --f: clamp(.55px, calc(.449px + .0284vw), .76px); }
+    .page { background-size: calc(72 * var(--f)) calc(72 * var(--f)); }
+    .canvas { width: auto; height: auto; padding: 0 clamp(16px, 5vw, 40px) calc(80 * var(--f)); text-align: center; }
+    .header { position: relative; height: auto; padding: calc(36 * var(--f)) 0; justify-content: space-between; }
+    .tile { width: calc(64 * var(--f)); height: calc(63 * var(--f)); font-size: calc(36 * var(--f)); border-radius: calc(15 * var(--f)); box-shadow: 0 0 calc(30 * var(--f)) rgba(111,90,220,.55); }
+    .brand { gap: calc(16 * var(--f)); }
+    .wordmark { font-size: calc(40 * var(--f)); }
+    .wordmark sup { right: calc(-6 * var(--f)); top: calc(-19 * var(--f)); font-size: calc(15 * var(--f)); }
+    .nav, .actions { display: none; }
+    .menu-btn {
+      display: grid; place-items: center;
+      width: calc(72 * var(--f)); height: calc(72 * var(--f)); border-radius: 50%;
+    }
+    .menu-btn svg { width: 42%; height: 42%; }
+    .menu-panel {
+      position: absolute; right: 0; top: calc(100% - 4px); z-index: 20;
+      width: min(320px, calc(100vw - 32px)); border-radius: 18px; padding: 10px;
+      text-align: left; flex-direction: column;
+      background: rgba(20, 19, 26, .72);
+    }
+    .menu-panel.open { display: flex; }
+    .menu-panel a { padding: 12px 14px; border-radius: 10px; color: var(--nav); font-size: 16px; }
+    .menu-panel a:hover { background: rgba(255,255,255,.05); color: var(--ink); }
+    .menu-panel .pill { width: 100%; height: 48px; margin-top: 8px; color: var(--ink); text-align: center; }
+
+    .left { position: relative; left: auto; top: auto; width: auto; margin: calc(70 * var(--f)) auto 0; max-width: 860px; }
+    .headline { font-size: clamp(34px, 10.2vw, calc(96 * var(--f))); line-height: 1.16; }
+    .sub { font-size: calc(30 * var(--f)); margin: calc(36 * var(--f)) auto 0; max-width: 34em; }
+    .buttons { justify-content: center; flex-wrap: wrap; margin-top: calc(48 * var(--f)); gap: calc(18 * var(--f)); }
+    .btn { height: calc(84 * var(--f)); padding: 0 calc(48 * var(--f)); font-size: calc(26 * var(--f)); }
+    .stats { justify-content: center; margin-top: calc(60 * var(--f)); }
+    .stat { padding: 0 calc(30 * var(--f)); text-align: left; }
+    .stat b { font-size: calc(48 * var(--f)); }
+    .stat span { font-size: calc(23 * var(--f)); }
+
+    .art-wrap { position: relative; margin: calc(40 * var(--f)) auto 0; width: min(100%, 640px); }
+    .art { position: relative; left: auto; top: auto; width: 100%; height: auto; aspect-ratio: 1; }
+    .card {
+      position: relative; left: auto; top: auto; width: min(100%, calc(451 * var(--f) * 1.2)); height: auto;
+      padding: calc(30 * var(--f)); gap: calc(22 * var(--f)); border-radius: 18px; text-align: left;
+    }
+    .card .icon { width: calc(63 * var(--f) * 1.15); height: calc(63 * var(--f) * 1.15); }
+    .kicker { font-size: calc(22 * var(--f)); }
+    .card h3 { font-size: calc(26 * var(--f)); }
+    .card-a { margin: calc(-260 * var(--f)) auto 0 0; }
+    .card-b { margin: calc(24 * var(--f)) 0 0 auto; }
+    .logos {
+      position: relative; bottom: auto; margin-top: calc(90 * var(--f));
+      flex-wrap: wrap; gap: calc(28 * var(--f)) calc(56 * var(--f));
+    }
+    .logos span { font-size: calc(32 * var(--f)); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .btn, .pill { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="canvas">
+    <header class="header">
+      <a class="brand" href="/" aria-label="Seller Probe" data-anim="h">
+        <span class="tile" aria-hidden="true">P</span>
+        <span class="wordmark">Probe<sup>x402</sup></span>
+      </a>
+      <nav class="nav" aria-label="メイン">
+        <a href="/#scores" data-anim="h">Scores</a>
+        <a href="/#formula" data-anim="h">Formula</a>
+        <a href="/#method" data-anim="h">Method</a>
+        <a href="/#method" data-anim="h">Self-check</a>
+        <a href="/#api" data-anim="h">API</a>
+        <a href="https://github.com/kato9292929/seller-probe/commits/main/log" data-anim="h">Log</a>
+      </nav>
+      <div class="actions">
+        <a class="login" href="https://github.com/kato9292929/seller-probe" data-anim="h">GitHub</a>
+        <a class="pill glass" href="/#scores" data-anim="h">View Scores</a>
+      </div>
+      <button class="menu-btn glass" type="button" aria-label="メニュー" aria-expanded="false" aria-controls="menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 8h16M4 16h16"/></svg>
+      </button>
+      <div class="menu-panel glass" id="menu">
+        <a href="/#scores">Scores</a>
+        <a href="/#formula">Formula</a>
+        <a href="/#method">Method</a>
+        <a href="/#method">Self-check</a>
+        <a href="/#api">API</a>
+        <a href="https://github.com/kato9292929/seller-probe/commits/main/log">Log</a>
+        <a class="pill glass" href="/#scores">View Scores</a>
+      </div>
+    </header>
+
+    <section class="left">
+      <h1 class="headline">
+        <span class="line"><span>Every x402 seller,</span></span>
+        <span class="line"><span>measured before</span></span>
+        <span class="line"><span>your agent pays.</span></span>
+      </h1>
+      <p class="sub" data-anim="sub">402 の形式から決済、チェーン上の送金、納品まで。x402 の売り手を自社エージェントが毎日外から測り、スコアを算出式ごと公開します。</p>
+      <div class="buttons">
+        <a class="btn btn-primary" href="/#scores" data-anim="primary">View Scores</a>
+        <a class="btn glass" href="/#api" data-anim="secondary">Use the API</a>
+      </div>
+      <div class="stats" aria-label="2026-10-21 の測定">
+        <div class="stat" data-anim="stat"><b>13.5K</b><span>hosts / day</span></div>
+        <div class="stat" data-anim="stat"><b>2,953</b><span>valid 402s</span></div>
+        <div class="stat" data-anim="stat"><b>$0.01</b><span>cap per call</span></div>
+      </div>
+    </section>
+
+    <div class="art-wrap">
+      <div class="art" aria-hidden="true">
+        <img src="https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/782a4a52-4c1e-4471-bb0c-aa232927f4a6.webp" alt="" width="1200" height="1200">
+        <video id="art-video" muted loop playsinline preload="auto"
+          poster="https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/782a4a52-4c1e-4471-bb0c-aa232927f4a6.webp"
+          src="https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/435a4fe7-e43b-4e7c-af78-0be083e73569.mp4"></video>
+      </div>
+
+      <article class="card card-a glass" data-anim="card">
+        <span class="icon" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none" stroke="#9ff0ec" stroke-width="1.6" stroke-linecap="round">
+            <circle cx="7" cy="9" r="3"/><circle cx="25" cy="7" r="3"/><circle cx="16" cy="18" r="3.4"/><circle cx="8" cy="26" r="3"/><circle cx="25" cy="25" r="3"/>
+            <path d="M9.6 10.6 13.5 16M22.4 8.6 18.3 15.8M10.3 24.3l3.2-3.6M22.6 23.3l-4-3.4"/>
+          </svg>
+        </span>
+        <div>
+          <p class="kicker">Paid probe</p>
+          <h3>One real call per seller:<br>settle, chain, delivery.</h3>
+        </div>
+      </article>
+
+      <article class="card card-b glass" data-anim="card">
+        <span class="icon" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none" stroke="#9ff0ec" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+            <path d="M4 28V11h4V7h4v4h8V7h4v4h4v17z"/><path d="M4 15h24"/>
+            <rect x="12" y="19.5" width="8" height="6.5" rx="1.2"/><path d="M13.8 19.5v-1.8a2.2 2.2 0 0 1 4.4 0v1.8"/>
+          </svg>
+        </span>
+        <div>
+          <p class="kicker">Self-check</p>
+          <h3>Replay &amp; cache tests,<br>on our own sellers only.</h3>
+        </div>
+      </article>
+    </div>
+
+    <div class="logos" aria-label="測定の仕組み">
+      <span class="lg-1" data-anim="logo">Daily</span>
+      <span class="lg-2" data-anim="logo">Paid</span>
+      <span class="lg-3" data-anim="logo">append-only</span>
+      <span class="lg-4" data-anim="logo">Open formula</span>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Artwork: loop the video; with reduced motion keep the still only.
+  const v = document.getElementById("art-video");
+  if (reduce) v.remove();
+  else { v.autoplay = true; v.play().catch(() => {}); }
+
+  // Mobile menu
+  const btn = document.querySelector(".menu-btn");
+  const panel = document.getElementById("menu");
+  btn.addEventListener("click", () => {
+    const open = panel.classList.toggle("open");
+    btn.setAttribute("aria-expanded", String(open));
+  });
+  panel.addEventListener("click", (e) => { if (e.target.closest("a")) { panel.classList.remove("open"); btn.setAttribute("aria-expanded", "false"); } });
+
+  if (reduce || !document.body.animate) return;
+
+  // Entrance: one timeline, runs once on load.
+  const ease = "cubic-bezier(.2,.7,.2,1)";
+  const rise = (el, delay, dist = 18, dur = 700) =>
+    el.animate([{ opacity: 0, transform: `translateY(${dist}px)` }, { opacity: 1, transform: "none" }],
+      { duration: dur, delay, easing: ease, fill: "both" });
+  const fade = (el, delay, dur = 600) => el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: dur, delay, easing: ease, fill: "both" });
+
+  let t = 0;
+  document.querySelectorAll('[data-anim="h"]').forEach((el, i) => rise(el, (t = 60 * i), 12, 600));
+  t = 300;
+  document.querySelectorAll(".line > span").forEach((el, i) =>
+    el.animate([{ transform: "translateY(105%)" }, { transform: "none" }], { duration: 900, delay: t + 120 * i, easing: ease, fill: "both" }));
+  t += 120 * 2 + 650;
+  rise(document.querySelector('[data-anim="sub"]'), t, 14, 800);
+  t += 250;
+  document.querySelector('[data-anim="primary"]').animate(
+    [{ opacity: 0, transform: "translateY(14px) scale(1.015)" }, { opacity: 1, transform: "translateY(0) scale(1.015)", offset: .7 }, { opacity: 1, transform: "none" }],
+    { duration: 900, delay: t, easing: ease, fill: "both" });
+  rise(document.querySelector('[data-anim="secondary"]'), t + 90, 14);
+  t += 350;
+  document.querySelectorAll('[data-anim="stat"]').forEach((el, i) => rise(el, t + 110 * i, 14));
+  t += 450;
+  document.querySelectorAll('[data-anim="card"]').forEach((el, i) => rise(el, t + 160 * i, 26, 900));
+  t += 450;
+  document.querySelectorAll('[data-anim="logo"]').forEach((el, i) => fade(el, t + 110 * i));
+})();
+</script>
+</body>
+</html>
