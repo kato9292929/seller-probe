@@ -38,7 +38,9 @@ const ITEMS = [
 
 export function MethodSection({ data }: { data: Scores | null }) {
   const pt = data?.paid_targets;
-  const dropped = pt?.requires_input ?? null;
+  const dropped = pt?.dropped ?? pt?.requires_input ?? null;
+  const kind = (r: string) => r.split(":")[0];
+  const LABEL: Record<string, string> = { requires_input: "入力が必要", no_402: "入力なしの GET で 402 を返さない", excluded: "除外（賭博など）" };
   return (
     <section id="method" className="mx-auto max-w-7xl scroll-mt-8 px-6 py-24 sm:px-8">
       <SectionTitle eyebrow="Method" title="What we measure, and how" />
@@ -50,15 +52,31 @@ export function MethodSection({ data }: { data: Scores | null }) {
           </div>
         ))}
         <div className="rounded-xl border bg-card/60 p-6 md:col-span-2">
-          <h3 className="mb-2 text-lg font-medium">入力が必要な売り手は買わない</h3>
+          <h3 className="mb-2 text-lg font-medium">実際に買える売り手だけを有料の対象にする</h3>
           <p className="leading-relaxed text-muted-foreground">
-            有料の測定は入力なしの GET で 1 コール買います。402 の入力スキーマ（bazaar 拡張や outputSchema）に必須の本文・クエリ・POST などがある売り手は、こちらの入力不足で失敗するだけなので対象から外し、次点を繰り上げます。スキーマを出していない売り手は対象に残ります。
+            有料の測定は入力なしの GET で 1 コール買います。次の売り手は対象から外し、次点を繰り上げて枠を埋めます。①入力なしの GET で 402 を返さない売り手。②402
+            の入力スキーマ（bazaar 拡張や outputSchema）に必須の本文・クエリ・POST などがある売り手（こちらの入力不足で失敗するだけのため。スキーマを出していない売り手は対象に残ります）。③くじなど賭博にあたる売り手（実際のお金で賭けることになり、「届いたか」も判定できないため。除外リストは
+            config/exclusions.json に理由付きで公開）。
           </p>
-          <p className="mt-3 text-sm">
-            {dropped === null
-              ? "外したホスト：—"
-              : `${pt!.date} の選定で外したホスト：${dropped.length} 件${dropped.length ? `（${dropped.map((d) => d.host).join("、")}）` : ""}`}
-          </p>
+          {dropped === null ? (
+            <p className="mt-3 text-sm">外したホスト：—</p>
+          ) : (
+            <div className="mt-3 text-sm">
+              <p>
+                {pt!.date} の選定で外したホスト：{dropped.length} 件
+              </p>
+              <ul className="mt-1 space-y-0.5 text-muted-foreground">
+                {Object.entries(LABEL).map(([k, label]) => {
+                  const hs = dropped.filter((d) => kind(d.reason) === k);
+                  return hs.length ? (
+                    <li key={k} className="break-words">
+                      {label}：{hs.length} 件（{hs.map((d) => d.host).join("、")}）
+                    </li>
+                  ) : null;
+                })}
+              </ul>
+            </div>
+          )}
           <p className="mt-2 text-sm text-muted-foreground">
             支払いを送っても送金されないまま 4xx・402 が返った回（購入不成立）は、納品の成否に数えず件数だけを表示します。2026-10-19 の記録はこの区分ができる前のものなので、送金なしで 4xx・402 だった行を集計時に購入不成立として読み替えています（ログ自体は書き換えていません）。
           </p>

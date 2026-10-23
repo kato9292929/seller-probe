@@ -4,6 +4,7 @@ import { BudgetError, assertWithinBudget, spentLast7Days } from "./budget.js";
 import type { Target } from "./catalog.js";
 import { checkBaseTransfer, findBasePayment, verifyBaseTransfer } from "./chains/base.js";
 import { checkSolanaTransfer, findSolanaPayment, verifySolanaTransfer } from "./chains/solana.js";
+import { exclusionReason } from "./exclusions.js";
 import { facilitatorFromExtra, loadFeePayerMap } from "./facilitator.js";
 import { bodySnippet, errMsg, timedGet } from "./http.js";
 import { type Kind, append } from "./log.js";
@@ -70,7 +71,10 @@ function empty(kind: PaidResult["kind"], t: Target): PaidResult {
 }
 
 export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
+  // Never buy from an excluded seller (config/exclusions.json), whatever the targets file says.
+  const ex = exclusionReason(t);
   const out: PaidRun = { ...empty(ctx.resultKind, t), ...(ctx.dryRun ? { dry_run: true as const, cap_check: null } : {}) };
+  if (ex) return { ...out, skipped: ex };
   // 1. unpaid GET → 402
   let parsed: Parsed402;
   let a: Accept | undefined;

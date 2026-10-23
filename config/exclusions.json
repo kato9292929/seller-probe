@@ -1,0 +1,18 @@
+{
+  "_note": "有料の測定で買わない売り手。理由（category）を必ず書く。外した事実は targets/*.json の paid.screened.dropped と paid.skipped_popular に `excluded: <category>` として残る。無料の測定（支払いなしの GET）は対象のまま。",
+  "hosts": [
+    {
+      "host": "x402-solana-lottery.alexwlex143.workers.dev",
+      "category": "gambling",
+      "reason": "くじ（支払いに対して当たり外れのある結果を返す）。実際のお金で賭けをしたことになりうる（刑法の賭博罪）ため、会社名義のウォレットからは払わない。当たり外れが結果そのものなので「届いたか」の判定も成り立たない。",
+      "added": "2026-10-23"
+    }
+  ],
+  "patterns": [
+    {
+      "category": "gambling",
+      "match": ["lottery", "lotto", "casino", "gambl", "jackpot", "roulette", "slot-machine", "sportsbook", "betting"],
+      "reason": "ホスト名か URL にこれらの語を含む売り手は、一覧に載っていなくても同じ理由で買わない（新しく上位に入ったくじ等を買ってしまわないための安全策）。"
+    }
+  ]
+}
