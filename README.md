@@ -19,6 +19,7 @@ src/
   x402.ts            402 の解析（v1 本文 / v2 PAYMENT-REQUIRED ヘッダ）と項目検査
   probe-free.ts      §3.1 無料の測定
   probe-paid.ts      §3.2 有料の測定（not_delivered の判定を含む）
+  outcome.ts         有料の測定の区分（delivered / not_delivered / request_rejected / failed）。古いログも同じ規則で読む
   pay.ts             支払いクライアント（@x402/* 2.28、exact・公式 USDC・Solana/Base 本番のみ）
   budget.ts          1 コール $0.01・7 日間 $5 の強制
   chains/solana.ts   自分の署名の抽出、tx の照会、USDC 送金の照合
@@ -47,6 +48,7 @@ web/                 公開ページ（React + Vite + Tailwind + shadcn/ui）。
 2. x402・USDC 建て・Solana か Base・https・パラメータのテンプレート（`{id}`）を含まない URL を抽出。
 3. **無料**：ホストごとに価格が最小のエンドポイントを 1 つ。
 4. **有料**：直近 7 日のコール数上位から、代表エンドポイントの価格が $0.01 以下のホストを `top_n` 件 ＋ 残りから無作為に `random_n` 件（乱数の種は日付。再現可能）。外したホストと理由は `paid.skipped_popular` に残す。
+5. **入力が必要な売り手は外す**：有料の候補ごとに支払いなしの GET で 402 を取り、入力スキーマ（v2 の bazaar 拡張 `extensions.bazaar` の `schema.properties.input` / `info.input`、v1 の `accepts[].outputSchema.input`）に必須の入力があれば外す（`src/x402.ts` の `inputRequirement`）。必須とみなすのは、メソッドが GET/HEAD 以外・本文の必須項目（`body.required`）・クエリの必須項目（`queryParams.required` や `required: true` のフィールド）。外したホストは `paid.skipped_popular` と `paid.screened.requires_input` に `requires_input: <理由>` で残し、次点を繰り上げて `top_n` 件にする。URL の見た目では判定しない。スキーマを出していない売り手は対象に残す。買う直前にも同じ判定をし、必須入力があれば `skipped: "requires_input: …"`（スコアに数えない）。
 
 `config/probe.json` は初週用に `top_n: 10, random_n: 0` にしてある。挙動を確認したら `phase: "full", top_n: 50, random_n: 20` に変える（§5）。
 
@@ -65,6 +67,19 @@ GET が 405 のときだけ空の JSON 本文で POST して 402 を取る（`me
 
 **tx 署名の記録**：署名した支払いはすべて、送信前の `paid_attempt` と結果の `paid` の両方に自分の署名（`payer_signature`、Base は `authorization_nonce` と署名の SHA-256 `authorization_signature_sha256`）を持つ。Base の署名そのものはログに書かない（署名済み authorization は誰でも `transferWithAuthorization` で実行できるため）。チェーン上の tx が判明したもの（settle 応答、または上の検索で発見）は `tx` にその署名／ハッシュと出所（`tx_source`）を入れる。送金が着地しなかった場合だけ `tx: null` になり、そのときも自分の署名は残る。
 
+**失敗時の記録**：有料の測定で 200 以外が返ったら、`http_status`、402 なら応答の `error` 欄（v2 は PAYMENT-REQUIRED の文書、v1 は本文の JSON。`x402_error`）、本文の先頭 300 文字（`error_body`、空白は詰める）を残す。無料の測定でも 402 以外が返ったら `error_body` を残す。応答ヘッダは `Cache-Control` 以外記録しない（Authorization 系は書かない）。
+
+**有料の測定の判定**（`src/outcome.ts` の `classifyPaid`、各行に `outcome` として記録）：
+
+| 区分 | 条件 | 集計での扱い |
+|---|---|---|
+| `delivered` | 送金成立（`tx` あり）かつ 200 と空でない本文 | 成功 |
+| `not_delivered` | 送金成立かつ 200 以外（または空の本文） | 失敗 |
+| `request_rejected` | 送金なし（`tx` なし）で 4xx または 402 | **失敗に数えない**。納品の成否の分母にも分子にも入れず、件数（`n_rejected`）と直近の理由（`last_rejection`）だけを出す |
+| `failed` | 送金なしでそれ以外（5xx・タイムアウト・送金のない 200） | 失敗（従来どおり） |
+
+**2026-10-19 分の読み替え**：10/19 の行は `outcome` を記録する前のもの。ログは書き換えず、集計（`src/score.ts`）と公開用の履歴（`src/cli/score.ts`）で、上の条件をそのまま当てはめて読み替える。`tx` が null で `http_status` が 400〜499（402 を含む）の行は `request_rejected`、`tx` があって 200 以外の行（x402.sniperx.fun の 400）は `not_delivered` のまま。10/19 の行には `x402_error` / `error_body` が無いので、理由は「未記録」と表示する。
+
 有料で買うのは GET で 402 を返す、`exact`・公式 USDC・Solana/Base 本番の提示だけです（Base は EIP-3009 のみ、Permit2 は買わない）。買わなかった理由は `skipped` に残し、スコアには数えません。
 
 ## スコア（§4）
@@ -79,7 +94,8 @@ score = 100 × Σ(重み × 合格率) ÷ Σ(重み)    （観測のない項目
 - `payto_stable` は比較できたときだけ、`latency_paid` は納品できた回だけ数える。
 - 応答時間は 1000 ms 以下を 1、10000 ms 以上を 0 として線形に換算。
 - `not_delivered` は `1 − 発生率`。
-- 有料の測定がないホストは無料の項目だけで計算し、`coverage: "free_only"`。
+- 有料の測定がないホストは無料の項目だけで計算し、`coverage: "free_only"`。`request_rejected` しかないホストもここに入る。
+- `request_rejected` の行は有料の項目（settle_ok・onchain_ok・delivered・not_delivered・latency_paid）のどれにも入れない。
 
 重みを変えるときは `version` を上げ、`history` に 1 行足す（Git の履歴と合わせて変更履歴になる）。式と重みは公開ページにそのまま表示される。
 
@@ -94,11 +110,11 @@ score = 100 × Σ(重み × 合格率) ÷ Σ(重み)    （観測のない項目
 | 順 | ファイル:行 | 内容 |
 |---|---|---|
 | 定義 | `src/config.ts:37` | `perCall: 10_000n`（USDC 6 桁で $0.01）。env や設定ファイルからは変えられない |
-| 1 | `src/pay.ts:55` | `refuseReason`：402 の金額が `LIMITS.perCall` を超える提示は買わない（`src/probe-paid.ts:79` で呼ぶ） |
-| 2 | `src/budget.ts:30` | `assertWithinBudget`：同じ上限を再検査し、7 日間 $5（`src/budget.ts:31`）も見る。署名の前に `src/probe-paid.ts:90` で呼ぶ |
+| 1 | `src/pay.ts:55` | `refuseReason`：402 の金額が `LIMITS.perCall` を超える提示は買わない（`src/probe-paid.ts:92` で呼ぶ） |
+| 2 | `src/budget.ts:30` | `assertWithinBudget`：同じ上限を再検査し、7 日間 $5（`src/budget.ts:31`）も見る。署名の前に `src/probe-paid.ts:103` で呼ぶ |
 | 3 | `src/pay.ts:23` | 支払いライブラリ（`@x402/core`）の `spendControls.maxAmountPerPayment: "$0.01"`。上の 2 つを抜けても署名しない二重の柵 |
 
-署名は 1・2 を通った後の `src/probe-paid.ts:100`（`signFor`）でだけ行う。対象選定時のカタログ価格の上限（`src/config.ts:41` の `catalogMaxPriceUsd`）は対象を絞るためのもので、支払いの強制ではない。
+署名は 1・2 を通った後の `src/probe-paid.ts:113`（`signFor`）でだけ行う。対象選定時のカタログ価格の上限（`src/config.ts:41` の `catalogMaxPriceUsd`）は対象を絞るためのもので、支払いの強制ではない。
 
 ## 実行
 

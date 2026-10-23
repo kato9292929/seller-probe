@@ -10,7 +10,17 @@ function outcome(r: Record<string, unknown>): string {
   if (r.kind === "free") return r.status_402 ? `402 ${r.spec_version ?? ""}` : r.reachable ? `HTTP ${r.http_status}` : `応答なし${r.error ? `（${r.error}）` : ""}`;
   if (r.dry_run) return "dry-run（送信なし）";
   if (r.skipped) return `購入せず：${r.skipped}`;
-  return `settle ${r.settle_ok ? "○" : "×"} / chain ${r.onchain_ok ? "○" : "×"} / 納品 ${r.delivered ? "○" : "×"}`;
+  const why = (r.x402_error ?? r.error_body) as string | undefined;
+  switch (r.outcome) {
+    case "delivered":
+      return "納品（送金あり・200）";
+    case "not_delivered":
+      return `未納品：送金後に HTTP ${r.http_status}${why ? `（${why}）` : ""}`;
+    case "request_rejected":
+      return `購入不成立：送金なしで HTTP ${r.http_status}${why ? `（${why}）` : "（理由は未記録）"}`;
+    default:
+      return `失敗：HTTP ${r.http_status ?? "—"}${r.error ? `（${r.error}）` : ""}`;
+  }
 }
 
 export function HostDetailDialog({ host, onClose }: { host: string | null; onClose: () => void }) {
@@ -78,6 +88,21 @@ export function HostDetailDialog({ host, onClose }: { host: string | null; onClo
                 ))}
               </ul>
             </div>
+            {(d.n_paid > 0 || d.n_rejected > 0) && (
+              <div className="rounded-lg border p-4 text-sm">
+                <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">有料の測定の内訳</p>
+                <p>
+                  納品 {d.paid_outcomes.delivered} ・ 未納品 {d.paid_outcomes.not_delivered} ・ 失敗 {d.paid_outcomes.failed}
+                  <span className="text-muted-foreground"> ／ 購入不成立 {d.n_rejected}（スコアには数えない）</span>
+                </p>
+                {d.last_rejection && (
+                  <p className="mt-2 break-words text-muted-foreground">
+                    直近の購入不成立（{d.last_rejection.ts.slice(0, 10)}・HTTP {d.last_rejection.http_status ?? "—"}）：
+                    {d.last_rejection.error ?? "理由は未記録（記録を始める前の測定）"}
+                  </p>
+                )}
+              </div>
+            )}
             {d.rfq && (
               <p className="text-sm text-muted-foreground">
                 RFQ Market の成績（参考値・スコアには不使用）：成立 {d.rfq.fulfilled} / 拒否 {d.rfq.rejected} / 未納品 {d.rfq.not_delivered}

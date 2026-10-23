@@ -1,5 +1,6 @@
 // §4 Score per host from the last `window_days` of measurements. Pure.
 import type { LogRecord } from "./log.js";
+import { type PaidOutcome, classifyPaid, rejectionText } from "./outcome.js";
 
 export type Weights = {
   version: number;
@@ -23,7 +24,12 @@ export type HostScore = {
   score: number | null;
   coverage: "full" | "free_only";
   n_free: number;
+  /** Paid measurements that count: the purchase happened (or failed in a way that is the seller's). */
   n_paid: number;
+  /** Purchases that never happened: no transfer and a 4xx/402 answer. Not counted in the score. */
+  n_rejected: number;
+  paid_outcomes: Record<PaidOutcome, number>;
+  last_rejection: { ts: string; http_status: number | null; error: string | null } | null;
   items: Record<string, ItemStat>;
   last_free_at: string | null;
   last_paid_at: string | null;
@@ -73,7 +79,7 @@ export function paidValues(r: LogRecord, w: Weights): Record<PaidItem, number | 
 
 export function scoreHosts(records: LogRecord[], w: Weights, now = new Date()): HostScore[] {
   const cutoff = now.getTime() - w.window_days * 86_400_000;
-  const by = new Map<string, { free: LogRecord[]; paid: LogRecord[] }>();
+  const by = new Map<string, { free: LogRecord[]; paid: LogRecord[]; rejected: LogRecord[] }>();
   for (const r of records) {
     if (Date.parse(r.ts) < cutoff) continue;
     const isFree = r.kind === "free";
@@ -81,14 +87,24 @@ export function scoreHosts(records: LogRecord[], w: Weights, now = new Date()): 
     if (r.dry_run) continue;
     const isPaid = r.kind === "paid" && !r.skipped;
     if (!isFree && !isPaid) continue;
-    const g = by.get(r.host) ?? { free: [], paid: [] };
-    (isFree ? g.free : g.paid).push(r);
+    const g = by.get(r.host) ?? { free: [], paid: [], rejected: [] };
+    // request_rejected (no transfer, 4xx/402) is read the same way for rows written before the
+    // `outcome` field existed: it stays out of every paid item, numerator and denominator.
+    if (isFree) g.free.push(r);
+    else (classifyPaid(r) === "request_rejected" ? g.rejected : g.paid).push(r);
     by.set(r.host, g);
   }
   const out: HostScore[] = [];
   for (const [host, g] of by) {
     g.free.sort((a, b) => a.ts.localeCompare(b.ts));
     g.paid.sort((a, b) => a.ts.localeCompare(b.ts));
+    g.rejected.sort((a, b) => a.ts.localeCompare(b.ts));
+    const outcomes: Record<PaidOutcome, number> = { delivered: 0, not_delivered: 0, request_rejected: g.rejected.length, failed: 0 };
+    for (const r of g.paid) {
+      const o = classifyPaid(r);
+      if (o) outcomes[o]++;
+    }
+    const lastRej = g.rejected.at(-1);
     const items: Record<string, ItemStat> = {};
     const add = (name: string, weight: number, vals: (number | null)[]) => {
       const seen = vals.filter((v): v is number => v !== null);
@@ -111,6 +127,11 @@ export function scoreHosts(records: LogRecord[], w: Weights, now = new Date()): 
       coverage: g.paid.length ? "full" : "free_only",
       n_free: g.free.length,
       n_paid: g.paid.length,
+      n_rejected: g.rejected.length,
+      paid_outcomes: outcomes,
+      last_rejection: lastRej
+        ? { ts: lastRej.ts, http_status: (lastRej.http_status as number | null) ?? null, error: rejectionText(lastRej) }
+        : null,
       items,
       last_free_at: lastFree?.ts ?? null,
       last_paid_at: lastPaid?.ts ?? null,

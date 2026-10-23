@@ -16,6 +16,9 @@ export type ScoreRow = {
   coverage: "full" | "free_only";
   n_free: number;
   n_paid: number;
+  n_rejected: number;
+  paid_outcomes: { delivered: number; not_delivered: number; request_rejected: number; failed: number };
+  last_rejection: { ts: string; http_status: number | null; error: string | null } | null;
   last_free_at: string | null;
   last_paid_at: string | null;
   latest: Latest;
@@ -28,6 +31,13 @@ export type Scores = {
   weights_version: number;
   hosts: number;
   rfq: { status: string; fetched_at: string | null; note: string | null; used_in_score: false };
+  paid_targets: {
+    date: string;
+    phase: string;
+    top: string[];
+    random: string[];
+    requires_input: { host: string; reason: string; pick: string }[] | null;
+  } | null;
   scores: ScoreRow[];
 };
 

@@ -104,3 +104,59 @@ export function primaryAccept(p: Parsed402): Accept | undefined {
   const onChain = p.accepts.filter((a) => a.chain);
   return onChain.find((a) => a.scheme === "exact" && isOfficialUsdc(a)) ?? onChain[0];
 }
+
+/** The 402's own `error` text (v2: in the PAYMENT-REQUIRED document; v1: in the JSON body). */
+export function x402Error(p: Parsed402 | null): string | null {
+  const e = (p?.raw as any)?.error;
+  return typeof e === "string" && e ? e.slice(0, 300) : null;
+}
+
+export type InputRequirement = { requires: boolean; reason: string | null; source: "bazaar" | "outputSchema" | null };
+
+const READ_METHODS = ["GET", "HEAD"];
+const nonEmpty = (v: unknown) => (Array.isArray(v) ? v.length > 0 : !!v && typeof v === "object" && Object.keys(v).length > 0);
+
+/** JSON-Schema form: { properties: { method, body, queryParams }, required } (bazaar `schema.properties.input`). */
+function fromInputSchema(s: any): string | null {
+  const props = s?.properties ?? {};
+  const m = props.method;
+  const methods: unknown[] | null = Array.isArray(m?.enum) ? m.enum : typeof m?.const === "string" ? [m.const] : null;
+  if (methods && !methods.some((x) => typeof x === "string" && READ_METHODS.includes(x.toUpperCase()))) return `method ${methods.join("/")}`;
+  if (Array.isArray(props.body?.required) && props.body.required.length) return `body: ${props.body.required.join(", ")}`;
+  if (Array.isArray(s?.required) && s.required.includes("body")) return "body required";
+  if (Array.isArray(props.queryParams?.required) && props.queryParams.required.length) return `query: ${props.queryParams.required.join(", ")}`;
+  return null;
+}
+
+/** Example/description form: { method, queryParams, body, bodyFields } (bazaar `info.input`, x402 v1 `outputSchema.input`). */
+function fromInputInfo(i: any): string | null {
+  if (!i || typeof i !== "object") return null;
+  if (typeof i.method === "string" && !READ_METHODS.includes(i.method.toUpperCase())) return `method ${i.method}`;
+  if (nonEmpty(i.body)) return "body";
+  const requiredNames = (fields: any) =>
+    fields && typeof fields === "object" && !Array.isArray(fields)
+      ? Object.entries(fields).filter(([, v]) => (v as any)?.required === true).map(([k]) => k)
+      : [];
+  const q = requiredNames(i.queryParams);
+  if (q.length) return `query: ${q.join(", ")}`;
+  const b = requiredNames(i.bodyFields);
+  if (b.length) return `body: ${b.join(", ")}`;
+  return null;
+}
+
+/**
+ * Does buying this endpoint with a bare GET need input we cannot supply? Read only from
+ * the 402's own schemas (bazaar extension, outputSchema); no schema means "no known input".
+ */
+export function inputRequirement(p: Parsed402 | null): InputRequirement {
+  const doc: any = p?.raw;
+  const bazaar = doc?.extensions?.bazaar;
+  const r1 = fromInputSchema(bazaar?.schema?.properties?.input) ?? fromInputInfo(bazaar?.info?.input);
+  if (r1) return { requires: true, reason: r1, source: "bazaar" };
+  for (const a of p?.accepts ?? []) {
+    const os: any = (a.raw as any)?.outputSchema;
+    const r2 = fromInputSchema(os?.input?.type === "object" ? os.input : null) ?? fromInputInfo(os?.input);
+    if (r2) return { requires: true, reason: r2, source: "outputSchema" };
+  }
+  return { requires: false, reason: null, source: bazaar ? "bazaar" : null };
+}
