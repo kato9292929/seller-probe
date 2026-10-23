@@ -1,6 +1,6 @@
 // §3.1 Free probe: GET without paying, check the 402.
 import type { Target } from "./catalog.js";
-import { errMsg, timedGet } from "./http.js";
+import { bodySnippet, errMsg, timedGet } from "./http.js";
 import { type Parsed402, fieldProblems, isOfficialUsdc, parse402, primaryAccept } from "./x402.js";
 
 export type FreeResult = {
@@ -26,6 +26,8 @@ export type FreeResult = {
   previous_pay_to: string | null;
   latency_402_ms: number | null;
   error: string | null;
+  /** On a non-402 answer: the first 300 characters of the body. */
+  error_body?: string | null;
 };
 
 /** previousPayTo(host, chain) → payTo from this host's last free measurement on that chain. */
@@ -82,5 +84,6 @@ export function judge402(
     previous_pay_to: prev,
     latency_402_ms: is402 ? headersMs : null,
     error: null,
+    error_body: is402 ? null : bodySnippet(bodyText),
   };
 }

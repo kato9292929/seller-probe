@@ -89,6 +89,9 @@ export function ScoresSection({ data, error }: { data: Scores | null; error: str
               <TableHead className="text-right">スコア</TableHead>
               <TableHead>範囲</TableHead>
               <TableHead className="text-right">無料 / 有料</TableHead>
+              <TableHead className="text-right" title="送金なしで 4xx・402 が返り、購入が成立しなかった回数。スコアには数えない">
+                購入不成立
+              </TableHead>
               <TableHead>ネットワーク</TableHead>
               <TableHead>最終測定</TableHead>
               <TableHead title="x402 RFQ Market の成績。参考値でありスコアには入っていません">RFQ 参考</TableHead>
@@ -110,6 +113,9 @@ export function ScoresSection({ data, error }: { data: Scores | null; error: str
                 <TableCell className="text-right tabular-nums">
                   {s.n_free} / {s.n_paid}
                 </TableCell>
+                <TableCell className="text-right tabular-nums text-muted-foreground" title={s.last_rejection?.error ?? undefined}>
+                  {s.n_rejected || "—"}
+                </TableCell>
                 <TableCell>{networkName(s.latest.network)}</TableCell>
                 <TableCell className="tabular-nums text-muted-foreground">{(s.last_paid_at ?? s.last_free_at ?? "").slice(0, 10)}</TableCell>
                 <TableCell className="tabular-nums text-muted-foreground">
@@ -119,7 +125,7 @@ export function ScoresSection({ data, error }: { data: Scores | null; error: str
             ))}
             {!list.length && (
               <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">
                   {error
                     ? `スコアを読み込めませんでした（${error}）`
                     : !data
@@ -141,7 +147,10 @@ export function ScoresSection({ data, error }: { data: Scores | null; error: str
           </button>
         )}
       </div>
-      <p className="mt-3 text-xs text-muted-foreground">RFQ 参考は x402 RFQ Market での成立 / 拒否 / 未納品の件数です。参考値で、スコアの計算には入れていません。</p>
+      <p className="mt-3 text-xs text-muted-foreground">
+        購入不成立は、支払いを送ったのに送金されないまま 4xx・402 が返った回数です（入力不足などで購入自体が成立しなかったもの）。納品の成否には数えていません。
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">RFQ 参考は x402 RFQ Market での成立 / 拒否 / 未納品の件数です。参考値で、スコアの計算には入れていません。</p>
       <HostDetailDialog host={host} onClose={() => setHost(null)} />
     </section>
   );

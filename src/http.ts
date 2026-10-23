@@ -18,3 +18,9 @@ export async function timedGet(url: string, headers: Record<string, string> = {}
 }
 
 export const errMsg = (e: any) => (e?.name === "TimeoutError" ? "timeout" : `${e?.message ?? e}${e?.cause?.code ? ` (${e.cause.code})` : ""}`);
+
+/** First 300 characters of a response body, whitespace collapsed (for failure records; headers are never logged). */
+export function bodySnippet(body: Buffer | string, max = 300): string | null {
+  const t = (typeof body === "string" ? body : body.toString("utf8")).replace(/\s+/g, " ").trim();
+  return t ? t.slice(0, max) : null;
+}

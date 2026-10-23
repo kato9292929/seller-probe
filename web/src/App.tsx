@@ -23,7 +23,7 @@ export default function App() {
       <main>
         <ScoresSection data={scores} error={error} />
         <FormulaSection w={weights} />
-        <MethodSection />
+        <MethodSection data={scores} />
         <ApiSection />
       </main>
       <Footer />

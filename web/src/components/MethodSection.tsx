@@ -1,3 +1,4 @@
+import type { Scores } from "@/lib/data";
 import { SectionTitle } from "./SectionTitle";
 
 const ITEMS = [
@@ -35,7 +36,9 @@ const ITEMS = [
   },
 ];
 
-export function MethodSection() {
+export function MethodSection({ data }: { data: Scores | null }) {
+  const pt = data?.paid_targets;
+  const dropped = pt?.requires_input ?? null;
   return (
     <section id="method" className="mx-auto max-w-7xl scroll-mt-8 px-6 py-24 sm:px-8">
       <SectionTitle eyebrow="Method" title="What we measure, and how" />
@@ -46,6 +49,20 @@ export function MethodSection() {
             <p className="leading-relaxed text-muted-foreground">{i.d}</p>
           </div>
         ))}
+        <div className="rounded-xl border bg-card/60 p-6 md:col-span-2">
+          <h3 className="mb-2 text-lg font-medium">入力が必要な売り手は買わない</h3>
+          <p className="leading-relaxed text-muted-foreground">
+            有料の測定は入力なしの GET で 1 コール買います。402 の入力スキーマ（bazaar 拡張や outputSchema）に必須の本文・クエリ・POST などがある売り手は、こちらの入力不足で失敗するだけなので対象から外し、次点を繰り上げます。スキーマを出していない売り手は対象に残ります。
+          </p>
+          <p className="mt-3 text-sm">
+            {dropped === null
+              ? "外したホスト：—"
+              : `${pt!.date} の選定で外したホスト：${dropped.length} 件${dropped.length ? `（${dropped.map((d) => d.host).join("、")}）` : ""}`}
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            支払いを送っても送金されないまま 4xx・402 が返った回（購入不成立）は、納品の成否に数えず件数だけを表示します。2026-10-19 の記録はこの区分ができる前のものなので、送金なしで 4xx・402 だった行を集計時に購入不成立として読み替えています（ログ自体は書き換えていません）。
+          </p>
+        </div>
       </div>
     </section>
   );

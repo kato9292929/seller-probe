@@ -5,10 +5,11 @@ import type { Target } from "./catalog.js";
 import { checkBaseTransfer, findBasePayment, verifyBaseTransfer } from "./chains/base.js";
 import { checkSolanaTransfer, findSolanaPayment, verifySolanaTransfer } from "./chains/solana.js";
 import { facilitatorFromExtra, loadFeePayerMap } from "./facilitator.js";
-import { errMsg, timedGet } from "./http.js";
+import { bodySnippet, errMsg, timedGet } from "./http.js";
 import { type Kind, append } from "./log.js";
 import { type Payer, refuseReason, settleFrom, signFor } from "./pay.js";
-import { type Accept, type Parsed402, parse402, primaryAccept } from "./x402.js";
+import { type PaidOutcome, classifyPaid } from "./outcome.js";
+import { type Accept, type Parsed402, inputRequirement, parse402, primaryAccept, x402Error } from "./x402.js";
 
 export type PaidResult = {
   kind: "paid" | "self_check";
@@ -45,9 +46,17 @@ export type PaidResult = {
   facilitator_by: string | null;
   fee_payer: string | null;
   error: string | null;
+  /** delivered / not_delivered / request_rejected / failed (outcome.ts); null when nothing was bought. */
+  outcome: PaidOutcome | null;
+  /** On a non-200 paid response: the 402's `error` field, and the first 300 characters of the body. */
+  x402_error: string | null;
+  error_body: string | null;
 };
 
 export type PaidRun = PaidResult & { /** Kept for the self-check (replay of the same header). */ _payment_headers?: Record<string, string>; _body?: Buffer };
+
+/** How long to look on chain for our own payment after a non-200 (tests set 0). */
+const FIND_MS = () => Number(process.env.PROBE_FIND_TIMEOUT_MS ?? 90_000);
 
 type Ctx = { payer: Payer; logDir: string; attemptKind: Kind; resultKind: "paid" | "self_check"; extra?: Record<string, unknown>; dryRun?: boolean };
 
@@ -56,7 +65,7 @@ function empty(kind: PaidResult["kind"], t: Target): PaidResult {
     kind, host: t.host, url: t.url, skipped: null, network: null, chain: null, amount: null, pay_to: null, payer: null, payer_key: null,
     http_status: null, settle_ok: null, settle_error: null, tx: null, tx_source: null, onchain_ok: null, onchain_detail: null, settled_by: null,
     delivered: null, not_delivered: null, latency_paid_ms: null, response_bytes: null, cache_control: null, cache_header: null,
-    facilitator: null, facilitator_by: null, fee_payer: null, error: null,
+    facilitator: null, facilitator_by: null, fee_payer: null, error: null, outcome: null, x402_error: null, error_body: null,
   };
 }
 
@@ -76,6 +85,10 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
     return { ...out, skipped: `unreachable: ${errMsg(e)}` };
   }
   if (a) Object.assign(out, { network: a.network ?? null, chain: a.chain, amount: a.amount ?? null, pay_to: a.payTo ?? null });
+  // Only endpoints that can be bought with a bare GET: a required body/query/method would
+  // make any failure ours. Judged from the 402's own schemas; no schema = no known input.
+  const need = inputRequirement(parsed);
+  if (need.requires) return { ...out, skipped: `requires_input: ${need.reason}` };
   const refuse = refuseReason(a, ctx.payer.address);
   if (refuse || !a) return { ...out, skipped: `not paid: ${refuse}`, ...(ctx.dryRun ? { cap_check: { pass: false, reason: refuse } } : {}) };
   const amount = BigInt(a.amount!);
@@ -129,6 +142,10 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
   }
   out.http_status = status || null;
   out.response_bytes = body.length;
+  if (status !== 200) {
+    out.error_body = bodySnippet(body);
+    if (status === 402) out.x402_error = x402Error(parse402(getHeader, body.toString("utf8")));
+  }
   const settle = settleFrom(ctx.payer, getHeader);
   out.settle_ok = settle ? settle.success : false;
   out.settle_error = settle ? settle.error : "no PAYMENT-RESPONSE / X-PAYMENT-RESPONSE header";
@@ -147,8 +164,8 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
     // Same rule as the RFQ buyer: no 200 → search the chain for the tx carrying our own signature.
     const found =
       a.chain === "solana"
-        ? await findSolanaPayment(out.payer!, signed.payer_key.payer_signature).then((f) => f && { tx: f.signature, check: checkSolanaTransfer(f.tx, want) })
-        : await findBasePayment(out.payer!, signed.payer_key.authorization_nonce).then((f) => f && { tx: f.hash, check: checkBaseTransfer(f.receipt, want) });
+        ? await findSolanaPayment(out.payer!, signed.payer_key.payer_signature, FIND_MS()).then((f) => f && { tx: f.signature, check: checkSolanaTransfer(f.tx, want) })
+        : await findBasePayment(out.payer!, signed.payer_key.authorization_nonce, FIND_MS()).then((f) => f && { tx: f.hash, check: checkBaseTransfer(f.receipt, want) });
     if (found) {
       out.tx = found.tx;
       out.tx_source = "onchain_search";
@@ -169,6 +186,7 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
   }
   // RFQ reason code 5: the transfer landed, the data did not come back.
   out.not_delivered = out.onchain_ok === true && status !== 200;
+  out.outcome = classifyPaid(out as unknown as Record<string, unknown>);
   return out;
 }
 

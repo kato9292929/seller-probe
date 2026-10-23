@@ -21,10 +21,18 @@ export type TargetsFile = {
     seed: string;
     top: (Target & { tx_count: number; rank: number })[];
     random: Target[];
-    /** Popular hosts left out of the paid set and why (price ceiling, not in catalog). */
+    /** Popular hosts left out of the paid set and why (price ceiling, not in catalog, requires_input). */
     skipped_popular: { host: string; rank: number; reason: string }[];
+    /** Eligible hosts in order, beyond top_n / random_n: what screening promotes from. */
+    top_candidates?: (Target & { tx_count: number; rank: number })[];
+    random_candidates?: Target[];
+    /** Set once screenPaidTargets ran (hosts dropped because a bare GET cannot buy them). */
+    screened?: { at: string; requires_input: { host: string; reason: string; pick: "top" | "random" }[] };
   };
 };
+
+/** How many eligible hosts past the quota are kept as stand-ins for screening. */
+const CANDIDATE_SLACK = 30;
 
 export const TARGETS_DIR = () => resolve(ROOT, process.env.PROBE_TARGETS_DIR ?? "targets");
 
@@ -48,7 +56,7 @@ export function buildTargets(date: string, catalog: Catalog, pop: Popularity, cf
   const top: TargetsFile["paid"]["top"] = [];
   const skipped: TargetsFile["paid"]["skipped_popular"] = [];
   pop.rows.forEach((row, i) => {
-    if (top.length >= cfg.paid.top_n) return;
+    if (top.length >= cfg.paid.top_n + CANDIDATE_SLACK) return;
     const t = byHost.get(row.host);
     if (!t) return void skipped.push({ host: row.host, rank: i + 1, reason: "no Solana/Base USDC endpoint in catalog" });
     if (!paidEligible(t)) return void skipped.push({ host: row.host, rank: i + 1, reason: `cheapest price $${t.price_usd} > $0.01` });
@@ -71,7 +79,10 @@ export function buildTargets(date: string, catalog: Catalog, pop: Popularity, cf
     free,
     paid: {
       phase: cfg.paid.phase, top_n: cfg.paid.top_n, random_n: cfg.paid.random_n, seed,
-      top, random: pool.slice(0, cfg.paid.random_n), skipped_popular: skipped,
+      top: top.slice(0, cfg.paid.top_n), random: pool.slice(0, cfg.paid.random_n),
+      // Only reasons for hosts that would have been in the quota; stand-ins are not "skipped".
+      skipped_popular: skipped.filter((s) => s.rank <= (top[cfg.paid.top_n - 1]?.rank ?? Infinity)),
+      top_candidates: top, random_candidates: pool.slice(0, cfg.paid.random_n + CANDIDATE_SLACK),
     },
   };
 }
@@ -92,4 +103,43 @@ export function latestTargets(): TargetsFile {
 
 export function loadProbeConfig(): ProbeConfig {
   return JSON.parse(readFileSync(resolve(ROOT, "config/probe.json"), "utf8"));
+}
+
+/** Result of asking a host's 402 whether a bare GET can buy it. */
+export type Screen = { requires: boolean; reason: string | null };
+
+/**
+ * Fill the paid quotas from the ordered candidates, dropping hosts whose 402 declares a
+ * required input (requires_input) and promoting the next eligible host in their place.
+ * A host whose 402 cannot be read stays: the paid probe itself records why it did not buy.
+ */
+export async function screenPaidTargets(t: TargetsFile, screen: (t: Target) => Promise<Screen>): Promise<TargetsFile> {
+  const dropped: { host: string; reason: string; pick: "top" | "random" }[] = [];
+  const fill = async <T extends Target>(cands: T[], n: number, pick: "top" | "random") => {
+    const out: T[] = [];
+    for (const c of cands) {
+      if (out.length >= n) break;
+      const s = await screen(c);
+      if (s.requires) dropped.push({ host: c.host, reason: `requires_input: ${s.reason}`, pick });
+      else out.push(c);
+    }
+    return out;
+  };
+  const top = await fill(t.paid.top_candidates ?? t.paid.top, t.paid.top_n, "top");
+  const taken = new Set(top.map((x) => x.host));
+  const random = await fill((t.paid.random_candidates ?? t.paid.random).filter((x) => !taken.has(x.host)), t.paid.random_n, "random");
+  const ranks = new Map((t.paid.top_candidates ?? []).map((c) => [c.host, c.rank]));
+  return {
+    ...t,
+    paid: {
+      ...t.paid,
+      top,
+      random,
+      skipped_popular: [
+        ...t.paid.skipped_popular,
+        ...dropped.filter((d) => d.pick === "top").map((d) => ({ host: d.host, rank: ranks.get(d.host) ?? -1, reason: d.reason })),
+      ].sort((a, b) => a.rank - b.rank),
+      screened: { at: new Date().toISOString(), requires_input: dropped },
+    },
+  };
 }
