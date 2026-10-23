@@ -37,6 +37,7 @@ export type Scores = {
     top: string[];
     random: string[];
     requires_input: { host: string; reason: string; pick: string }[] | null;
+    dropped?: { host: string; reason: string; pick: string }[] | null;
   } | null;
   scores: ScoreRow[];
 };

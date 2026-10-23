@@ -26,8 +26,16 @@ export type TargetsFile = {
     /** Eligible hosts in order, beyond top_n / random_n: what screening promotes from. */
     top_candidates?: (Target & { tx_count: number; rank: number })[];
     random_candidates?: Target[];
-    /** Set once screenPaidTargets ran (hosts dropped because a bare GET cannot buy them). */
-    screened?: { at: string; requires_input: { host: string; reason: string; pick: "top" | "random" }[] };
+    /**
+     * Set once screenPaidTargets ran. `dropped` holds every host passed over and why:
+     * `excluded: <category>` (config/exclusions.json), `no_402: …` (a bare GET does not get a 402),
+     * `requires_input: …` (the 402 declares a required input). `requires_input` is that subset.
+     */
+    screened?: {
+      at: string;
+      dropped: { host: string; reason: string; pick: "top" | "random" }[];
+      requires_input: { host: string; reason: string; pick: "top" | "random" }[];
+    };
   };
 };
 
@@ -105,13 +113,13 @@ export function loadProbeConfig(): ProbeConfig {
   return JSON.parse(readFileSync(resolve(ROOT, "config/probe.json"), "utf8"));
 }
 
-/** Result of asking a host's 402 whether a bare GET can buy it. */
-export type Screen = { requires: boolean; reason: string | null };
+/** Whether a paid candidate can be bought with a bare GET, and if not, why (the reason is recorded). */
+export type Screen = { drop: boolean; reason: string | null };
 
 /**
- * Fill the paid quotas from the ordered candidates, dropping hosts whose 402 declares a
- * required input (requires_input) and promoting the next eligible host in their place.
- * A host whose 402 cannot be read stays: the paid probe itself records why it did not buy.
+ * Fill the paid quotas from the ordered candidates, passing over every host the screen
+ * drops (excluded, no 402 to a bare GET, required input) and promoting the next eligible
+ * host in its place, so each slot is a host that can actually be bought.
  */
 export async function screenPaidTargets(t: TargetsFile, screen: (t: Target) => Promise<Screen>): Promise<TargetsFile> {
   const dropped: { host: string; reason: string; pick: "top" | "random" }[] = [];
@@ -120,7 +128,7 @@ export async function screenPaidTargets(t: TargetsFile, screen: (t: Target) => P
     for (const c of cands) {
       if (out.length >= n) break;
       const s = await screen(c);
-      if (s.requires) dropped.push({ host: c.host, reason: `requires_input: ${s.reason}`, pick });
+      if (s.drop) dropped.push({ host: c.host, reason: s.reason ?? "dropped", pick });
       else out.push(c);
     }
     return out;
@@ -139,7 +147,11 @@ export async function screenPaidTargets(t: TargetsFile, screen: (t: Target) => P
         ...t.paid.skipped_popular,
         ...dropped.filter((d) => d.pick === "top").map((d) => ({ host: d.host, rank: ranks.get(d.host) ?? -1, reason: d.reason })),
       ].sort((a, b) => a.rank - b.rank),
-      screened: { at: new Date().toISOString(), requires_input: dropped },
+      screened: {
+        at: new Date().toISOString(),
+        dropped,
+        requires_input: dropped.filter((d) => d.reason.startsWith("requires_input")),
+      },
     },
   };
 }

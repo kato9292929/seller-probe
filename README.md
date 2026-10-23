@@ -48,7 +48,11 @@ web/                 公開ページ（React + Vite + Tailwind + shadcn/ui）。
 2. x402・USDC 建て・Solana か Base・https・パラメータのテンプレート（`{id}`）を含まない URL を抽出。
 3. **無料**：ホストごとに価格が最小のエンドポイントを 1 つ。
 4. **有料**：直近 7 日のコール数上位から、代表エンドポイントの価格が $0.01 以下のホストを `top_n` 件 ＋ 残りから無作為に `random_n` 件（乱数の種は日付。再現可能）。外したホストと理由は `paid.skipped_popular` に残す。
-5. **入力が必要な売り手は外す**：有料の候補ごとに支払いなしの GET で 402 を取り、入力スキーマ（v2 の bazaar 拡張 `extensions.bazaar` の `schema.properties.input` / `info.input`、v1 の `accepts[].outputSchema.input`）に必須の入力があれば外す（`src/x402.ts` の `inputRequirement`）。必須とみなすのは、メソッドが GET/HEAD 以外・本文の必須項目（`body.required`）・クエリの必須項目（`queryParams.required` や `required: true` のフィールド）。外したホストは `paid.skipped_popular` と `paid.screened.requires_input` に `requires_input: <理由>` で残し、次点を繰り上げて `top_n` 件にする。URL の見た目では判定しない。スキーマを出していない売り手は対象に残す。買う直前にも同じ判定をし、必須入力があれば `skipped: "requires_input: …"`（スコアに数えない）。
+5. **実際に買える売り手だけで枠を埋める**：候補を上から順に見て、次のどれかに当たる売り手は理由付きで外し（`paid.screened.dropped` と `paid.skipped_popular`）、次点を繰り上げて `top_n` 件（無作為枠は `random_n` 件）にする。
+   - `excluded: <category>`：`config/exclusions.json` の除外リストに載っている、またはホスト名・URL が除外の語（lottery・casino など）に当たる。**くじなどの賭博は買わない**（実際のお金で賭けをしたことになりうる＝刑法の賭博罪。当たり外れが結果そのものなので「届いたか」の判定も成り立たない）。理由は一覧に書く。有料の測定は買う直前にも同じ判定をし、targets に入っていても買わない（`skipped: "excluded: …"`）。無料の測定（支払いなしの GET）は対象のまま。
+   - `no_402: …`：入力なしの GET で 402 が返らない（200・405・404・接続できない等）。
+   - `requires_input: …`：下の入力スキーマの判定に当たる。
+6. **入力が必要な売り手は外す**：有料の候補ごとに支払いなしの GET で 402 を取り、入力スキーマ（v2 の bazaar 拡張 `extensions.bazaar` の `schema.properties.input` / `info.input`、v1 の `accepts[].outputSchema.input`）に必須の入力があれば外す（`src/x402.ts` の `inputRequirement`）。必須とみなすのは、メソッドが GET/HEAD 以外・本文の必須項目（`body.required`）・クエリの必須項目（`queryParams.required` や `required: true` のフィールド）。外したホストは `paid.skipped_popular` と `paid.screened.requires_input` に `requires_input: <理由>` で残し、次点を繰り上げて `top_n` 件にする。URL の見た目では判定しない。スキーマを出していない売り手は対象に残す。買う直前にも同じ判定をし、必須入力があれば `skipped: "requires_input: …"`（スコアに数えない）。
 
 `config/probe.json` は初週用に `top_n: 10, random_n: 0` にしてある。挙動を確認したら `phase: "full", top_n: 50, random_n: 20` に変える（§5）。
 
@@ -110,11 +114,11 @@ score = 100 × Σ(重み × 合格率) ÷ Σ(重み)    （観測のない項目
 | 順 | ファイル:行 | 内容 |
 |---|---|---|
 | 定義 | `src/config.ts:37` | `perCall: 10_000n`（USDC 6 桁で $0.01）。env や設定ファイルからは変えられない |
-| 1 | `src/pay.ts:55` | `refuseReason`：402 の金額が `LIMITS.perCall` を超える提示は買わない（`src/probe-paid.ts:92` で呼ぶ） |
-| 2 | `src/budget.ts:30` | `assertWithinBudget`：同じ上限を再検査し、7 日間 $5（`src/budget.ts:31`）も見る。署名の前に `src/probe-paid.ts:103` で呼ぶ |
+| 1 | `src/pay.ts:55` | `refuseReason`：402 の金額が `LIMITS.perCall` を超える提示は買わない（`src/probe-paid.ts:96` で呼ぶ） |
+| 2 | `src/budget.ts:30` | `assertWithinBudget`：同じ上限を再検査し、7 日間 $5（`src/budget.ts:31`）も見る。署名の前に `src/probe-paid.ts:107` で呼ぶ |
 | 3 | `src/pay.ts:23` | 支払いライブラリ（`@x402/core`）の `spendControls.maxAmountPerPayment: "$0.01"`。上の 2 つを抜けても署名しない二重の柵 |
 
-署名は 1・2 を通った後の `src/probe-paid.ts:113`（`signFor`）でだけ行う。対象選定時のカタログ価格の上限（`src/config.ts:41` の `catalogMaxPriceUsd`）は対象を絞るためのもので、支払いの強制ではない。
+署名は 1・2 を通った後の `src/probe-paid.ts:117`（`signFor`）でだけ行う。対象選定時のカタログ価格の上限（`src/config.ts:41` の `catalogMaxPriceUsd`）は対象を絞るためのもので、支払いの強制ではない。
 
 ## 実行
 

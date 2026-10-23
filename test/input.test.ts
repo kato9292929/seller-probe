@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { exclusionReason } from "../src/exclusions.js";
 import { screenPaidTargets } from "../src/targets.js";
 import { inputRequirement, parse402 } from "../src/x402.js";
 
@@ -49,9 +50,34 @@ test("screening drops requires_input hosts and promotes the next ones up to top_
   const cands = Array.from({ length: 14 }, (_, i) => t(`h${i}`, i + 1));
   const file: any = { paid: { top_n: 10, random_n: 0, top: cands.slice(0, 10), random: [], skipped_popular: [], top_candidates: cands, random_candidates: [] } };
   const needs = new Set(["h0", "h3", "h7"]);
-  const out = await screenPaidTargets(file, async (c) => (needs.has(c.host) ? { requires: true, reason: "body: x" } : { requires: false, reason: null }));
+  const out = await screenPaidTargets(file, async (c) => (needs.has(c.host) ? { drop: true, reason: "requires_input: body: x" } : { drop: false, reason: null }));
   assert.equal(out.paid.top.length, 10);
   assert.deepEqual(out.paid.top.map((x: any) => x.host), ["h1", "h2", "h4", "h5", "h6", "h8", "h9", "h10", "h11", "h12"]);
   assert.deepEqual(out.paid.screened!.requires_input.map((d) => d.host), ["h0", "h3", "h7"]);
   assert.ok(out.paid.skipped_popular.every((s: any) => s.reason.startsWith("requires_input")));
+});
+
+test("every slot goes to a buyable host: excluded and no-402 hosts are passed over and recorded", async () => {
+  const t = (host: string, rank: number) => ({ host, url: `https://${host}/`, endpoint_id: host, price_usd: 0.001, networks: ["Base"], tx_count: 100 - rank, rank });
+  const cands = ["a", "lotto-x.example", "b", "no402", "c", "d"].map((h, i) => t(h, i + 1));
+  const file: any = { paid: { top_n: 4, random_n: 0, top: cands.slice(0, 4), random: [], skipped_popular: [], top_candidates: cands, random_candidates: [] } };
+  const out = await screenPaidTargets(file, async (c) => {
+    const ex = exclusionReason(c);
+    if (ex) return { drop: true, reason: ex };
+    if (c.host === "no402") return { drop: true, reason: "no_402: HTTP 405 on GET" };
+    return { drop: false, reason: null };
+  });
+  assert.deepEqual(out.paid.top.map((x: any) => x.host), ["a", "b", "c", "d"]);
+  assert.deepEqual(out.paid.screened!.dropped.map((d) => [d.host, d.reason]), [
+    ["lotto-x.example", 'excluded: gambling (matches "lotto")'],
+    ["no402", "no_402: HTTP 405 on GET"],
+  ]);
+  assert.equal(out.paid.screened!.requires_input.length, 0);
+});
+
+test("the listed lottery host is excluded as gambling; ordinary hosts are not", () => {
+  const lottery = "x402-solana-lottery.alexwlex143.workers.dev";
+  assert.equal(exclusionReason({ host: lottery, url: `https://${lottery}/api` }), "excluded: gambling");
+  assert.equal(exclusionReason({ host: "claw402.ai", url: "https://claw402.ai/api/v1/nofx/upbit/hot" }), null);
+  assert.equal(exclusionReason({ host: "alphabet.example", url: "https://alphabet.example/x" }), null, "no loose 'bet' match");
 });

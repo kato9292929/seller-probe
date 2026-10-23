@@ -37,6 +37,7 @@ try {
     top: t.paid.top.map((x) => x.host),
     random: t.paid.random.map((x) => x.host),
     requires_input: t.paid.screened?.requires_input ?? null,
+    dropped: t.paid.screened?.dropped ?? null,
   };
 } catch {
   paidTargets = null;

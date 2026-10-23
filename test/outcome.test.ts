@@ -132,3 +132,24 @@ test("paid probe does not buy an endpoint whose 402 declares a required input", 
     s.srv.close();
   }
 });
+
+test("paid probe never buys from an excluded seller, even if it is in the targets file", async () => {
+  let calls = 0;
+  const srv = createServer((_req, res) => {
+    calls++;
+    res.statusCode = 402;
+    res.end("{}");
+  });
+  await new Promise<void>((r) => srv.listen(0, "127.0.0.1", r));
+  try {
+    process.env.PROBE_EVM_PRIVATE_KEY = generatePrivateKey();
+    const r = await probePaid(
+      { host: "x402-solana-lottery.alexwlex143.workers.dev", url: `http://127.0.0.1:${(srv.address() as any).port}/x`, endpoint_id: "t", price_usd: 0, networks: [] },
+      { payer: await makePayer(), logDir: mkdtempSync(join(tmpdir(), "probe-ex-")), attemptKind: "paid_attempt", resultKind: "paid" },
+    );
+    assert.equal(r.skipped, "excluded: gambling");
+    assert.equal(calls, 0, "not even the unpaid GET");
+  } finally {
+    srv.close();
+  }
+});
