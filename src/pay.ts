@@ -53,6 +53,7 @@ export function refuseReason(a: Accept | undefined, payer: Payer["address"]): st
   if (a.chain === "base" && a.extra?.assetTransferMethod && a.extra.assetTransferMethod !== "eip3009")
     return `asset transfer method ${String(a.extra.assetTransferMethod)} (only EIP-3009 is paid)`;
   if (BigInt(a.amount) > LIMITS.perCall) return `amount ${a.amount} > per-call cap ${LIMITS.perCall}`;
+  if (BigInt(a.amount) <= 0n) return `amount ${a.amount} (nothing to buy)`;
   return null;
 }
 

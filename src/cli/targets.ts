@@ -4,14 +4,16 @@ import { fetchPopularity } from "../popularity.js";
 import { exclusionReason, loadExclusions } from "../exclusions.js";
 import { errMsg, timedGet } from "../http.js";
 import { buildTargets, loadProbeConfig, screenPaidTargets, writeTargets } from "../targets.js";
-import { inputRequirement, parse402 } from "../x402.js";
+import { refuseReason } from "../pay.js";
+import { inputRequirement, parse402, primaryAccept } from "../x402.js";
 
 const date = process.env.PROBE_DATE ?? new Date().toISOString().slice(0, 10);
 const catalog = await loadCatalog();
 const pop = await fetchPopularity();
 // A paid slot goes only to a host that can actually be bought with a bare GET:
 // not excluded (config/exclusions.json), answers a free GET with a 402 (the same request
-// the free probe makes), and that 402 declares no required input. Others are recorded
+// the free probe makes), offers something the probe would pay (not_payable otherwise,
+// e.g. an amount of 0), and declares no required input. Others are recorded
 // with the reason and the next eligible host is promoted.
 const exclusions = loadExclusions();
 const t = await screenPaidTargets(buildTargets(date, catalog, pop, loadProbeConfig()), async (c) => {
@@ -20,7 +22,12 @@ const t = await screenPaidTargets(buildTargets(date, catalog, pop, loadProbeConf
   try {
     const r = await timedGet(c.url);
     if (r.res.status !== 402) return { drop: true, reason: `no_402: HTTP ${r.res.status} on GET` };
-    const need = inputRequirement(parse402((n) => r.res.headers.get(n), r.body.toString("utf8")));
+    const parsed = parse402((n) => r.res.headers.get(n), r.body.toString("utf8"));
+    // Same accept rules as the purchase itself (exact, official USDC on Solana/Base, 0 < amount ≤ cap),
+    // judged as if both probe wallets were configured.
+    const refuse = refuseReason(primaryAccept(parsed), { solana: "any", base: "any" });
+    if (refuse) return { drop: true, reason: `not_payable: ${refuse}` };
+    const need = inputRequirement(parsed);
     return need.requires ? { drop: true, reason: `requires_input: ${need.reason}` } : { drop: false, reason: null };
   } catch (e) {
     return { drop: true, reason: `no_402: unreachable (${errMsg(e)})` };

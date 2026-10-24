@@ -51,6 +51,7 @@ web/                 公開ページ（React + Vite + Tailwind + shadcn/ui）。
 5. **実際に買える売り手だけで枠を埋める**：候補を上から順に見て、次のどれかに当たる売り手は理由付きで外し（`paid.screened.dropped` と `paid.skipped_popular`）、次点を繰り上げて `top_n` 件（無作為枠は `random_n` 件）にする。
    - `excluded: <category>`：`config/exclusions.json` の除外リストに載っている、またはホスト名・URL が除外の語（lottery・casino など）に当たる。**くじなどの賭博は買わない**（実際のお金で賭けをしたことになりうる＝刑法の賭博罪。当たり外れが結果そのものなので「届いたか」の判定も成り立たない）。理由は一覧に書く。有料の測定は買う直前にも同じ判定をし、targets に入っていても買わない（`skipped: "excluded: …"`）。無料の測定（支払いなしの GET）は対象のまま。
    - `no_402: …`：入力なしの GET で 402 が返らない（200・405・404・接続できない等）。
+   - `not_payable: …`：402 は返るが、買う側の条件（exact・Solana/Base の公式 USDC・金額が 1 以上かつ $0.01 以下）を満たす提示がない（例：金額 0）。買うときと同じ `refuseReason` で判定する。
    - `requires_input: …`：下の入力スキーマの判定に当たる。
 6. **入力が必要な売り手は外す**：有料の候補ごとに支払いなしの GET で 402 を取り、入力スキーマ（v2 の bazaar 拡張 `extensions.bazaar` の `schema.properties.input` / `info.input`、v1 の `accepts[].outputSchema.input`）に必須の入力があれば外す（`src/x402.ts` の `inputRequirement`）。必須とみなすのは、メソッドが GET/HEAD 以外・本文の必須項目（`body.required`）・クエリの必須項目（`queryParams.required` や `required: true` のフィールド）。外したホストは `paid.skipped_popular` と `paid.screened.requires_input` に `requires_input: <理由>` で残し、次点を繰り上げて `top_n` 件にする。URL の見た目では判定しない。スキーマを出していない売り手は対象に残す。買う直前にも同じ判定をし、必須入力があれば `skipped: "requires_input: …"`（スコアに数えない）。
 
