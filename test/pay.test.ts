@@ -55,3 +55,7 @@ test("self-check refuses any host that is not ours", () => {
   delete process.env.OSD_PAID_URL;
   assert.deepEqual(selfTargets().map((s) => s.url), ["https://jin.x402jp.com/api/jin/series", "https://osd.x402jp.com/api/alpha/portfolio/current"]);
 });
+
+test("an offer of amount 0 is refused: there is nothing to buy", () => {
+  assert.match(refuseReason(primaryAccept(parsedOf(doc("0"))), { solana: null, base: "0xabc" })!, /nothing to buy/);
+});

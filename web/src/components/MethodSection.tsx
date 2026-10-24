@@ -40,7 +40,7 @@ export function MethodSection({ data }: { data: Scores | null }) {
   const pt = data?.paid_targets;
   const dropped = pt?.dropped ?? pt?.requires_input ?? null;
   const kind = (r: string) => r.split(":")[0];
-  const LABEL: Record<string, string> = { requires_input: "入力が必要", no_402: "入力なしの GET で 402 を返さない", excluded: "除外（賭博など）" };
+  const LABEL: Record<string, string> = { requires_input: "入力が必要", no_402: "入力なしの GET で 402 を返さない", not_payable: "払える提示がない（金額 0・公式 USDC 以外など）", excluded: "除外（賭博など）" };
   return (
     <section id="method" className="mx-auto max-w-7xl scroll-mt-8 px-6 py-24 sm:px-8">
       <SectionTitle eyebrow="Method" title="What we measure, and how" />
@@ -54,7 +54,7 @@ export function MethodSection({ data }: { data: Scores | null }) {
         <div className="rounded-xl border bg-card/60 p-6 md:col-span-2">
           <h3 className="mb-2 text-lg font-medium">実際に買える売り手だけを有料の対象にする</h3>
           <p className="leading-relaxed text-muted-foreground">
-            有料の測定は入力なしの GET で 1 コール買います。次の売り手は対象から外し、次点を繰り上げて枠を埋めます。①入力なしの GET で 402 を返さない売り手。②402
+            有料の測定は入力なしの GET で 1 コール買います。次の売り手は対象から外し、次点を繰り上げて枠を埋めます。①入力なしの GET で 402 を返さない売り手と、402 に払える提示がない売り手（金額 0、公式 USDC 以外、上限 $0.01 超など）。②402
             の入力スキーマ（bazaar 拡張や outputSchema）に必須の本文・クエリ・POST などがある売り手（こちらの入力不足で失敗するだけのため。スキーマを出していない売り手は対象に残ります）。③くじなど賭博にあたる売り手（実際のお金で賭けることになり、「届いたか」も判定できないため。除外リストは
             config/exclusions.json に理由付きで公開）。
           </p>
