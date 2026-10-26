@@ -19,7 +19,8 @@
     "rfq:snapshot": "tsx src/cli/rfq-snapshot.ts",
     "wallet:new": "tsx src/cli/wallet-new.ts",
     "probe:dry-run": "tsx src/cli/probe-paid.ts --dry-run",
-    "dev": "vite --config web/vite.config.ts"
+    "dev": "vite --config web/vite.config.ts",
+    "reconcile": "tsx src/cli/reconcile.ts"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.3.1",

@@ -1,6 +1,6 @@
 // §4 Score per host from the last `window_days` of measurements. Pure.
 import type { LogRecord } from "./log.js";
-import { type PaidOutcome, classifyPaid, rejectionText } from "./outcome.js";
+import { type PaidOutcome, applyReconciliations, classifyPaid, rejectionText } from "./outcome.js";
 
 export type Weights = {
   version: number;
@@ -80,7 +80,7 @@ export function paidValues(r: LogRecord, w: Weights): Record<PaidItem, number | 
 export function scoreHosts(records: LogRecord[], w: Weights, now = new Date()): HostScore[] {
   const cutoff = now.getTime() - w.window_days * 86_400_000;
   const by = new Map<string, { free: LogRecord[]; paid: LogRecord[]; rejected: LogRecord[] }>();
-  for (const r of records) {
+  for (const r of applyReconciliations(records)) {
     if (Date.parse(r.ts) < cutoff) continue;
     const isFree = r.kind === "free";
     // Dry-run rows never paid anything: they are not measurements.

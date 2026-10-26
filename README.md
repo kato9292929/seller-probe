@@ -83,6 +83,10 @@ GET が 405 のときだけ空の JSON 本文で POST して 402 を取る（`me
 | `request_rejected` | 送金なし（`tx` なし）で 4xx または 402 | **失敗に数えない**。納品の成否の分母にも分子にも入れず、件数（`n_rejected`）と直近の理由（`last_rejection`）だけを出す |
 | `failed` | 送金なしでそれ以外（5xx・タイムアウト・送金のない 200） | 失敗（従来どおり） |
 
+**決済の応答ヘッダが無いとき**：200 が返っても PAYMENT-RESPONSE / X-PAYMENT-RESPONSE が無ければ、送信前に記録した自分の署名（Base は nonce）でチェーンを探す。見つかれば `tx`（`tx_source: "onchain_search"`）が入り `delivered` になる。ヘッダの欠落は売り手の不備なので `settle_ok: false` として減点に残す（2026-10-26 の glim.sh：決済して 2KB を返したがヘッダが無かった）。
+
+**後から見つけた支払いの照合**（`npm run reconcile`、`src/cli/reconcile.ts`）：`tx` の無い有料の行について、自分の署名・nonce でチェーンを探し、見つかれば `kind: "paid_reconciled"`（元の行の `payer_key_value`、`tx`、`onchain_ok`）を**追記**する。元の行は書き換えない。集計と公開用の履歴は、照合の行を元の行に重ねて読む（`applyReconciliations`）。見つからなかった行はそのまま（送金なしが確定）。
+
 **2026-10-19 分の読み替え**：10/19 の行は `outcome` を記録する前のもの。ログは書き換えず、集計（`src/score.ts`）と公開用の履歴（`src/cli/score.ts`）で、上の条件をそのまま当てはめて読み替える。`tx` が null で `http_status` が 400〜499（402 を含む）の行は `request_rejected`、`tx` があって 200 以外の行（x402.sniperx.fun の 400）は `not_delivered` のまま。10/19 の行には `x402_error` / `error_body` が無いので、理由は「未記録」と表示する。
 
 有料で買うのは GET で 402 を返す、`exact`・公式 USDC・Solana/Base 本番の提示だけです（Base は EIP-3009 のみ、Permit2 は買わない）。買わなかった理由は `skipped` に残し、スコアには数えません。

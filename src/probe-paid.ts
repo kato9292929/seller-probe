@@ -164,8 +164,10 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
   if (settle?.transaction) {
     out.tx = settle.transaction;
     out.tx_source = "settle_header";
-  } else if (status !== 200) {
-    // Same rule as the RFQ buyer: no 200 → search the chain for the tx carrying our own signature.
+  } else {
+    // No settlement header: search the chain for the tx carrying our own signature (the RFQ
+    // buyer's rule). Also on a 200: a seller can settle and deliver but omit the header, which
+    // is a header fault (settle_ok stays false), not a missing payment.
     const found =
       a.chain === "solana"
         ? await findSolanaPayment(out.payer!, signed.payer_key.payer_signature, FIND_MS()).then((f) => f && { tx: f.signature, check: checkSolanaTransfer(f.tx, want) })
@@ -186,7 +188,7 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
   }
   if (!out.tx) {
     out.onchain_ok = false;
-    out.onchain_detail = status === 200 ? "200 without a settlement tx" : "no landed payment found";
+    out.onchain_detail = status === 200 ? "200 without a settlement tx (none found on chain)" : "no landed payment found";
   }
   // RFQ reason code 5: the transfer landed, the data did not come back.
   out.not_delivered = out.onchain_ok === true && status !== 200;
