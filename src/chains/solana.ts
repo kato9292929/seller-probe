@@ -63,11 +63,11 @@ export async function verifySolanaTransfer(sig: string, w: { payer: string; payT
  * In an x402 exact-SVM tx the tx id is the facilitator's (fee payer's) signature, so
  * our signature is matched against every signature of each candidate tx.
  */
-export async function findSolanaPayment(payer: string, payerSig: string, timeoutMs = 90_000): Promise<{ signature: string; tx: any } | null> {
+export async function findSolanaPayment(payer: string, payerSig: string, timeoutMs = 90_000, limit = 20): Promise<{ signature: string; tx: any } | null> {
   const seen = new Set<string>();
   const until = Date.now() + timeoutMs;
   while (Date.now() < until) {
-    const sigs: any[] = await rpc(SOLANA_RPC(), "getSignaturesForAddress", [payer, { limit: 20, commitment: "confirmed" }]).catch(() => []);
+    const sigs: any[] = await rpc(SOLANA_RPC(), "getSignaturesForAddress", [payer, { limit, commitment: "confirmed" }]).catch(() => []);
     for (const s of sigs) {
       if (seen.has(s.signature)) continue;
       seen.add(s.signature);

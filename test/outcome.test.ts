@@ -153,3 +153,19 @@ test("paid probe never buys from an excluded seller, even if it is in the target
     srv.close();
   }
 });
+
+test("a 200 without a settlement header, reconciled with the tx found on chain, reads as delivered (settle_ok stays false)", async () => {
+  const { applyReconciliations } = await import("../src/outcome.js");
+  const glim = paidRow({
+    host: "a", http_status: 200, response_bytes: 2084, delivered: true, settle_ok: false, onchain_ok: false, tx: null,
+    payer_key: { payer_signature: "5qqTgC" }, outcome: "failed",
+  });
+  const fix = { ts: "2026-10-26T13:10:00Z", kind: "paid_reconciled", host: "a", payer_key_value: "5qqTgC", tx: "4P1SHy", onchain_ok: true, onchain_detail: "USDC transfer matches 402" };
+  const [merged] = applyReconciliations([glim, fix] as any[]).filter((r: any) => r.kind === "paid");
+  assert.equal(classifyPaid(merged), "delivered");
+  const [s] = scoreHosts([free, glim, fix] as any, w, now);
+  assert.equal(s.paid_outcomes.delivered, 1);
+  assert.equal(s.paid_outcomes.failed, 0);
+  assert.equal(s.items.settle_ok.value, 0, "the missing header still counts against settle_ok");
+  assert.equal(s.items.onchain_ok.value, 1);
+});

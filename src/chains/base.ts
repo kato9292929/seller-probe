@@ -55,12 +55,18 @@ export async function verifyBaseTransfer(txHash: string, w: { payer: string; pay
 }
 
 /** After a failed paid request: the tx that consumed our authorization nonce, if any. */
-export async function findBasePayment(payer: string, nonce: string, timeoutMs = 90_000): Promise<{ hash: string; receipt: any } | null> {
+export async function findBasePayment(
+  payer: string, nonce: string, timeoutMs = 90_000, at?: Date,
+): Promise<{ hash: string; receipt: any } | null> {
   const until = Date.now() + timeoutMs;
   while (Date.now() < until) {
     const latest = parseInt(await rpc<string>(BASE_RPC(), "eth_blockNumber", []), 16);
+    // Recent payment: the last ~hour. Older one (`at`): a narrow window around its time (2 s blocks).
+    const centre = at ? latest - Math.round((Date.now() - at.getTime()) / 2000) : latest;
+    const from = Math.max(0, at ? centre - 900 : latest - 1800);
+    const to = at ? Math.min(latest, centre + 900) : latest;
     const logs: any[] = await rpc(BASE_RPC(), "eth_getLogs", [
-      { address: USDC.base, fromBlock: "0x" + Math.max(0, latest - 1800).toString(16), toBlock: "latest", topics: [AUTHORIZATION_USED, topicAddr(payer), nonce.toLowerCase()] },
+      { address: USDC.base, fromBlock: "0x" + from.toString(16), toBlock: "0x" + to.toString(16), topics: [AUTHORIZATION_USED, topicAddr(payer), nonce.toLowerCase()] },
     ]).catch(() => []);
     if (logs.length) {
       const hash = logs[0].transactionHash;

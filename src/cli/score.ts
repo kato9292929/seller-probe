@@ -4,14 +4,14 @@ import { resolve } from "node:path";
 import { ROOT } from "../config.js";
 import { LOG_DIR, readRecords } from "../log.js";
 import { refreshRfqSnapshot, rfqForHost } from "../rfq.js";
-import { classifyPaid } from "../outcome.js";
+import { applyReconciliations, classifyPaid } from "../outcome.js";
 import { type Weights, scoreHosts } from "../score.js";
 import { latestTargets } from "../targets.js";
 
 const OUT = resolve(ROOT, process.env.PROBE_PUBLIC_DIR ?? "dist/data");
 const weights: Weights = JSON.parse(readFileSync(resolve(ROOT, "config/weights.json"), "utf8"));
 const now = new Date();
-const records = readRecords(LOG_DIR(), weights.window_days, now);
+const records = applyReconciliations(readRecords(LOG_DIR(), weights.window_days, now));
 const scores = scoreHosts(records, weights, now);
 const rfq = await refreshRfqSnapshot();
 
