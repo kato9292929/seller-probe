@@ -1,0 +1,46 @@
+{
+ "api.loyalspark.online": {
+  "ts": "2026-10-26T10:33:15.626Z",
+  "kind": "paid",
+  "host": "api.loyalspark.online",
+  "skipped": null,
+  "http_status": 400,
+  "tx": null,
+  "response_bytes": 514,
+  "x402_error": null,
+  "error_body": "{\"error\":\"Missing required query params: token_address, customer_address. The request is not charged.\",\"error_code\":\"missing_fields\",\"missing\":[\"token_address\",\"customer_address\"],\"example\":{\"token_address\":\"<token_address>\",\"customer_address\":\"<customer_address>\"},\"docs\":\"https://loyalspark.online/"
+ },
+ "api.agents-trust.com": {
+  "ts": "2026-10-26T10:35:02.977Z",
+  "kind": "paid",
+  "host": "api.agents-trust.com",
+  "skipped": null,
+  "http_status": 400,
+  "tx": null,
+  "response_bytes": 189,
+  "x402_error": null,
+  "error_body": "{\"error\":{\"code\":\"MISSING_PARAMETER\",\"message\":\"Missing 'url' param: expected one absolute public HTTPS endpoint URL\",\"parameter\":\"url\"},\"request_id\":\"01a177c5-9893-7251-8cbd-7750d980ac1d\"}"
+ },
+ "x402.freeq.one": {
+  "ts": "2026-10-26T10:37:00.271Z",
+  "kind": "paid",
+  "host": "x402.freeq.one",
+  "skipped": null,
+  "http_status": 402,
+  "tx": null,
+  "response_bytes": 1499,
+  "x402_error": "Payment required — use POST to call this tool",
+  "error_body": "{\"x402Version\":2,\"error\":\"Payment required — use POST to call this tool\",\"accepts\":[{\"scheme\":\"exact\",\"network\":\"eip155:8453\",\"amount\":\"1000\",\"asset\":\"0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913\",\"payTo\":\"0x90b0dC893406d6eA63bb077ED59F5e8340f98d84\",\"maxTimeoutSeconds\":60,\"extra\":{\"name\":\"USDC\",\"versi"
+ },
+ "api.geekvault.dev": {
+  "ts": "2026-10-26T10:38:43.142Z",
+  "kind": "paid",
+  "host": "api.geekvault.dev",
+  "skipped": null,
+  "http_status": 402,
+  "tx": null,
+  "response_bytes": 2,
+  "x402_error": "payment_identifier_required",
+  "error_body": "{}"
+ }
+}

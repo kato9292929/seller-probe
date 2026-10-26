@@ -53,6 +53,7 @@ web/                 公開ページ（React + Vite + Tailwind + shadcn/ui）。
    - `no_402: …`：入力なしの GET で 402 が返らない（200・405・404・接続できない等）。
    - `not_payable: …`：402 は返るが、買う側の条件（exact・Solana/Base の公式 USDC・金額が 1 以上かつ $0.01 以下）を満たす提示がない（例：金額 0）。買うときと同じ `refuseReason` で判定する。
    - `requires_input: …`：下の入力スキーマの判定に当たる。
+   - `requires_input (observed): …`：前回の購入で、売り手自身のエラー応答が入力不足を示した（`src/observed.ts`）。根拠にするのは構造化された項目だけで、自由文の言い回しは照合しない。①本文の `missing` 配列（例 loyalspark：`"error_code":"missing_fields","missing":["token_address","customer_address"]`）、②入力欠落を表すエラーコード（`error_code` / `code` が `missing_parameter` など決まった値。例 agents-trust：`"code":"MISSING_PARAMETER","parameter":"url"`）、③402 の `error` 欄の「use POST」の明示（例 freeq）。外した記録（`paid.screened.dropped[].evidence`）に、根拠にしたエラーの本文・時刻・HTTP ステータス・戻す日（`until`）を残す。**観測から 4 週間（28 日）たつと候補に戻して測り直す**（売り手が仕様を直すことがあるため）。その後の購入が成立すれば、その時点で外れなくなる。
 6. **入力が必要な売り手は外す**：有料の候補ごとに支払いなしの GET で 402 を取り、入力スキーマ（v2 の bazaar 拡張 `extensions.bazaar` の `schema.properties.input` / `info.input`、v1 の `accepts[].outputSchema.input`）に必須の入力があれば外す（`src/x402.ts` の `inputRequirement`）。必須とみなすのは、メソッドが GET/HEAD 以外・本文の必須項目（`body.required`）・クエリの必須項目（`queryParams.required` や `required: true` のフィールド）。外したホストは `paid.skipped_popular` と `paid.screened.requires_input` に `requires_input: <理由>` で残し、次点を繰り上げて `top_n` 件にする。URL の見た目では判定しない。スキーマを出していない売り手は対象に残す。買う直前にも同じ判定をし、必須入力があれば `skipped: "requires_input: …"`（スコアに数えない）。
 
 `config/probe.json` は初週用に `top_n: 10, random_n: 0` にしてある。挙動を確認したら `phase: "full", top_n: 50, random_n: 20` に変える（§5）。
@@ -71,6 +72,8 @@ GET が 405 のときだけ空の JSON 本文で POST して 402 を取る（`me
 3. 見つかった tx が 402 の提示どおりの送金なら `not_delivered: true`（RFQ の理由コード 5 と同じ）。
 
 **tx 署名の記録**：署名した支払いはすべて、送信前の `paid_attempt` と結果の `paid` の両方に自分の署名（`payer_signature`、Base は `authorization_nonce` と署名の SHA-256 `authorization_signature_sha256`）を持つ。Base の署名そのものはログに書かない（署名済み authorization は誰でも `transferWithAuthorization` で実行できるため）。チェーン上の tx が判明したもの（settle 応答、または上の検索で発見）は `tx` にその署名／ハッシュと出所（`tx_source`）を入れる。送金が着地しなかった場合だけ `tx: null` になり、そのときも自分の署名は残る。
+
+**payment-identifier 拡張**：402 が `extensions["payment-identifier"]` を宣言していれば、支払いに新しい識別子（`@x402/extensions` の `appendPaymentIdentifierToExtensions`）を付ける。識別子は冪等キーで秘密ではないので、`payer_key.payment_identifier` として記録する（2026-10-26 の geekvault は宣言で `required: true` とし、付けていない支払いを 402 `payment_identifier_required` で断っていた）。
 
 **失敗時の記録**：有料の測定で 200 以外が返ったら、`http_status`、402 なら応答の `error` 欄（v2 は PAYMENT-REQUIRED の文書、v1 は本文の JSON。`x402_error`）、本文の先頭 300 文字（`error_body`、空白は詰める）を残す。無料の測定でも 402 以外が返ったら `error_body` を残す。応答ヘッダは `Cache-Control` 以外記録しない（Authorization 系は書かない）。
 
@@ -119,9 +122,9 @@ score = 100 × Σ(重み × 合格率) ÷ Σ(重み)    （観測のない項目
 | 順 | ファイル:行 | 内容 |
 |---|---|---|
 | 定義 | `src/config.ts:37` | `perCall: 10_000n`（USDC 6 桁で $0.01）。env や設定ファイルからは変えられない |
-| 1 | `src/pay.ts:55` | `refuseReason`：402 の金額が `LIMITS.perCall` を超える提示は買わない（`src/probe-paid.ts:96` で呼ぶ） |
+| 1 | `src/pay.ts:56` | `refuseReason`：402 の金額が `LIMITS.perCall` を超える提示は買わない（`src/probe-paid.ts:96` で呼ぶ） |
 | 2 | `src/budget.ts:30` | `assertWithinBudget`：同じ上限を再検査し、7 日間 $5（`src/budget.ts:31`）も見る。署名の前に `src/probe-paid.ts:107` で呼ぶ |
-| 3 | `src/pay.ts:23` | 支払いライブラリ（`@x402/core`）の `spendControls.maxAmountPerPayment: "$0.01"`。上の 2 つを抜けても署名しない二重の柵 |
+| 3 | `src/pay.ts:24` | 支払いライブラリ（`@x402/core`）の `spendControls.maxAmountPerPayment: "$0.01"`。上の 2 つを抜けても署名しない二重の柵 |
 
 署名は 1・2 を通った後の `src/probe-paid.ts:117`（`signFor`）でだけ行う。対象選定時のカタログ価格の上限（`src/config.ts:41` の `catalogMaxPriceUsd`）は対象を絞るためのもので、支払いの強制ではない。
 

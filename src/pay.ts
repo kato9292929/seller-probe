@@ -1,6 +1,7 @@
 // The probe's paying client: official USDC on Solana/Base mainnet, `exact` only,
 // one requirement at a time, and never above the hard caps in config.ts.
 import { createHash } from "node:crypto";
+import { PAYMENT_IDENTIFIER, appendPaymentIdentifierToExtensions } from "@x402/extensions/payment-identifier";
 import { x402Client, x402HTTPClient } from "@x402/core/client";
 import { ExactSvmScheme } from "@x402/svm/exact/client";
 import { ExactSvmSchemeV1 } from "@x402/svm/v1";
@@ -61,13 +62,28 @@ export function refuseReason(a: Accept | undefined, payer: Payer["address"]): st
 export async function signFor(payer: Payer, parsed: Parsed402, a: Accept): Promise<{ payload: any; headers: Record<string, string>; payer_key: Record<string, string> }> {
   const doc = parsed.raw as any;
   const payload = await payer.http.createPaymentPayload({ ...doc, accepts: [a.raw] });
+  // x402 `payment-identifier` extension: when the seller declares it, send a fresh id with
+  // the payment (some sellers require it and answer 402 `payment_identifier_required`).
+  // The id is an idempotency key, not a secret, and is logged with the attempt.
+  let payment_identifier: string | null = null;
+  const pid = doc?.extensions?.[PAYMENT_IDENTIFIER];
+  if (pid) {
+    const ext = { ...(payload.extensions ?? {}), [PAYMENT_IDENTIFIER]: payload.extensions?.[PAYMENT_IDENTIFIER] ?? pid };
+    appendPaymentIdentifierToExtensions(ext);
+    payload.extensions = ext;
+    payment_identifier = (ext[PAYMENT_IDENTIFIER] as any)?.info?.id ?? null;
+  }
   const payer_key =
     a.chain === "solana"
       ? { payer_signature: payerSignature(payload, payer.address.solana!) }
       : // The raw authorization signature is never logged: with it anyone could submit the
         // transfer. Its SHA-256 identifies it; the nonce is what the chain search uses.
         (({ nonce, signature }) => ({ authorization_nonce: nonce, authorization_signature_sha256: createHash("sha256").update(signature).digest("hex") }))(evmAuthorization(payload));
-  return { payload, headers: payer.http.encodePaymentSignatureHeader(payload), payer_key };
+  return {
+    payload,
+    headers: payer.http.encodePaymentSignatureHeader(payload),
+    payer_key: payment_identifier ? { ...payer_key, payment_identifier } : payer_key,
+  };
 }
 
 export function settleFrom(payer: Payer, getHeader: (n: string) => string | null): { success: boolean; transaction: string | null; network: string | null; error: string | null } | null {
