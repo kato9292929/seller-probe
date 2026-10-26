@@ -33,8 +33,8 @@ export type TargetsFile = {
      */
     screened?: {
       at: string;
-      dropped: { host: string; reason: string; pick: "top" | "random" }[];
-      requires_input: { host: string; reason: string; pick: "top" | "random" }[];
+      dropped: { host: string; reason: string; pick: "top" | "random"; evidence?: Record<string, unknown> }[];
+      requires_input: { host: string; reason: string; pick: "top" | "random"; evidence?: Record<string, unknown> }[];
     };
   };
 };
@@ -114,7 +114,7 @@ export function loadProbeConfig(): ProbeConfig {
 }
 
 /** Whether a paid candidate can be bought with a bare GET, and if not, why (the reason is recorded). */
-export type Screen = { drop: boolean; reason: string | null };
+export type Screen = { drop: boolean; reason: string | null; evidence?: Record<string, unknown> };
 
 /**
  * Fill the paid quotas from the ordered candidates, passing over every host the screen
@@ -122,13 +122,13 @@ export type Screen = { drop: boolean; reason: string | null };
  * host in its place, so each slot is a host that can actually be bought.
  */
 export async function screenPaidTargets(t: TargetsFile, screen: (t: Target) => Promise<Screen>): Promise<TargetsFile> {
-  const dropped: { host: string; reason: string; pick: "top" | "random" }[] = [];
+  const dropped: { host: string; reason: string; pick: "top" | "random"; evidence?: Record<string, unknown> }[] = [];
   const fill = async <T extends Target>(cands: T[], n: number, pick: "top" | "random") => {
     const out: T[] = [];
     for (const c of cands) {
       if (out.length >= n) break;
       const s = await screen(c);
-      if (s.drop) dropped.push({ host: c.host, reason: s.reason ?? "dropped", pick });
+      if (s.drop) dropped.push({ host: c.host, reason: s.reason ?? "dropped", pick, ...(s.evidence ? { evidence: s.evidence } : {}) });
       else out.push(c);
     }
     return out;

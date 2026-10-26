@@ -2,6 +2,8 @@ import "dotenv/config";
 import { loadCatalog } from "../catalog.js";
 import { fetchPopularity } from "../popularity.js";
 import { exclusionReason, loadExclusions } from "../exclusions.js";
+import { LOG_DIR, readRecords } from "../log.js";
+import { OBSERVED_TTL_DAYS, observedRequirements } from "../observed.js";
 import { errMsg, timedGet } from "../http.js";
 import { buildTargets, loadProbeConfig, screenPaidTargets, writeTargets } from "../targets.js";
 import { refuseReason } from "../pay.js";
@@ -16,9 +18,14 @@ const pop = await fetchPopularity();
 // e.g. an amount of 0), and declares no required input. Others are recorded
 // with the reason and the next eligible host is promoted.
 const exclusions = loadExclusions();
+// Sellers whose own error answer to a recent purchase showed a required input (observed.ts);
+// they stay out for OBSERVED_TTL_DAYS after that answer, then are measured again.
+const observed = observedRequirements(readRecords(LOG_DIR(), OBSERVED_TTL_DAYS + 1));
 const t = await screenPaidTargets(buildTargets(date, catalog, pop, loadProbeConfig()), async (c) => {
   const ex = exclusionReason(c, exclusions);
   if (ex) return { drop: true, reason: ex };
+  const ob = observed.get(c.host);
+  if (ob) return { drop: true, reason: `requires_input (observed): ${ob.reason}`, evidence: { ...ob.evidence, until: ob.until } };
   try {
     const r = await timedGet(c.url);
     if (r.res.status !== 402) return { drop: true, reason: `no_402: HTTP ${r.res.status} on GET` };

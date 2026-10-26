@@ -7,8 +7,8 @@ import { test } from "node:test";
 const REFS: [string, number, string][] = [
   ["src/config.ts", 37, "perCall: 10_000n"],
   ["src/config.ts", 41, "catalogMaxPriceUsd: 0.01"],
-  ["src/pay.ts", 23, 'maxAmountPerPayment: "$0.01"'],
-  ["src/pay.ts", 55, "BigInt(a.amount) > LIMITS.perCall"],
+  ["src/pay.ts", 24, 'maxAmountPerPayment: "$0.01"'],
+  ["src/pay.ts", 56, "BigInt(a.amount) > LIMITS.perCall"],
   ["src/budget.ts", 30, "amount > LIMITS.perCall"],
   ["src/budget.ts", 31, "spent + amount > LIMITS.perWeek"],
   ["src/probe-paid.ts", 96, "refuseReason(a, ctx.payer.address)"],
