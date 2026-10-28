@@ -1,6 +1,6 @@
 {
  "date": "2026-10-28",
- "generated_at": "2026-10-28T09:39:40.639Z",
+ "generated_at": "2026-10-28T09:47:15.760Z",
  "catalog": {
   "repo": "https://github.com/kato9292929/endpoint",
   "commit": "d8bccd75ea6d8b3b369570fab1ce081389514199",
@@ -11,7 +11,7 @@
  },
  "popularity": {
   "metric": "x402scan:tx_count:7d",
-  "fetched_at": "2026-10-28T09:39:24.957Z",
+  "fetched_at": "2026-10-28T09:47:13.803Z",
   "status": "ok",
   "hosts": 191
  },
@@ -132872,8 +132872,8 @@
   }
  ],
  "paid": {
-  "phase": "initial",
-  "top_n": 10,
+  "phase": "all_buyable",
+  "top_n": "all",
   "random_n": 0,
   "seed": "seller-probe:2026-10-28",
   "top": [
@@ -132956,6 +132956,523 @@
     ],
     "tx_count": 587,
     "rank": 46
+   },
+   {
+    "host": "x402-niche-briefs.fly.dev",
+    "url": "https://x402-niche-briefs.fly.dev/v1/listing-quality-teaser",
+    "endpoint_id": "59c810b7f393bbf7",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 542,
+    "rank": 51
+   },
+   {
+    "host": "intel.degenscan.io",
+    "url": "https://intel.degenscan.io/v1/pulse",
+    "endpoint_id": "b778804df0321fdc",
+    "price_usd": 0.001,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 468,
+    "rank": 52
+   },
+   {
+    "host": "xintel.aispace.bot",
+    "url": "https://xintel.aispace.bot/api/intel/reports",
+    "endpoint_id": "4f2948fc48447ff1",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 381,
+    "rank": 57
+   },
+   {
+    "host": "tb2s28fm0h8dkq2t.68r.lambda-web.us-east-1.on.aws",
+    "url": "https://tb2s28fm0h8dkq2t.68r.lambda-web.us-east-1.on.aws/v1/market/new",
+    "endpoint_id": "8b602a37b2c01d8b",
+    "price_usd": 0.002,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 348,
+    "rank": 63
+   },
+   {
+    "host": "money-reactor.makar52nn2016.workers.dev",
+    "url": "https://money-reactor.makar52nn2016.workers.dev/api/uuid",
+    "endpoint_id": "741520792e6e8d5b",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 348,
+    "rank": 64
+   },
+   {
+    "host": "api.bitrefill.com",
+    "url": "https://api.bitrefill.com/x402/checkout/info",
+    "endpoint_id": "b975bbbe840ff50e",
+    "price_usd": 0.001,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 329,
+    "rank": 65
+   },
+   {
+    "host": "api.jarvisclaw.ai",
+    "url": "https://api.jarvisclaw.ai/v1/marketplace/markets/candles",
+    "endpoint_id": "75564241bfc70389",
+    "price_usd": 0.0011,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 320,
+    "rank": 68
+   },
+   {
+    "host": "straits.live",
+    "url": "https://straits.live/api/premium/brief",
+    "endpoint_id": "ec36aee15d75cb2a",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 304,
+    "rank": 70
+   },
+   {
+    "host": "quantagentshop.com",
+    "url": "https://quantagentshop.com/v1/qr",
+    "endpoint_id": "41fcf471f38be9f6",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 296,
+    "rank": 71
+   },
+   {
+    "host": "crypto.apitoll.cloud",
+    "url": "https://crypto.apitoll.cloud/v1/crypto/dex",
+    "endpoint_id": "6362f6fef6f210de",
+    "price_usd": 0.001,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 285,
+    "rank": 75
+   },
+   {
+    "host": "onchaincheck.dev",
+    "url": "https://onchaincheck.dev/x402/ping",
+    "endpoint_id": "59fa9e2e48984e7a",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 282,
+    "rank": 77
+   },
+   {
+    "host": "api.myceliasignal.com",
+    "url": "https://api.myceliasignal.com/sho/oracle/btceur",
+    "endpoint_id": "6b20ad1e068c4823",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 247,
+    "rank": 83
+   },
+   {
+    "host": "api.api-agent-ia.ch",
+    "url": "https://api.api-agent-ia.ch/gaz",
+    "endpoint_id": "fcbd7fc1afff0a8a",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 202,
+    "rank": 88
+   },
+   {
+    "host": "defi.hugen.tokyo",
+    "url": "https://defi.hugen.tokyo/defi/chains",
+    "endpoint_id": "8dd351db9f4736c6",
+    "price_usd": 0.005,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 197,
+    "rank": 89
+   },
+   {
+    "host": "workspace-x402-paywall.onrender.com",
+    "url": "https://workspace-x402-paywall.onrender.com/utils/ip",
+    "endpoint_id": "f807a914ef07c99e",
+    "price_usd": 0.001,
+    "networks": [
+     "Solana",
+     "Base"
+    ],
+    "tx_count": 197,
+    "rank": 90
+   },
+   {
+    "host": "codetrack-x402-api-production.up.railway.app",
+    "url": "https://codetrack-x402-api-production.up.railway.app/leaderboard",
+    "endpoint_id": "75031d2f2cce8ae4",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 195,
+    "rank": 91
+   },
+   {
+    "host": "polynews.news",
+    "url": "https://polynews.news/api/v1/feed",
+    "endpoint_id": "8d0351d18c167b0e",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 192,
+    "rank": 93
+   },
+   {
+    "host": "time.24klabs.ai",
+    "url": "https://time.24klabs.ai/time",
+    "endpoint_id": "a9d14d9c5b1cf935",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 189,
+    "rank": 96
+   },
+   {
+    "host": "twitter.use.x402atlas.com",
+    "url": "https://twitter.use.x402atlas.com/search",
+    "endpoint_id": "86f25ede9bb55659",
+    "price_usd": 0.005,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 185,
+    "rank": 99
+   },
+   {
+    "host": "x402helper.xyz",
+    "url": "https://x402helper.xyz/test-billing",
+    "endpoint_id": "d84f5b4937dac6b7",
+    "price_usd": 0.001,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 177,
+    "rank": 106
+   },
+   {
+    "host": "402-server.pinata-marketing-enterprise.workers.dev",
+    "url": "https://402-server.pinata-marketing-enterprise.workers.dev/v1/retrieve/private/bafkreig64zjue3vnfqejtq2lmzdhgbbsin7gc7dxdebw3exy4ysjkoq62q",
+    "endpoint_id": "afd13d8c060ddd80",
+    "price_usd": 0.0001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 175,
+    "rank": 107
+   },
+   {
+    "host": "company-x402.tbs-digital.com",
+    "url": "https://company-x402.tbs-digital.com/company/lookup",
+    "endpoint_id": "96be5a312e90dfc2",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 172,
+    "rank": 109
+   },
+   {
+    "host": "api.sitecheck-api.workers.dev",
+    "url": "https://api.sitecheck-api.workers.dev/api/fx",
+    "endpoint_id": "c4cbec8956fdf58c",
+    "price_usd": 0.002,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 172,
+    "rank": 110
+   },
+   {
+    "host": "agent-tools.jbarkules.workers.dev",
+    "url": "https://agent-tools.jbarkules.workers.dev/v1/fx/rates",
+    "endpoint_id": "59d1784ede4a77d0",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 162,
+    "rank": 113
+   },
+   {
+    "host": "lion-x402-bible.lionmaster-operations.workers.dev",
+    "url": "https://lion-x402-bible.lionmaster-operations.workers.dev/api/x402/composite-bundle-json",
+    "endpoint_id": "abb84cc4fdfa15ef",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 162,
+    "rank": 114
+   },
+   {
+    "host": "fetcher.sh",
+    "url": "https://fetcher.sh/api/reddit/posts/hot",
+    "endpoint_id": "1e3a42bbbf9d7ba9",
+    "price_usd": 0.002,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 157,
+    "rank": 118
+   },
+   {
+    "host": "x402.slinkylayer.ai",
+    "url": "https://x402.slinkylayer.ai/api/v1/proxy/7ef83efe-de6e-4bcd-8d4e-15e19b64b678/top_holders",
+    "endpoint_id": "3e98380633e61f3f",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 152,
+    "rank": 120
+   },
+   {
+    "host": "api.geekvault.dev",
+    "url": "https://api.geekvault.dev/dev-tools/v1/hex",
+    "endpoint_id": "e65a47232a6802ac",
+    "price_usd": 0.002,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 141,
+    "rank": 129
+   },
+   {
+    "host": "api.webbersites.com",
+    "url": "https://api.webbersites.com/api/geo",
+    "endpoint_id": "b3c4dc28ee6e8c47",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 139,
+    "rank": 133
+   },
+   {
+    "host": "api.agentweather.io",
+    "url": "https://api.agentweather.io/v1/pulse/storm",
+    "endpoint_id": "a2972b2d97c23bec",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 137,
+    "rank": 134
+   },
+   {
+    "host": "golf-evm-math.x402-evm-math.workers.dev",
+    "url": "https://golf-evm-math.x402-evm-math.workers.dev/evm/address",
+    "endpoint_id": "249376586fcd4726",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 117,
+    "rank": 142
+   },
+   {
+    "host": "api.marketintelligenceapi.com",
+    "url": "https://api.marketintelligenceapi.com/api/v1/markets/gas-price",
+    "endpoint_id": "269c16d38db33335",
+    "price_usd": 0.001,
+    "networks": [
+     "Solana",
+     "Base"
+    ],
+    "tx_count": 117,
+    "rank": 143
+   },
+   {
+    "host": "apexrunner.ai",
+    "url": "https://apexrunner.ai/signals/fg-micro",
+    "endpoint_id": "53b2b2c1659c9720",
+    "price_usd": 0.007,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 117,
+    "rank": 144
+   },
+   {
+    "host": "api.signalis.dev",
+    "url": "https://api.signalis.dev/v1/pulse/narratives",
+    "endpoint_id": "847849cf5361c195",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 116,
+    "rank": 145
+   },
+   {
+    "host": "crypto-market-data.zafermemon87.workers.dev",
+    "url": "https://crypto-market-data.zafermemon87.workers.dev/v1/news",
+    "endpoint_id": "96483af6a66f5956",
+    "price_usd": 0.003,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 109,
+    "rank": 146
+   },
+   {
+    "host": "toll402.dev",
+    "url": "https://toll402.dev/v1/fx",
+    "endpoint_id": "a5a77b62d6e46555",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 99,
+    "rank": 155
+   },
+   {
+    "host": "api.printmoneylab.com",
+    "url": "https://api.printmoneylab.com/api/v1/fx-rate",
+    "endpoint_id": "969bfe6d4df86ed4",
+    "price_usd": 0.001,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 87,
+    "rank": 167
+   },
+   {
+    "host": "x402-datashop-production.up.railway.app",
+    "url": "https://x402-datashop-production.up.railway.app/v1/btc/fees",
+    "endpoint_id": "cd76fcbd6477294f",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 82,
+    "rank": 171
+   },
+   {
+    "host": "defi-yield.agentdiet.dev",
+    "url": "https://defi-yield.agentdiet.dev/v1/distill",
+    "endpoint_id": "7cd2ea931df0071f",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 80,
+    "rank": 177
+   },
+   {
+    "host": "x402stock.xyz",
+    "url": "https://x402stock.xyz/api/v1/gdp",
+    "endpoint_id": "e8cace994813b4d5",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 78,
+    "rank": 180
+   },
+   {
+    "host": "x402-bazaar-rank.x402-bazaar-rank-worker.workers.dev",
+    "url": "https://x402-bazaar-rank.x402-bazaar-rank-worker.workers.dev/tags",
+    "endpoint_id": "b1375f651a04f685",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 75,
+    "rank": 183
+   },
+   {
+    "host": "1gateway.dev",
+    "url": "https://1gateway.dev/v1/fx/rates",
+    "endpoint_id": "2630daa1c666ca6e",
+    "price_usd": 0.002,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 74,
+    "rank": 184
+   },
+   {
+    "host": "vibesprings.net",
+    "url": "https://vibesprings.net/api/gas",
+    "endpoint_id": "7f4a148d0dda0cb7",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 73,
+    "rank": 185
+   },
+   {
+    "host": "api.fastaf.co",
+    "url": "https://api.fastaf.co/x402/v1/amazon",
+    "endpoint_id": "ca5ec94c12266e0a",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 70,
+    "rank": 187
+   },
+   {
+    "host": "gateway.spraay.app",
+    "url": "https://gateway.spraay.app/api/v1/models",
+    "endpoint_id": "c2d4132662d48a71",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 68,
+    "rank": 188
+   },
+   {
+    "host": "horizonpulse.dev",
+    "url": "https://horizonpulse.dev/api/pulse",
+    "endpoint_id": "80ea4c1ee4685b00",
+    "price_usd": 0.005,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 67,
+    "rank": 190
    }
   ],
   "random": [],
@@ -132993,7 +133510,7 @@
    {
     "host": "stormstation247.com",
     "rank": 9,
-    "reason": "no_402: HTTP 403 on GET"
+    "reason": "no_402: HTTP 200 on GET"
    },
    {
     "host": "x402.sniperx.fun",
@@ -133019,6 +133536,11 @@
     "host": "agent402.tools",
     "rank": 15,
     "reason": "requires_input: query: text"
+   },
+   {
+    "host": "x402.dtelecom.org",
+    "rank": 16,
+    "reason": "cheapest price $0.1 > $0.01"
    },
    {
     "host": "x402.twit.sh",
@@ -133073,7 +133595,7 @@
    {
     "host": "losbeto.xyz",
     "rank": 29,
-    "reason": "no_402: unreachable (fetch failed (ERR_TLS_CERT_ALTNAME_INVALID))"
+    "reason": "no_402: HTTP 503 on GET"
    },
    {
     "host": "api.nansen.ai",
@@ -133086,6 +133608,11 @@
     "reason": "requires_input: query: lat, lon, spanFt"
    },
    {
+    "host": "mcp.fortclaw.com",
+    "rank": 32,
+    "reason": "cheapest price $1 > $0.01"
+   },
+   {
     "host": "medien.halowerk.com",
     "rank": 33,
     "reason": "requires_input: method POST/PUT/PATCH"
@@ -133094,6 +133621,11 @@
     "host": "x402.freeq.one",
     "rank": 34,
     "reason": "requires_input (observed): method POST (402 error)"
+   },
+   {
+    "host": "basehub.fun",
+    "rank": 35,
+    "reason": "cheapest price $0.1 > $0.01"
    },
    {
     "host": "api.kadec0.xyz",
@@ -133106,6 +133638,16 @@
     "reason": "requires_input: query: text"
    },
    {
+    "host": "api.strale.io",
+    "rank": 38,
+    "reason": "cheapest price $0.0216 > $0.01"
+   },
+   {
+    "host": "stablesocial.dev",
+    "rank": 39,
+    "reason": "cheapest price $0.06 > $0.01"
+   },
+   {
     "host": "three.ws",
     "rank": 40,
     "reason": "requires_input: query: url"
@@ -133116,6 +133658,11 @@
     "reason": "not_payable: amount 20000 > per-call cap 10000"
    },
    {
+    "host": "keywords.duoleads.com",
+    "rank": 43,
+    "reason": "cheapest price $0.03 > $0.01"
+   },
+   {
     "host": "x402engine.app",
     "rank": 44,
     "reason": "requires_input: query: cid"
@@ -133124,6 +133671,11 @@
     "host": "agent-search.centorprat.workers.dev",
     "rank": 45,
     "reason": "requires_input: method POST/PUT/PATCH"
+   },
+   {
+    "host": "social.gedx402.com",
+    "rank": 47,
+    "reason": "cheapest price $0.014 > $0.01"
    },
    {
     "host": "x402-market-data.vercel.app",
@@ -133139,6 +133691,481 @@
     "host": "agent-kiosk.vercel.app",
     "rank": 50,
     "reason": "requires_input: method POST"
+   },
+   {
+    "host": "bess-x402.onrender.com",
+    "rank": 53,
+    "reason": "requires_input: query: chain"
+   },
+   {
+    "host": "defillama.use.x402atlas.com",
+    "rank": 54,
+    "reason": "requires_input: query: protocol"
+   },
+   {
+    "host": "x402.clashofcoins.com",
+    "rank": 55,
+    "reason": "no_402: HTTP 404 on GET"
+   },
+   {
+    "host": "agentsvc.io",
+    "rank": 56,
+    "reason": "requires_input: method POST/PUT/PATCH"
+   },
+   {
+    "host": "api.gondola-ai.com",
+    "rank": 58,
+    "reason": "no_402: HTTP 405 on GET"
+   },
+   {
+    "host": "api.exa.ai",
+    "rank": 59,
+    "reason": "no_402: HTTP 404 on GET"
+   },
+   {
+    "host": "api.glianalabs.com",
+    "rank": 60,
+    "reason": "requires_input: body required"
+   },
+   {
+    "host": "api.agentstools.dev",
+    "rank": 61,
+    "reason": "requires_input: query: query"
+   },
+   {
+    "host": "stable-deepline.dev",
+    "rank": 62,
+    "reason": "cheapest price $0.02 > $0.01"
+   },
+   {
+    "host": "cloudprice.genexxis.com",
+    "rank": 66,
+    "reason": "requires_input: query: model"
+   },
+   {
+    "host": "api.boonprotocol.com",
+    "rank": 67,
+    "reason": "no_402: HTTP 404 on GET"
+   },
+   {
+    "host": "stationfx.com",
+    "rank": 69,
+    "reason": "requires_input: method POST/PUT/PATCH"
+   },
+   {
+    "host": "sift.srv1996466.hstgr.cloud",
+    "rank": 72,
+    "reason": "requires_input: query: q"
+   },
+   {
+    "host": "api.venice.ai",
+    "rank": 73,
+    "reason": "cheapest price $5 > $0.01"
+   },
+   {
+    "host": "apexfaucet.xyz",
+    "rank": 74,
+    "reason": "requires_input: query: from"
+   },
+   {
+    "host": "x402scan.com",
+    "rank": 76,
+    "reason": "requires_input: query: page, page_size, sort_by"
+   },
+   {
+    "host": "api.solenrich.com",
+    "rank": 78,
+    "reason": "no_402: HTTP 404 on GET"
+   },
+   {
+    "host": "x402.forgemesh.io",
+    "rank": 79,
+    "reason": "requires_input: method POST"
+   },
+   {
+    "host": "grokzilla.shop",
+    "rank": 80,
+    "reason": "requires_input: method POST/PUT/PATCH"
+   },
+   {
+    "host": "cultos.dev",
+    "rank": 81,
+    "reason": "no_402: HTTP 404 on GET"
+   },
+   {
+    "host": "squeezeos-api.onrender.com",
+    "rank": 82,
+    "reason": "requires_input: query: q"
+   },
+   {
+    "host": "stability-ai.x402.paywithlocus.com",
+    "rank": 84,
+    "reason": "no_402: HTTP 404 on GET"
+   },
+   {
+    "host": "domaincheck.agentgate.workers.dev",
+    "rank": 85,
+    "reason": "requires_input: query: email"
+   },
+   {
+    "host": "x402.onchainexpat.com",
+    "rank": 86,
+    "reason": "no_402: HTTP 405 on GET"
+   },
+   {
+    "host": "agent-utility-network.frosty-sound-4560.workers.dev",
+    "rank": 87,
+    "reason": "no_402: HTTP 404 on GET"
+   },
+   {
+    "host": "sovereign-x402.fly.dev",
+    "rank": 92,
+    "reason": "no_402: HTTP 404 on GET"
+   },
+   {
+    "host": "api.vextorium.com",
+    "rank": 94,
+    "reason": "requires_input: method POST"
+   },
+   {
+    "host": "x402.ottoai.services",
+    "rank": 95,
+    "reason": "no_402: HTTP 405 on GET"
+   },
+   {
+    "host": "slamai.dev",
+    "rank": 97,
+    "reason": "no_402: HTTP 502 on GET"
+   },
+   {
+    "host": "cornhusk-rely-preformed.ngrok-free.dev",
+    "rank": 98,
+    "reason": "no_402: HTTP 404 on GET"
+   },
+   {
+    "host": "afriref.dev",
+    "rank": 100,
+    "reason": "no_402: HTTP 405 on GET"
+   },
+   {
+    "host": "x402.apidirect.io",
+    "rank": 101,
+    "reason": "requires_input: query: url"
+   },
+   {
+    "host": "x402-api.vybenetwork.xyz",
+    "rank": 102,
+    "reason": "cheapest price $0.012 > $0.01"
+   },
+   {
+    "host": "token-verdict-production.up.railway.app",
+    "rank": 103,
+    "reason": "cheapest price $0.02 > $0.01"
+   },
+   {
+    "host": "laso.finance",
+    "rank": 104,
+    "reason": "cheapest price $5 > $0.01"
+   },
+   {
+    "host": "api.macaroonnetwork.com",
+    "rank": 105,
+    "reason": "requires_input: method POST/PUT/PATCH"
+   },
+   {
+    "host": "coord.taifoon.dev",
+    "rank": 108,
+    "reason": "requires_input: method POST/PUT/PATCH"
+   },
+   {
+    "host": "google-patents.use.x402atlas.com",
+    "rank": 111,
+    "reason": "cheapest price $0.02 > $0.01"
+   },
+   {
+    "host": "x402.telnyx.com",
+    "rank": 112,
+    "reason": "no_402: HTTP 404 on GET"
+   },
+   {
+    "host": "tienda.textokit.store",
+    "rank": 115,
+    "reason": "requires_input: method POST"
+   },
+   {
+    "host": "x402.asterpay.io",
+    "rank": 116,
+    "reason": "no_402: HTTP 404 on GET"
+   },
+   {
+    "host": "agi.apify.com",
+    "rank": 117,
+    "reason": "cheapest price $1 > $0.01"
+   },
+   {
+    "host": "hubvibe-io.com",
+    "rank": 119,
+    "reason": "cheapest price $0.02 > $0.01"
+   },
+   {
+    "host": "cycle.lonestaroracle.xyz",
+    "rank": 121,
+    "reason": "cheapest price $0.05 > $0.01"
+   },
+   {
+    "host": "api.messari.io",
+    "rank": 122,
+    "reason": "cheapest price $0.1 > $0.01"
+   },
+   {
+    "host": "api.agentmercantile.com",
+    "rank": 123,
+    "reason": "no_402: HTTP 404 on GET"
+   },
+   {
+    "host": "minifetch.com",
+    "rank": 124,
+    "reason": "requires_input: query: url"
+   },
+   {
+    "host": "rdap-api-production.up.railway.app",
+    "rank": 125,
+    "reason": "no_402: HTTP 404 on GET"
+   },
+   {
+    "host": "ads.apitoll.cloud",
+    "rank": 126,
+    "reason": "cheapest price $0.03 > $0.01"
+   },
+   {
+    "host": "dns.payapi.market",
+    "rank": 127,
+    "reason": "requires_input: method POST/PUT/PATCH"
+   },
+   {
+    "host": "fileshareforagents.online",
+    "rank": 128,
+    "reason": "no_402: HTTP 405 on GET"
+   },
+   {
+    "host": "llmrt-companion.manhliemcn4euwlu.workers.dev",
+    "rank": 130,
+    "reason": "no_402: HTTP 530 on GET"
+   },
+   {
+    "host": "agentproof-base.softcreek2.chatgpt.site",
+    "rank": 131,
+    "reason": "requires_input: query: address"
+   },
+   {
+    "host": "apiacre.com",
+    "rank": 132,
+    "reason": "no_402: HTTP 405 on GET"
+   },
+   {
+    "host": "api.sirenic.eu",
+    "rank": 135,
+    "reason": "no Solana/Base USDC endpoint in catalog"
+   },
+   {
+    "host": "docs.tanod.dev",
+    "rank": 136,
+    "reason": "requires_input: method POST"
+   },
+   {
+    "host": "agenttoll.dev",
+    "rank": 137,
+    "reason": "no_402: HTTP 200 on GET"
+   },
+   {
+    "host": "apiv2.laevitas.ch",
+    "rank": 138,
+    "reason": "cheapest price $0.1 > $0.01"
+   },
+   {
+    "host": "travel.brij.fi",
+    "rank": 139,
+    "reason": "no_402: HTTP 405 on GET"
+   },
+   {
+    "host": "api.munition.io",
+    "rank": 140,
+    "reason": "no_402: HTTP 404 on GET"
+   },
+   {
+    "host": "x402-farm.vercel.app",
+    "rank": 141,
+    "reason": "no_402: HTTP 410 on GET"
+   },
+   {
+    "host": "x402.agentindex.world",
+    "rank": 147,
+    "reason": "requires_input: method POST"
+   },
+   {
+    "host": "ari001.tailb4ac3a.ts.net",
+    "rank": 148,
+    "reason": "no_402: HTTP 410 on GET"
+   },
+   {
+    "host": "kari.mayim-mayim.com",
+    "rank": 149,
+    "reason": "no_402: HTTP 200 on GET"
+   },
+   {
+    "host": "tabularium.matt-3e0.workers.dev",
+    "rank": 150,
+    "reason": "no Solana/Base USDC endpoint in catalog"
+   },
+   {
+    "host": "tolca.tonbot.ca",
+    "rank": 151,
+    "reason": "no_402: HTTP 405 on GET"
+   },
+   {
+    "host": "ask.singitai.app",
+    "rank": 152,
+    "reason": "requires_input: method POST"
+   },
+   {
+    "host": "gogeta2-u35175.vm.elestio.app",
+    "rank": 153,
+    "reason": "requires_input: query: token"
+   },
+   {
+    "host": "api.getanyapi.com",
+    "rank": 154,
+    "reason": "no_402: HTTP 401 on GET"
+   },
+   {
+    "host": "api.arkm.com",
+    "rank": 156,
+    "reason": "cheapest price $0.2 > $0.01"
+   },
+   {
+    "host": "api.lumitrades.io",
+    "rank": 157,
+    "reason": "no_402: HTTP 410 on GET"
+   },
+   {
+    "host": "api.relaystation.ai",
+    "rank": 158,
+    "reason": "no Solana/Base USDC endpoint in catalog"
+   },
+   {
+    "host": "x402-agent-api.onrender.com",
+    "rank": 159,
+    "reason": "no_402: HTTP 404 on GET"
+   },
+   {
+    "host": "asin402.com",
+    "rank": 160,
+    "reason": "requires_input: query: selection"
+   },
+   {
+    "host": "fractalai.net.co",
+    "rank": 161,
+    "reason": "requires_input: method POST/PUT/PATCH"
+   },
+   {
+    "host": "agent-web-tools.agent-web-tools.workers.dev",
+    "rank": 162,
+    "reason": "requires_input: query: url"
+   },
+   {
+    "host": "deepai.pay.zeroclick.io",
+    "rank": 163,
+    "reason": "no_402: HTTP 401 on GET"
+   },
+   {
+    "host": "stablestudio.dev",
+    "rank": 164,
+    "reason": "no_402: HTTP 405 on GET"
+   },
+   {
+    "host": "tablepulse.vercel.app",
+    "rank": 165,
+    "reason": "cheapest price $0.08 > $0.01"
+   },
+   {
+    "host": "api.eckari.com",
+    "rank": 166,
+    "reason": "requires_input: query: tracking_number"
+   },
+   {
+    "host": "domain-age-checker.underscoredone.com",
+    "rank": 168,
+    "reason": "requires_input: method POST/PUT/PATCH"
+   },
+   {
+    "host": "api.interzoid.com",
+    "rank": 169,
+    "reason": "requires_input: query: name"
+   },
+   {
+    "host": "api.orioncmd.com",
+    "rank": 170,
+    "reason": "requires_input: query: domain"
+   },
+   {
+    "host": "rubric-protocol.com",
+    "rank": 172,
+    "reason": "requires_input: method POST"
+   },
+   {
+    "host": "pjm-nowcast-production.up.railway.app",
+    "rank": 173,
+    "reason": "cheapest price $0.02 > $0.01"
+   },
+   {
+    "host": "api.blockchain.info",
+    "rank": 174,
+    "reason": "requires_input: method POST"
+   },
+   {
+    "host": "pool.linkrra.com",
+    "rank": 175,
+    "reason": "requires_input: method POST"
+   },
+   {
+    "host": "clink-lithium-vault.fly.dev",
+    "rank": 176,
+    "reason": "no_402: HTTP 503 on GET"
+   },
+   {
+    "host": "blockchainiq.co",
+    "rank": 178,
+    "reason": "cheapest price $0.02 > $0.01"
+   },
+   {
+    "host": "x402-social-hub.vercel.app",
+    "rank": 179,
+    "reason": "cheapest price $0.05 > $0.01"
+   },
+   {
+    "host": "api.relayshield.net",
+    "rank": 181,
+    "reason": "cheapest price $0.05 > $0.01"
+   },
+   {
+    "host": "aizamon.com",
+    "rank": 182,
+    "reason": "requires_input: query: q"
+   },
+   {
+    "host": "x402.botsmith.dev",
+    "rank": 186,
+    "reason": "cheapest price $0.02 > $0.01"
+   },
+   {
+    "host": "pulse.scrapemole.workers.dev",
+    "rank": 189,
+    "reason": "requires_input: query: q"
+   },
+   {
+    "host": "api.3route.io",
+    "rank": 191,
+    "reason": "no Solana/Base USDC endpoint in catalog"
    }
   ],
   "top_candidates": [
@@ -133600,44 +134627,943 @@
     ],
     "tx_count": 563,
     "rank": 50
-   }
-  ],
-  "random_candidates": [
+   },
    {
-    "host": "jyluv-37-255-229-96.run.pinggy-free.link",
-    "url": "https://jyluv-37-255-229-96.run.pinggy-free.link/evidence",
-    "endpoint_id": "3983ff5c09c57c2b",
+    "host": "x402-niche-briefs.fly.dev",
+    "url": "https://x402-niche-briefs.fly.dev/v1/listing-quality-teaser",
+    "endpoint_id": "59c810b7f393bbf7",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 542,
+    "rank": 51
+   },
+   {
+    "host": "intel.degenscan.io",
+    "url": "https://intel.degenscan.io/v1/pulse",
+    "endpoint_id": "b778804df0321fdc",
+    "price_usd": 0.001,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 468,
+    "rank": 52
+   },
+   {
+    "host": "bess-x402.onrender.com",
+    "url": "https://bess-x402.onrender.com/v1/chain/gas",
+    "endpoint_id": "07aee88fde7d80b0",
+    "price_usd": 0.002,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 464,
+    "rank": 53
+   },
+   {
+    "host": "defillama.use.x402atlas.com",
+    "url": "https://defillama.use.x402atlas.com/tvl",
+    "endpoint_id": "4af36917daa4557f",
     "price_usd": 0.005,
     "networks": [
-     "Base"
-    ]
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 446,
+    "rank": 54
    },
    {
-    "host": "tyeox-2a03-4000-60-9b5-d48c-d9ff-feb2-1dca.free.pinggy.net",
-    "url": "https://tyeox-2a03-4000-60-9b5-d48c-d9ff-feb2-1dca.free.pinggy.net/x402/tokeninfo",
-    "endpoint_id": "1ae322e963e35661",
-    "price_usd": 0.008062,
+    "host": "x402.clashofcoins.com",
+    "url": "https://x402.clashofcoins.com/x402/report-tx",
+    "endpoint_id": "7b4d5f5d31f14412",
+    "price_usd": 0.001,
     "networks": [
      "Base"
-    ]
+    ],
+    "tx_count": 402,
+    "rank": 55
    },
    {
-    "host": "stockcheck-mainnet-production.up.railway.app",
-    "url": "https://stockcheck-mainnet-production.up.railway.app/stock",
-    "endpoint_id": "5526d760f3c520cc",
+    "host": "agentsvc.io",
+    "url": "https://agentsvc.io/api/v1/proxy/btc-tx",
+    "endpoint_id": "53fcd0f278c4aff4",
+    "price_usd": 0.002,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 400,
+    "rank": 56
+   },
+   {
+    "host": "xintel.aispace.bot",
+    "url": "https://xintel.aispace.bot/api/intel/reports",
+    "endpoint_id": "4f2948fc48447ff1",
     "price_usd": 0.01,
     "networks": [
      "Base"
-    ]
+    ],
+    "tx_count": 381,
+    "rank": 57
    },
    {
-    "host": "relayzero.ai",
-    "url": "https://relayzero.ai/v1/benchmarks/rugslayer/verify",
-    "endpoint_id": "24b611264d275fcf",
+    "host": "api.gondola-ai.com",
+    "url": "https://api.gondola-ai.com/v1/messages",
+    "endpoint_id": "64cea63949e20c61",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 360,
+    "rank": 58
+   },
+   {
+    "host": "api.exa.ai",
+    "url": "https://api.exa.ai/search",
+    "endpoint_id": "b139b9bf8f07e4f6",
+    "price_usd": 0.007,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 359,
+    "rank": 59
+   },
+   {
+    "host": "api.glianalabs.com",
+    "url": "https://api.glianalabs.com/x402/jev",
+    "endpoint_id": "f56d1898df8b4ff5",
+    "price_usd": 0.002,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 351,
+    "rank": 60
+   },
+   {
+    "host": "api.agentstools.dev",
+    "url": "https://api.agentstools.dev/search",
+    "endpoint_id": "d7f78884fae5ed52",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 351,
+    "rank": 61
+   },
+   {
+    "host": "tb2s28fm0h8dkq2t.68r.lambda-web.us-east-1.on.aws",
+    "url": "https://tb2s28fm0h8dkq2t.68r.lambda-web.us-east-1.on.aws/v1/market/new",
+    "endpoint_id": "8b602a37b2c01d8b",
+    "price_usd": 0.002,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 348,
+    "rank": 63
+   },
+   {
+    "host": "money-reactor.makar52nn2016.workers.dev",
+    "url": "https://money-reactor.makar52nn2016.workers.dev/api/uuid",
+    "endpoint_id": "741520792e6e8d5b",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 348,
+    "rank": 64
+   },
+   {
+    "host": "api.bitrefill.com",
+    "url": "https://api.bitrefill.com/x402/checkout/info",
+    "endpoint_id": "b975bbbe840ff50e",
+    "price_usd": 0.001,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 329,
+    "rank": 65
+   },
+   {
+    "host": "cloudprice.genexxis.com",
+    "url": "https://cloudprice.genexxis.com/gpu",
+    "endpoint_id": "23807f5abe579127",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 324,
+    "rank": 66
+   },
+   {
+    "host": "api.boonprotocol.com",
+    "url": "https://api.boonprotocol.com/api/v1/score",
+    "endpoint_id": "33e118d12933d5c7",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 321,
+    "rank": 67
+   },
+   {
+    "host": "api.jarvisclaw.ai",
+    "url": "https://api.jarvisclaw.ai/v1/marketplace/markets/candles",
+    "endpoint_id": "75564241bfc70389",
+    "price_usd": 0.0011,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 320,
+    "rank": 68
+   },
+   {
+    "host": "stationfx.com",
+    "url": "https://stationfx.com/util/convert/json-to-toon",
+    "endpoint_id": "3178d10ea3218478",
+    "price_usd": 0.005,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 312,
+    "rank": 69
+   },
+   {
+    "host": "straits.live",
+    "url": "https://straits.live/api/premium/brief",
+    "endpoint_id": "ec36aee15d75cb2a",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 304,
+    "rank": 70
+   },
+   {
+    "host": "quantagentshop.com",
+    "url": "https://quantagentshop.com/v1/qr",
+    "endpoint_id": "41fcf471f38be9f6",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 296,
+    "rank": 71
+   },
+   {
+    "host": "sift.srv1996466.hstgr.cloud",
+    "url": "https://sift.srv1996466.hstgr.cloud/v1/crypto/ens",
+    "endpoint_id": "48c8111580c5c1c9",
+    "price_usd": 0.001,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 293,
+    "rank": 72
+   },
+   {
+    "host": "apexfaucet.xyz",
+    "url": "https://apexfaucet.xyz/api/x402/fx-rate",
+    "endpoint_id": "df468e29765865ce",
+    "price_usd": 0.001,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 291,
+    "rank": 74
+   },
+   {
+    "host": "crypto.apitoll.cloud",
+    "url": "https://crypto.apitoll.cloud/v1/crypto/dex",
+    "endpoint_id": "6362f6fef6f210de",
+    "price_usd": 0.001,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 285,
+    "rank": 75
+   },
+   {
+    "host": "x402scan.com",
+    "url": "https://x402scan.com/api/x402/merchants",
+    "endpoint_id": "2cda36bd4569f712",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 283,
+    "rank": 76
+   },
+   {
+    "host": "onchaincheck.dev",
+    "url": "https://onchaincheck.dev/x402/ping",
+    "endpoint_id": "59fa9e2e48984e7a",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 282,
+    "rank": 77
+   },
+   {
+    "host": "api.solenrich.com",
+    "url": "https://api.solenrich.com/entrypoints/parse-transaction/invoke",
+    "endpoint_id": "73eb741b9ee3e6fd",
+    "price_usd": 0.001,
+    "networks": [
+     "Solana",
+     "Base"
+    ],
+    "tx_count": 277,
+    "rank": 78
+   },
+   {
+    "host": "x402.forgemesh.io",
+    "url": "https://x402.forgemesh.io/daily",
+    "endpoint_id": "85a57af5ee9b3175",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 258,
+    "rank": 79
+   },
+   {
+    "host": "grokzilla.shop",
+    "url": "https://grokzilla.shop/api/skills/token-price",
+    "endpoint_id": "30415b69178711b5",
+    "price_usd": 0.002,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 251,
+    "rank": 80
+   },
+   {
+    "host": "cultos.dev",
+    "url": "https://www.cultos.dev/services/x402-lens",
+    "endpoint_id": "d8f4ccdf1193b08c",
+    "price_usd": 0.001,
+    "networks": [
+     "Solana",
+     "Base"
+    ],
+    "tx_count": 251,
+    "rank": 81
+   },
+   {
+    "host": "squeezeos-api.onrender.com",
+    "url": "https://squeezeos-api.onrender.com/v1/odds",
+    "endpoint_id": "f938a4c80879127f",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 250,
+    "rank": 82
+   },
+   {
+    "host": "api.myceliasignal.com",
+    "url": "https://api.myceliasignal.com/sho/oracle/btceur",
+    "endpoint_id": "6b20ad1e068c4823",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 247,
+    "rank": 83
+   },
+   {
+    "host": "stability-ai.x402.paywithlocus.com",
+    "url": "https://stability-ai.x402.paywithlocus.com/stability-ai/result",
+    "endpoint_id": "9f3ef7a28f166986",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 245,
+    "rank": 84
+   },
+   {
+    "host": "domaincheck.agentgate.workers.dev",
+    "url": "https://domaincheck.agentgate.workers.dev/v1/email",
+    "endpoint_id": "68a7bd15fce30d90",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 240,
+    "rank": 85
+   },
+   {
+    "host": "x402.onchainexpat.com",
+    "url": "https://x402.onchainexpat.com/api/x402-proxy/stats",
+    "endpoint_id": "025e13296948cdad",
+    "price_usd": 0.01,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 228,
+    "rank": 86
+   },
+   {
+    "host": "agent-utility-network.frosty-sound-4560.workers.dev",
+    "url": "https://agent-utility-network.frosty-sound-4560.workers.dev/v1/paid/url-parse",
+    "endpoint_id": "2a1fde5364a54bdd",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 203,
+    "rank": 87
+   },
+   {
+    "host": "api.api-agent-ia.ch",
+    "url": "https://api.api-agent-ia.ch/gaz",
+    "endpoint_id": "fcbd7fc1afff0a8a",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 202,
+    "rank": 88
+   },
+   {
+    "host": "defi.hugen.tokyo",
+    "url": "https://defi.hugen.tokyo/defi/chains",
+    "endpoint_id": "8dd351db9f4736c6",
+    "price_usd": 0.005,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 197,
+    "rank": 89
+   },
+   {
+    "host": "workspace-x402-paywall.onrender.com",
+    "url": "https://workspace-x402-paywall.onrender.com/utils/ip",
+    "endpoint_id": "f807a914ef07c99e",
+    "price_usd": 0.001,
+    "networks": [
+     "Solana",
+     "Base"
+    ],
+    "tx_count": 197,
+    "rank": 90
+   },
+   {
+    "host": "codetrack-x402-api-production.up.railway.app",
+    "url": "https://codetrack-x402-api-production.up.railway.app/leaderboard",
+    "endpoint_id": "75031d2f2cce8ae4",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 195,
+    "rank": 91
+   },
+   {
+    "host": "sovereign-x402.fly.dev",
+    "url": "https://sovereign-x402.fly.dev/premium",
+    "endpoint_id": "adb4d48ac911c7c4",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 192,
+    "rank": 92
+   },
+   {
+    "host": "polynews.news",
+    "url": "https://polynews.news/api/v1/feed",
+    "endpoint_id": "8d0351d18c167b0e",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 192,
+    "rank": 93
+   },
+   {
+    "host": "api.vextorium.com",
+    "url": "https://api.vextorium.com/v1/ping",
+    "endpoint_id": "6432a9442a4647de",
+    "price_usd": 0.001,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 191,
+    "rank": 94
+   },
+   {
+    "host": "x402.ottoai.services",
+    "url": "https://x402.ottoai.services/feedback",
+    "endpoint_id": "4ff36d3e98d74f67",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 189,
+    "rank": 95
+   },
+   {
+    "host": "time.24klabs.ai",
+    "url": "https://time.24klabs.ai/time",
+    "endpoint_id": "a9d14d9c5b1cf935",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 189,
+    "rank": 96
+   },
+   {
+    "host": "slamai.dev",
+    "url": "https://slamai.dev/chain/transfers",
+    "endpoint_id": "76806796d8f86c0d",
+    "price_usd": 0.00025,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 187,
+    "rank": 97
+   },
+   {
+    "host": "cornhusk-rely-preformed.ngrok-free.dev",
+    "url": "https://cornhusk-rely-preformed.ngrok-free.dev/v1/lookup/coin",
+    "endpoint_id": "0997f446038c61af",
+    "price_usd": 0.002,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 186,
+    "rank": 98
+   },
+   {
+    "host": "twitter.use.x402atlas.com",
+    "url": "https://twitter.use.x402atlas.com/search",
+    "endpoint_id": "86f25ede9bb55659",
+    "price_usd": 0.005,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 185,
+    "rank": 99
+   },
+   {
+    "host": "afriref.dev",
+    "url": "https://afriref.dev/v1/answers/working-days",
+    "endpoint_id": "085cf1a4ed4478c4",
+    "price_usd": 0.002,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 184,
+    "rank": 100
+   },
+   {
+    "host": "x402.apidirect.io",
+    "url": "https://x402.apidirect.io/v1/linkedin/job",
+    "endpoint_id": "13ed723af9bfa0f5",
+    "price_usd": 0.003,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 184,
+    "rank": 101
+   },
+   {
+    "host": "api.macaroonnetwork.com",
+    "url": "https://api.macaroonnetwork.com/execute/polymathica-archive-statistics-v1",
+    "endpoint_id": "9fdba65a204d2d4a",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 178,
+    "rank": 105
+   },
+   {
+    "host": "x402helper.xyz",
+    "url": "https://x402helper.xyz/test-billing",
+    "endpoint_id": "d84f5b4937dac6b7",
+    "price_usd": 0.001,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 177,
+    "rank": 106
+   },
+   {
+    "host": "402-server.pinata-marketing-enterprise.workers.dev",
+    "url": "https://402-server.pinata-marketing-enterprise.workers.dev/v1/retrieve/private/bafkreig64zjue3vnfqejtq2lmzdhgbbsin7gc7dxdebw3exy4ysjkoq62q",
+    "endpoint_id": "afd13d8c060ddd80",
+    "price_usd": 0.0001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 175,
+    "rank": 107
+   },
+   {
+    "host": "coord.taifoon.dev",
+    "url": "https://coord.taifoon.dev/v1/x402/class/inference.metered",
+    "endpoint_id": "3ee75ed80a046f92",
+    "price_usd": 0.001,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 173,
+    "rank": 108
+   },
+   {
+    "host": "company-x402.tbs-digital.com",
+    "url": "https://company-x402.tbs-digital.com/company/lookup",
+    "endpoint_id": "96be5a312e90dfc2",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 172,
+    "rank": 109
+   },
+   {
+    "host": "api.sitecheck-api.workers.dev",
+    "url": "https://api.sitecheck-api.workers.dev/api/fx",
+    "endpoint_id": "c4cbec8956fdf58c",
+    "price_usd": 0.002,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 172,
+    "rank": 110
+   },
+   {
+    "host": "x402.telnyx.com",
+    "url": "https://x402.telnyx.com/v1/chat/completions/_t/gemma-2b",
+    "endpoint_id": "7b682fc500a16c9a",
+    "price_usd": 0.002,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 163,
+    "rank": 112
+   },
+   {
+    "host": "agent-tools.jbarkules.workers.dev",
+    "url": "https://agent-tools.jbarkules.workers.dev/v1/fx/rates",
+    "endpoint_id": "59d1784ede4a77d0",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 162,
+    "rank": 113
+   },
+   {
+    "host": "lion-x402-bible.lionmaster-operations.workers.dev",
+    "url": "https://lion-x402-bible.lionmaster-operations.workers.dev/api/x402/composite-bundle-json",
+    "endpoint_id": "abb84cc4fdfa15ef",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 162,
+    "rank": 114
+   },
+   {
+    "host": "tienda.textokit.store",
+    "url": "https://tienda.textokit.store/api/cuit-ar",
+    "endpoint_id": "6f9729863277c36b",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 160,
+    "rank": 115
+   },
+   {
+    "host": "x402.asterpay.io",
+    "url": "https://x402.asterpay.io/v2/x402/ai/fact-check",
+    "endpoint_id": "963991f9a5ad6bc8",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 160,
+    "rank": 116
+   },
+   {
+    "host": "fetcher.sh",
+    "url": "https://fetcher.sh/api/reddit/posts/hot",
+    "endpoint_id": "1e3a42bbbf9d7ba9",
+    "price_usd": 0.002,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 157,
+    "rank": 118
+   },
+   {
+    "host": "x402.slinkylayer.ai",
+    "url": "https://x402.slinkylayer.ai/api/v1/proxy/7ef83efe-de6e-4bcd-8d4e-15e19b64b678/top_holders",
+    "endpoint_id": "3e98380633e61f3f",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 152,
+    "rank": 120
+   },
+   {
+    "host": "api.agentmercantile.com",
+    "url": "https://api.agentmercantile.com/v1/web-change-snapshot",
+    "endpoint_id": "273dfb30bdf6fdfa",
+    "price_usd": 0.005,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 151,
+    "rank": 123
+   },
+   {
+    "host": "minifetch.com",
+    "url": "https://minifetch.com/api/v1/x402/extract/url-preview",
+    "endpoint_id": "5395c561b43fc973",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 150,
+    "rank": 124
+   },
+   {
+    "host": "rdap-api-production.up.railway.app",
+    "url": "https://rdap-api-production.up.railway.app/check",
+    "endpoint_id": "89bbbcf9557cbfd0",
+    "price_usd": 0.005,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 149,
+    "rank": 125
+   },
+   {
+    "host": "dns.payapi.market",
+    "url": "https://dns.payapi.market/dns/ssl",
+    "endpoint_id": "8eff27dc2db93688",
+    "price_usd": 0.002,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 144,
+    "rank": 127
+   },
+   {
+    "host": "fileshareforagents.online",
+    "url": "https://fileshareforagents.online/v1/items",
+    "endpoint_id": "e8ce94a5a87977aa",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 142,
+    "rank": 128
+   },
+   {
+    "host": "api.geekvault.dev",
+    "url": "https://api.geekvault.dev/dev-tools/v1/hex",
+    "endpoint_id": "e65a47232a6802ac",
+    "price_usd": 0.002,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 141,
+    "rank": 129
+   },
+   {
+    "host": "llmrt-companion.manhliemcn4euwlu.workers.dev",
+    "url": "https://llmrt-companion.manhliemcn4euwlu.workers.dev/pro/micro-402",
+    "endpoint_id": "122881eb541768f7",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 139,
+    "rank": 130
+   },
+   {
+    "host": "agentproof-base.softcreek2.chatgpt.site",
+    "url": "https://agentproof-base.softcreek2.chatgpt.site/v1/base/token",
+    "endpoint_id": "285cfbfd9e9f8cf9",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 139,
+    "rank": 131
+   },
+   {
+    "host": "apiacre.com",
+    "url": "https://apiacre.com/v1/data/current-weather",
+    "endpoint_id": "5ed3ce0c40b83c85",
+    "price_usd": 0.001,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 139,
+    "rank": 132
+   },
+   {
+    "host": "api.webbersites.com",
+    "url": "https://api.webbersites.com/api/geo",
+    "endpoint_id": "b3c4dc28ee6e8c47",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 139,
+    "rank": 133
+   },
+   {
+    "host": "api.agentweather.io",
+    "url": "https://api.agentweather.io/v1/pulse/storm",
+    "endpoint_id": "a2972b2d97c23bec",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 137,
+    "rank": 134
+   },
+   {
+    "host": "docs.tanod.dev",
+    "url": "https://docs.tanod.dev/v1/pdf",
+    "endpoint_id": "78a62092f1daa86a",
+    "price_usd": 0.005,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 135,
+    "rank": 136
+   },
+   {
+    "host": "agenttoll.dev",
+    "url": "https://agenttoll.dev/paid/osint/timezone",
+    "endpoint_id": "9149fb27998f1ebf",
+    "price_usd": 0.01,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 135,
+    "rank": 137
+   },
+   {
+    "host": "travel.brij.fi",
+    "url": "https://travel.brij.fi/air/book",
+    "endpoint_id": "ad50fbdcb6f275dc",
     "price_usd": 0.001,
     "networks": [
      "Solana"
-    ]
+    ],
+    "tx_count": 131,
+    "rank": 139
+   },
+   {
+    "host": "api.munition.io",
+    "url": "https://api.munition.io/v1/airports/search",
+    "endpoint_id": "03ea0714688f3c36",
+    "price_usd": 0.001,
+    "networks": [
+     "Solana",
+     "Base"
+    ],
+    "tx_count": 128,
+    "rank": 140
+   },
+   {
+    "host": "x402-farm.vercel.app",
+    "url": "https://x402-farm.vercel.app/v1/dns",
+    "endpoint_id": "bde084098df74bb9",
+    "price_usd": 0.005,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 118,
+    "rank": 141
+   },
+   {
+    "host": "golf-evm-math.x402-evm-math.workers.dev",
+    "url": "https://golf-evm-math.x402-evm-math.workers.dev/evm/address",
+    "endpoint_id": "249376586fcd4726",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 117,
+    "rank": 142
+   },
+   {
+    "host": "api.marketintelligenceapi.com",
+    "url": "https://api.marketintelligenceapi.com/api/v1/markets/gas-price",
+    "endpoint_id": "269c16d38db33335",
+    "price_usd": 0.001,
+    "networks": [
+     "Solana",
+     "Base"
+    ],
+    "tx_count": 117,
+    "rank": 143
+   },
+   {
+    "host": "apexrunner.ai",
+    "url": "https://apexrunner.ai/signals/fg-micro",
+    "endpoint_id": "53b2b2c1659c9720",
+    "price_usd": 0.007,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 117,
+    "rank": 144
+   },
+   {
+    "host": "api.signalis.dev",
+    "url": "https://api.signalis.dev/v1/pulse/narratives",
+    "endpoint_id": "847849cf5361c195",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 116,
+    "rank": 145
+   },
+   {
+    "host": "crypto-market-data.zafermemon87.workers.dev",
+    "url": "https://crypto-market-data.zafermemon87.workers.dev/v1/news",
+    "endpoint_id": "96483af6a66f5956",
+    "price_usd": 0.003,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 109,
+    "rank": 146
    },
    {
     "host": "x402.agentindex.world",
@@ -133646,219 +135572,522 @@
     "price_usd": 0.001,
     "networks": [
      "Base"
-    ]
+    ],
+    "tx_count": 108,
+    "rank": 147
    },
    {
-    "host": "aa43d1017906a8.lhr.life",
-    "url": "https://aa43d1017906a8.lhr.life/v1/forecast/btc",
-    "endpoint_id": "8a06ad0a3b47bd3c",
+    "host": "ari001.tailb4ac3a.ts.net",
+    "url": "https://ari001.tailb4ac3a.ts.net/v1/ventures/x402_chain_reads_v1/eth_chainid",
+    "endpoint_id": "2bebcd6febf88ab5",
+    "price_usd": 0.002,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 104,
+    "rank": 148
+   },
+   {
+    "host": "kari.mayim-mayim.com",
+    "url": "https://kari.mayim-mayim.com/api/bazaar/omikuji",
+    "endpoint_id": "18e4f42779f2b769",
     "price_usd": 0.01,
     "networks": [
      "Base"
-    ]
+    ],
+    "tx_count": 104,
+    "rank": 149
    },
    {
-    "host": "x402repo.vercel.app",
-    "url": "https://x402repo.vercel.app/api/chat",
-    "endpoint_id": "4a86a9a546a3a000",
+    "host": "tolca.tonbot.ca",
+    "url": "https://tolca.tonbot.ca/v1/pkg-meta",
+    "endpoint_id": "88c178d5c972256e",
+    "price_usd": 0.005,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 102,
+    "rank": 151
+   },
+   {
+    "host": "ask.singitai.app",
+    "url": "https://ask.singitai.app/v1/chat/completions",
+    "endpoint_id": "24dc7817e6b1f05f",
+    "price_usd": 0.003,
+    "networks": [
+     "Solana",
+     "Base"
+    ],
+    "tx_count": 102,
+    "rank": 152
+   },
+   {
+    "host": "gogeta2-u35175.vm.elestio.app",
+    "url": "https://gogeta2-u35175.vm.elestio.app/agents/v1/escrow/verify",
+    "endpoint_id": "64b56b3a1130ecba",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 102,
+    "rank": 153
+   },
+   {
+    "host": "api.getanyapi.com",
+    "url": "https://api.getanyapi.com/v1/run/web.map",
+    "endpoint_id": "70d738414afc97e1",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 100,
+    "rank": 154
+   },
+   {
+    "host": "toll402.dev",
+    "url": "https://toll402.dev/v1/fx",
+    "endpoint_id": "a5a77b62d6e46555",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 99,
+    "rank": 155
+   },
+   {
+    "host": "api.lumitrades.io",
+    "url": "https://api.lumitrades.io/v1/funding",
+    "endpoint_id": "2b723a4c7dec83f1",
+    "price_usd": 0.003,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 98,
+    "rank": 157
+   },
+   {
+    "host": "x402-agent-api.onrender.com",
+    "url": "https://x402-agent-api.onrender.com/api/v1/email-verify",
+    "endpoint_id": "dd7333de5b19cce6",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 97,
+    "rank": 159
+   },
+   {
+    "host": "asin402.com",
+    "url": "https://asin402.com/api/data/deals",
+    "endpoint_id": "f5074ee4e8e774db",
+    "price_usd": 0.005,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 94,
+    "rank": 160
+   },
+   {
+    "host": "fractalai.net.co",
+    "url": "https://fractalai.net.co/api/x402/witness",
+    "endpoint_id": "df63500c6c9eeae5",
+    "price_usd": 0.005,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 93,
+    "rank": 161
+   },
+   {
+    "host": "agent-web-tools.agent-web-tools.workers.dev",
+    "url": "https://agent-web-tools.agent-web-tools.workers.dev/v1/check",
+    "endpoint_id": "7887893a2f5e3350",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 93,
+    "rank": 162
+   },
+   {
+    "host": "deepai.pay.zeroclick.io",
+    "url": "https://deepai.pay.zeroclick.io/api/text2img",
+    "endpoint_id": "559977b4e33349bf",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 92,
+    "rank": 163
+   },
+   {
+    "host": "stablestudio.dev",
+    "url": "https://stablestudio.dev/api/upload",
+    "endpoint_id": "12b3834e5a7312ac",
+    "price_usd": 0.01,
+    "networks": [
+     "Solana",
+     "Base"
+    ],
+    "tx_count": 89,
+    "rank": 164
+   },
+   {
+    "host": "api.eckari.com",
+    "url": "https://api.eckari.com/v1/parcels/detect-carrier",
+    "endpoint_id": "6695a47a956880cd",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 88,
+    "rank": 166
+   },
+   {
+    "host": "api.printmoneylab.com",
+    "url": "https://api.printmoneylab.com/api/v1/fx-rate",
+    "endpoint_id": "969bfe6d4df86ed4",
+    "price_usd": 0.001,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 87,
+    "rank": 167
+   },
+   {
+    "host": "domain-age-checker.underscoredone.com",
+    "url": "https://domain-age-checker.underscoredone.com/lookup",
+    "endpoint_id": "d988a3011a4ea98b",
+    "price_usd": 0.01,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 84,
+    "rank": 168
+   },
+   {
+    "host": "api.interzoid.com",
+    "url": "https://api.interzoid.com/getgender",
+    "endpoint_id": "617571eae5f4022b",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 83,
+    "rank": 169
+   },
+   {
+    "host": "api.orioncmd.com",
+    "url": "https://api.orioncmd.com/v1/dns",
+    "endpoint_id": "7129d97c640fb12b",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 82,
+    "rank": 170
+   },
+   {
+    "host": "x402-datashop-production.up.railway.app",
+    "url": "https://x402-datashop-production.up.railway.app/v1/btc/fees",
+    "endpoint_id": "cd76fcbd6477294f",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 82,
+    "rank": 171
+   },
+   {
+    "host": "rubric-protocol.com",
+    "url": "https://rubric-protocol.com/v1/x402/tiered-attest",
+    "endpoint_id": "eb1100bba99687f4",
+    "price_usd": 0.005,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 82,
+    "rank": 172
+   },
+   {
+    "host": "api.blockchain.info",
+    "url": "https://api.blockchain.info/explorer-gateway-kt/x402/charts/nvt",
+    "endpoint_id": "32c19f8b8cff4634",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 81,
+    "rank": 174
+   },
+   {
+    "host": "pool.linkrra.com",
+    "url": "https://pool.linkrra.com/v1/chat/completions",
+    "endpoint_id": "fe3b809537faeb6e",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 81,
+    "rank": 175
+   },
+   {
+    "host": "clink-lithium-vault.fly.dev",
+    "url": "https://clink-lithium-vault.fly.dev/market/new",
+    "endpoint_id": "e40574e1d52b85a1",
+    "price_usd": 0.005,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 81,
+    "rank": 176
+   },
+   {
+    "host": "defi-yield.agentdiet.dev",
+    "url": "https://defi-yield.agentdiet.dev/v1/distill",
+    "endpoint_id": "7cd2ea931df0071f",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 80,
+    "rank": 177
+   },
+   {
+    "host": "x402stock.xyz",
+    "url": "https://x402stock.xyz/api/v1/gdp",
+    "endpoint_id": "e8cace994813b4d5",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 78,
+    "rank": 180
+   },
+   {
+    "host": "aizamon.com",
+    "url": "https://aizamon.com/x402/v1/dns",
+    "endpoint_id": "83c6695c0fe62f7a",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 75,
+    "rank": 182
+   },
+   {
+    "host": "x402-bazaar-rank.x402-bazaar-rank-worker.workers.dev",
+    "url": "https://x402-bazaar-rank.x402-bazaar-rank-worker.workers.dev/tags",
+    "endpoint_id": "b1375f651a04f685",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 75,
+    "rank": 183
+   },
+   {
+    "host": "1gateway.dev",
+    "url": "https://1gateway.dev/v1/fx/rates",
+    "endpoint_id": "2630daa1c666ca6e",
+    "price_usd": 0.002,
+    "networks": [
+     "Base",
+     "Solana"
+    ],
+    "tx_count": 74,
+    "rank": 184
+   },
+   {
+    "host": "vibesprings.net",
+    "url": "https://vibesprings.net/api/gas",
+    "endpoint_id": "7f4a148d0dda0cb7",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 73,
+    "rank": 185
+   },
+   {
+    "host": "api.fastaf.co",
+    "url": "https://api.fastaf.co/x402/v1/amazon",
+    "endpoint_id": "ca5ec94c12266e0a",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 70,
+    "rank": 187
+   },
+   {
+    "host": "gateway.spraay.app",
+    "url": "https://gateway.spraay.app/api/v1/models",
+    "endpoint_id": "c2d4132662d48a71",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 68,
+    "rank": 188
+   },
+   {
+    "host": "pulse.scrapemole.workers.dev",
+    "url": "https://pulse.scrapemole.workers.dev/v1/geocode",
+    "endpoint_id": "813d131778827f96",
+    "price_usd": 0.001,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 68,
+    "rank": 189
+   },
+   {
+    "host": "horizonpulse.dev",
+    "url": "https://horizonpulse.dev/api/pulse",
+    "endpoint_id": "80ea4c1ee4685b00",
+    "price_usd": 0.005,
+    "networks": [
+     "Base"
+    ],
+    "tx_count": 67,
+    "rank": 190
+   }
+  ],
+  "random_candidates": [
+   {
+    "host": "datoka-agent.bhazarstudio.workers.dev",
+    "url": "https://datoka-agent.bhazarstudio.workers.dev/v1/operations/issue_agent_receipt",
+    "endpoint_id": "4ca55888e3379921",
     "price_usd": 0.002,
     "networks": [
      "Base"
     ]
    },
    {
-    "host": "d210e7448d67e4.lhr.life",
-    "url": "https://d210e7448d67e4.lhr.life/api/x402/dist-ping",
-    "endpoint_id": "9fa3707c6c5b0f2c",
-    "price_usd": 0.005,
+    "host": "x402check.xyz",
+    "url": "https://x402check.xyz/v1/risk-check",
+    "endpoint_id": "6cc4dd80542318e7",
+    "price_usd": 0.0035,
     "networks": [
-     "Base"
+     "Base",
+     "Solana"
     ]
    },
    {
-    "host": "sitecheck-api.vercel.app",
-    "url": "https://sitecheck-api.vercel.app/api/hiring",
-    "endpoint_id": "0ac5e42f4824be8f",
-    "price_usd": 0.01,
-    "networks": [
-     "Base"
-    ]
-   },
-   {
-    "host": "well-007-rss-to-markdown.rainmaker-wells.workers.dev",
-    "url": "https://well-007-rss-to-markdown.rainmaker-wells.workers.dev/api/rss-to-markdown",
-    "endpoint_id": "3e82775d93a398b1",
-    "price_usd": 0.005,
-    "networks": [
-     "Base"
-    ]
-   },
-   {
-    "host": "usxjn-2a03-4000-60-9b5-d48c-d9ff-feb2-1dca.free.pinggy.net",
-    "url": "https://usxjn-2a03-4000-60-9b5-d48c-d9ff-feb2-1dca.free.pinggy.net/x402/verify",
-    "endpoint_id": "a5ceb9de00602b32",
-    "price_usd": 0.006386,
-    "networks": [
-     "Base"
-    ]
-   },
-   {
-    "host": "97a43600b3fd71.lhr.life",
-    "url": "https://97a43600b3fd71.lhr.life/v1/forecast/btc",
-    "endpoint_id": "40a8874c5faa8a9d",
-    "price_usd": 0.01,
-    "networks": [
-     "Base"
-    ]
-   },
-   {
-    "host": "color-palette-production-8c81.up.railway.app",
-    "url": "https://color-palette-production-8c81.up.railway.app/api/palette",
-    "endpoint_id": "1c1ef943f20cf26e",
+    "host": "dev-api-x402.world.fun",
+    "url": "https://dev-api-x402.world.fun/api/mint/dynamic",
+    "endpoint_id": "0974bb4482ce37b9",
     "price_usd": 0.001,
     "networks": [
      "Base"
     ]
    },
    {
-    "host": "lupaplaza.com",
-    "url": "https://lupaplaza.com/api/probe",
-    "endpoint_id": "907ce5b1cc78bd80",
-    "price_usd": 0.01,
-    "networks": [
-     "Base"
-    ]
-   },
-   {
-    "host": "duzhx-159-89-4-32.free.pinggy.net",
-    "url": "https://duzhx-159-89-4-32.free.pinggy.net/evidence",
-    "endpoint_id": "53d87ec7f988546f",
+    "host": "agent-arcade.use.x402atlas.com",
+    "url": "https://agent-arcade.use.x402atlas.com/chess/check",
+    "endpoint_id": "bd0d045beeb6ae0d",
     "price_usd": 0.005,
     "networks": [
      "Base"
     ]
    },
    {
-    "host": "cyzuz-159-89-4-32.free.pinggy.net",
-    "url": "https://cyzuz-159-89-4-32.free.pinggy.net/evidence",
-    "endpoint_id": "f8a9029b3b625db5",
+    "host": "api.ai-pin.io",
+    "url": "https://api.ai-pin.io/agentic-news",
+    "endpoint_id": "51cb03de6adefb2d",
     "price_usd": 0.005,
     "networks": [
      "Base"
     ]
    },
    {
-    "host": "dc81dd99d69838.lhr.life",
-    "url": "https://dc81dd99d69838.lhr.life/v1/forecast/btc",
-    "endpoint_id": "6005ce78433596d2",
+    "host": "beab9c9a45e535.lhr.life",
+    "url": "https://beab9c9a45e535.lhr.life/v1/forecast/btc",
+    "endpoint_id": "01774b801a7e6b3a",
     "price_usd": 0.01,
     "networks": [
      "Base"
     ]
    },
    {
-    "host": "injectscan.agentgate.workers.dev",
-    "url": "https://injectscan.agentgate.workers.dev/v1/scan",
-    "endpoint_id": "840c7bbc2ee5b7d8",
-    "price_usd": 0.003,
-    "networks": [
-     "Base"
-    ]
-   },
-   {
-    "host": "fa203ecd2c7753.lhr.life",
-    "url": "https://fa203ecd2c7753.lhr.life/v1/forecast/btc",
-    "endpoint_id": "d1551e3c1f4ffcfd",
+    "host": "clone-x402-production.up.railway.app",
+    "url": "https://clone-x402-production.up.railway.app/",
+    "endpoint_id": "5a55d95ff8ad1595",
     "price_usd": 0.01,
     "networks": [
      "Base"
     ]
    },
    {
-    "host": "simplefi.tech",
-    "url": "https://www.simplefi.tech/x402-board/post",
-    "endpoint_id": "3f32573e26ead3bc",
+    "host": "bahn.1f916.de",
+    "url": "https://bahn.1f916.de/api/transfer-chain",
+    "endpoint_id": "6e3cbe95d445d6de",
     "price_usd": 0.01,
     "networks": [
      "Base"
     ]
    },
    {
-    "host": "152-53-225-73.sslip.io",
-    "url": "https://152-53-225-73.sslip.io/logs",
-    "endpoint_id": "67eb0d4987b9059c",
+    "host": "1db9769e0a0f70.lhr.life",
+    "url": "https://1db9769e0a0f70.lhr.life/v1/forecast/btc",
+    "endpoint_id": "3a5820cce13a79fb",
     "price_usd": 0.01,
     "networks": [
      "Base"
     ]
    },
    {
-    "host": "nojunk-geo.mick8511.workers.dev",
-    "url": "https://nojunk-geo.mick8511.workers.dev/geocode",
-    "endpoint_id": "f5433dc1d01d9842",
-    "price_usd": 0.002,
-    "networks": [
-     "Base"
-    ]
-   },
-   {
-    "host": "e40a78f85cae61.lhr.life",
-    "url": "https://e40a78f85cae61.lhr.life/v1/forecast/btc",
-    "endpoint_id": "8f19c283bf0a5c61",
+    "host": "65976f8ec21d73.lhr.life",
+    "url": "https://65976f8ec21d73.lhr.life/v1/forecast/btc",
+    "endpoint_id": "17dcd186f7094847",
     "price_usd": 0.01,
     "networks": [
      "Base"
     ]
    },
    {
-    "host": "llm-agent.fretchen.eu",
-    "url": "https://llm-agent.fretchen.eu/",
-    "endpoint_id": "bbc1da0df05b1d6e",
-    "price_usd": 0.003,
+    "host": "moneytest-x402-api.indierepo.chatgpt.site",
+    "url": "https://moneytest-x402-api.indierepo.chatgpt.site/v1/x402/canonical-receipt",
+    "endpoint_id": "e2734f9bed077b90",
+    "price_usd": 0.001,
     "networks": [
      "Base"
     ]
    },
    {
-    "host": "4c5e9424a08c1b.lhr.life",
-    "url": "https://4c5e9424a08c1b.lhr.life/v1/forecast/btc",
-    "endpoint_id": "ebb8a109b8e0d302",
+    "host": "736f426934c118.lhr.life",
+    "url": "https://736f426934c118.lhr.life/v1/forecast/btc",
+    "endpoint_id": "3885dfc65650934e",
     "price_usd": 0.01,
     "networks": [
      "Base"
     ]
    },
    {
-    "host": "well-002-url-to-markdown.rainmaker-wells.workers.dev",
-    "url": "https://well-002-url-to-markdown.rainmaker-wells.workers.dev/api/url-to-markdown",
-    "endpoint_id": "cffaef29cf38769e",
-    "price_usd": 0.005,
-    "networks": [
-     "Base"
-    ]
-   },
-   {
-    "host": "x402.1xu.app",
-    "url": "https://x402.1xu.app/api/leaderboard",
-    "endpoint_id": "114ef109b73a1b66",
+    "host": "1ce66e2e54d851.lhr.life",
+    "url": "https://1ce66e2e54d851.lhr.life/api/agent-brief",
+    "endpoint_id": "8554fbf8c37b7be9",
     "price_usd": 0.01,
     "networks": [
      "Base"
     ]
    },
    {
-    "host": "api.zinc.com",
-    "url": "https://api.zinc.com/agent/orders",
-    "endpoint_id": "0b7090f5da832f75",
+    "host": "x402-api.heyelsa.ai",
+    "url": "https://x402-api.heyelsa.ai/api/get_portfolio",
+    "endpoint_id": "7bdb4ea3634683ca",
     "price_usd": 0.01,
     "networks": [
      "Base"
     ]
    },
    {
-    "host": "extract.tollkit.dev",
-    "url": "https://extract.tollkit.dev/extract",
-    "endpoint_id": "3a5366b5594fda49",
+    "host": "dmarc-lookup.underscoredone.com",
+    "url": "https://dmarc-lookup.underscoredone.com/dmarc-lookup",
+    "endpoint_id": "4ffe79df5a21aad4",
     "price_usd": 0.01,
     "networks": [
      "Base",
@@ -133866,9 +136095,136 @@
     ]
    },
    {
-    "host": "eamfv-159-89-4-32.run.pinggy-free.link",
-    "url": "https://eamfv-159-89-4-32.run.pinggy-free.link/evidence",
-    "endpoint_id": "a83855d9d43ffb9a",
+    "host": "x402-6m47uoam6-ethannisers.vercel.app",
+    "url": "https://x402-6m47uoam6-ethannisers.vercel.app/blog",
+    "endpoint_id": "c28426ff86b708f4",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ]
+   },
+   {
+    "host": "nydvz-212-23-215-103.free.pinggy.net",
+    "url": "https://nydvz-212-23-215-103.free.pinggy.net/evidence",
+    "endpoint_id": "465374446ce2b0fe",
+    "price_usd": 0.005,
+    "networks": [
+     "Base"
+    ]
+   },
+   {
+    "host": "toolcall.click",
+    "url": "https://toolcall.click/t/fx/rates",
+    "endpoint_id": "612b34c0c6380d3f",
+    "price_usd": 0.002,
+    "networks": [
+     "Base"
+    ]
+   },
+   {
+    "host": "micro-api-gateway-production.up.railway.app",
+    "url": "https://micro-api-gateway-production.up.railway.app/v1/fresh-demand",
+    "endpoint_id": "429dc08625e1192f",
+    "price_usd": 0.003,
+    "networks": [
+     "Base"
+    ]
+   },
+   {
+    "host": "orpjf-159-89-4-32.run.pinggy-free.link",
+    "url": "https://orpjf-159-89-4-32.run.pinggy-free.link/evidence",
+    "endpoint_id": "a74b2c55f529f2f6",
+    "price_usd": 0.005,
+    "networks": [
+     "Base"
+    ]
+   },
+   {
+    "host": "c0e9d1258596b5.lhr.life",
+    "url": "https://c0e9d1258596b5.lhr.life/v1/forecast/btc",
+    "endpoint_id": "890ec5e1fb61d66b",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ]
+   },
+   {
+    "host": "6653be4bdf2f8e.lhr.life",
+    "url": "https://6653be4bdf2f8e.lhr.life/v1/forecast/btc",
+    "endpoint_id": "fd65661a42f532c3",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ]
+   },
+   {
+    "host": "d56577f49b40f4.lhr.life",
+    "url": "https://d56577f49b40f4.lhr.life/v1/forecast/btc",
+    "endpoint_id": "9e843f264d787002",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ]
+   },
+   {
+    "host": "63b4140e3ee8a53d-13-219-19-81.serveousercontent.com",
+    "url": "https://63b4140e3ee8a53d-13-219-19-81.serveousercontent.com/api/x402/dist-ping",
+    "endpoint_id": "94d44ca4ebcf200c",
+    "price_usd": 0.005,
+    "networks": [
+     "Base"
+    ]
+   },
+   {
+    "host": "api.paxie.fun",
+    "url": "https://api.paxie.fun/v1/rh/pools/new",
+    "endpoint_id": "e1ef67f1618baa5b",
+    "price_usd": 0.005,
+    "networks": [
+     "Base",
+     "Solana"
+    ]
+   },
+   {
+    "host": "17f8977a88d932.lhr.life",
+    "url": "https://17f8977a88d932.lhr.life/v1/forecast/btc",
+    "endpoint_id": "f2c35f1053ec8ba5",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ]
+   },
+   {
+    "host": "bix-creator-edge.liara.run",
+    "url": "https://bix-creator-edge.liara.run/paid/v1/creator-edge",
+    "endpoint_id": "638b6aa25cd58a1e",
+    "price_usd": 0.005,
+    "networks": [
+     "Base"
+    ]
+   },
+   {
+    "host": "clear-to-send.audiemedhurstcre.workers.dev",
+    "url": "https://clear-to-send.audiemedhurstcre.workers.dev/fx",
+    "endpoint_id": "c4202779fb7b33e5",
+    "price_usd": 0.01,
+    "networks": [
+     "Base"
+    ]
+   },
+   {
+    "host": "lotusnetworkapi.com",
+    "url": "https://lotusnetworkapi.com/api/v1/gas/preflight",
+    "endpoint_id": "bb7cc72a3e399b9a",
+    "price_usd": 0.002,
+    "networks": [
+     "Base"
+    ]
+   },
+   {
+    "host": "tiomt-37-255-229-96.free.pinggy.net",
+    "url": "https://tiomt-37-255-229-96.free.pinggy.net/evidence",
+    "endpoint_id": "59f6e70fc049d91a",
     "price_usd": 0.005,
     "networks": [
      "Base"
@@ -133876,7 +136232,7 @@
    }
   ],
   "screened": {
-   "at": "2026-10-28T09:39:58.109Z",
+   "at": "2026-10-28T09:47:27.549Z",
    "dropped": [
     {
      "host": "sol.blockrun.ai",
@@ -133900,7 +136256,7 @@
     },
     {
      "host": "stormstation247.com",
-     "reason": "no_402: HTTP 403 on GET",
+     "reason": "no_402: HTTP 200 on GET",
      "pick": "top"
     },
     {
@@ -133987,7 +136343,7 @@
     },
     {
      "host": "losbeto.xyz",
-     "reason": "no_402: unreachable (fetch failed (ERR_TLS_CERT_ALTNAME_INVALID))",
+     "reason": "no_402: HTTP 503 on GET",
      "pick": "top"
     },
     {
@@ -134059,6 +136415,366 @@
     {
      "host": "agent-kiosk.vercel.app",
      "reason": "requires_input: method POST",
+     "pick": "top"
+    },
+    {
+     "host": "bess-x402.onrender.com",
+     "reason": "requires_input: query: chain",
+     "pick": "top"
+    },
+    {
+     "host": "defillama.use.x402atlas.com",
+     "reason": "requires_input: query: protocol",
+     "pick": "top"
+    },
+    {
+     "host": "x402.clashofcoins.com",
+     "reason": "no_402: HTTP 404 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "agentsvc.io",
+     "reason": "requires_input: method POST/PUT/PATCH",
+     "pick": "top"
+    },
+    {
+     "host": "api.gondola-ai.com",
+     "reason": "no_402: HTTP 405 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "api.exa.ai",
+     "reason": "no_402: HTTP 404 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "api.glianalabs.com",
+     "reason": "requires_input: body required",
+     "pick": "top"
+    },
+    {
+     "host": "api.agentstools.dev",
+     "reason": "requires_input: query: query",
+     "pick": "top"
+    },
+    {
+     "host": "cloudprice.genexxis.com",
+     "reason": "requires_input: query: model",
+     "pick": "top"
+    },
+    {
+     "host": "api.boonprotocol.com",
+     "reason": "no_402: HTTP 404 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "stationfx.com",
+     "reason": "requires_input: method POST/PUT/PATCH",
+     "pick": "top"
+    },
+    {
+     "host": "sift.srv1996466.hstgr.cloud",
+     "reason": "requires_input: query: q",
+     "pick": "top"
+    },
+    {
+     "host": "apexfaucet.xyz",
+     "reason": "requires_input: query: from",
+     "pick": "top"
+    },
+    {
+     "host": "x402scan.com",
+     "reason": "requires_input: query: page, page_size, sort_by",
+     "pick": "top"
+    },
+    {
+     "host": "api.solenrich.com",
+     "reason": "no_402: HTTP 404 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "x402.forgemesh.io",
+     "reason": "requires_input: method POST",
+     "pick": "top"
+    },
+    {
+     "host": "grokzilla.shop",
+     "reason": "requires_input: method POST/PUT/PATCH",
+     "pick": "top"
+    },
+    {
+     "host": "cultos.dev",
+     "reason": "no_402: HTTP 404 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "squeezeos-api.onrender.com",
+     "reason": "requires_input: query: q",
+     "pick": "top"
+    },
+    {
+     "host": "stability-ai.x402.paywithlocus.com",
+     "reason": "no_402: HTTP 404 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "domaincheck.agentgate.workers.dev",
+     "reason": "requires_input: query: email",
+     "pick": "top"
+    },
+    {
+     "host": "x402.onchainexpat.com",
+     "reason": "no_402: HTTP 405 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "agent-utility-network.frosty-sound-4560.workers.dev",
+     "reason": "no_402: HTTP 404 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "sovereign-x402.fly.dev",
+     "reason": "no_402: HTTP 404 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "api.vextorium.com",
+     "reason": "requires_input: method POST",
+     "pick": "top"
+    },
+    {
+     "host": "x402.ottoai.services",
+     "reason": "no_402: HTTP 405 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "slamai.dev",
+     "reason": "no_402: HTTP 502 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "cornhusk-rely-preformed.ngrok-free.dev",
+     "reason": "no_402: HTTP 404 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "afriref.dev",
+     "reason": "no_402: HTTP 405 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "x402.apidirect.io",
+     "reason": "requires_input: query: url",
+     "pick": "top"
+    },
+    {
+     "host": "api.macaroonnetwork.com",
+     "reason": "requires_input: method POST/PUT/PATCH",
+     "pick": "top"
+    },
+    {
+     "host": "coord.taifoon.dev",
+     "reason": "requires_input: method POST/PUT/PATCH",
+     "pick": "top"
+    },
+    {
+     "host": "x402.telnyx.com",
+     "reason": "no_402: HTTP 404 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "tienda.textokit.store",
+     "reason": "requires_input: method POST",
+     "pick": "top"
+    },
+    {
+     "host": "x402.asterpay.io",
+     "reason": "no_402: HTTP 404 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "api.agentmercantile.com",
+     "reason": "no_402: HTTP 404 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "minifetch.com",
+     "reason": "requires_input: query: url",
+     "pick": "top"
+    },
+    {
+     "host": "rdap-api-production.up.railway.app",
+     "reason": "no_402: HTTP 404 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "dns.payapi.market",
+     "reason": "requires_input: method POST/PUT/PATCH",
+     "pick": "top"
+    },
+    {
+     "host": "fileshareforagents.online",
+     "reason": "no_402: HTTP 405 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "llmrt-companion.manhliemcn4euwlu.workers.dev",
+     "reason": "no_402: HTTP 530 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "agentproof-base.softcreek2.chatgpt.site",
+     "reason": "requires_input: query: address",
+     "pick": "top"
+    },
+    {
+     "host": "apiacre.com",
+     "reason": "no_402: HTTP 405 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "docs.tanod.dev",
+     "reason": "requires_input: method POST",
+     "pick": "top"
+    },
+    {
+     "host": "agenttoll.dev",
+     "reason": "no_402: HTTP 200 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "travel.brij.fi",
+     "reason": "no_402: HTTP 405 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "api.munition.io",
+     "reason": "no_402: HTTP 404 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "x402-farm.vercel.app",
+     "reason": "no_402: HTTP 410 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "x402.agentindex.world",
+     "reason": "requires_input: method POST",
+     "pick": "top"
+    },
+    {
+     "host": "ari001.tailb4ac3a.ts.net",
+     "reason": "no_402: HTTP 410 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "kari.mayim-mayim.com",
+     "reason": "no_402: HTTP 200 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "tolca.tonbot.ca",
+     "reason": "no_402: HTTP 405 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "ask.singitai.app",
+     "reason": "requires_input: method POST",
+     "pick": "top"
+    },
+    {
+     "host": "gogeta2-u35175.vm.elestio.app",
+     "reason": "requires_input: query: token",
+     "pick": "top"
+    },
+    {
+     "host": "api.getanyapi.com",
+     "reason": "no_402: HTTP 401 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "api.lumitrades.io",
+     "reason": "no_402: HTTP 410 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "x402-agent-api.onrender.com",
+     "reason": "no_402: HTTP 404 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "asin402.com",
+     "reason": "requires_input: query: selection",
+     "pick": "top"
+    },
+    {
+     "host": "fractalai.net.co",
+     "reason": "requires_input: method POST/PUT/PATCH",
+     "pick": "top"
+    },
+    {
+     "host": "agent-web-tools.agent-web-tools.workers.dev",
+     "reason": "requires_input: query: url",
+     "pick": "top"
+    },
+    {
+     "host": "deepai.pay.zeroclick.io",
+     "reason": "no_402: HTTP 401 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "stablestudio.dev",
+     "reason": "no_402: HTTP 405 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "api.eckari.com",
+     "reason": "requires_input: query: tracking_number",
+     "pick": "top"
+    },
+    {
+     "host": "domain-age-checker.underscoredone.com",
+     "reason": "requires_input: method POST/PUT/PATCH",
+     "pick": "top"
+    },
+    {
+     "host": "api.interzoid.com",
+     "reason": "requires_input: query: name",
+     "pick": "top"
+    },
+    {
+     "host": "api.orioncmd.com",
+     "reason": "requires_input: query: domain",
+     "pick": "top"
+    },
+    {
+     "host": "rubric-protocol.com",
+     "reason": "requires_input: method POST",
+     "pick": "top"
+    },
+    {
+     "host": "api.blockchain.info",
+     "reason": "requires_input: method POST",
+     "pick": "top"
+    },
+    {
+     "host": "pool.linkrra.com",
+     "reason": "requires_input: method POST",
+     "pick": "top"
+    },
+    {
+     "host": "clink-lithium-vault.fly.dev",
+     "reason": "no_402: HTTP 503 on GET",
+     "pick": "top"
+    },
+    {
+     "host": "aizamon.com",
+     "reason": "requires_input: query: q",
+     "pick": "top"
+    },
+    {
+     "host": "pulse.scrapemole.workers.dev",
+     "reason": "requires_input: query: q",
      "pick": "top"
     }
    ],
@@ -134189,6 +136905,196 @@
     {
      "host": "agent-kiosk.vercel.app",
      "reason": "requires_input: method POST",
+     "pick": "top"
+    },
+    {
+     "host": "bess-x402.onrender.com",
+     "reason": "requires_input: query: chain",
+     "pick": "top"
+    },
+    {
+     "host": "defillama.use.x402atlas.com",
+     "reason": "requires_input: query: protocol",
+     "pick": "top"
+    },
+    {
+     "host": "agentsvc.io",
+     "reason": "requires_input: method POST/PUT/PATCH",
+     "pick": "top"
+    },
+    {
+     "host": "api.glianalabs.com",
+     "reason": "requires_input: body required",
+     "pick": "top"
+    },
+    {
+     "host": "api.agentstools.dev",
+     "reason": "requires_input: query: query",
+     "pick": "top"
+    },
+    {
+     "host": "cloudprice.genexxis.com",
+     "reason": "requires_input: query: model",
+     "pick": "top"
+    },
+    {
+     "host": "stationfx.com",
+     "reason": "requires_input: method POST/PUT/PATCH",
+     "pick": "top"
+    },
+    {
+     "host": "sift.srv1996466.hstgr.cloud",
+     "reason": "requires_input: query: q",
+     "pick": "top"
+    },
+    {
+     "host": "apexfaucet.xyz",
+     "reason": "requires_input: query: from",
+     "pick": "top"
+    },
+    {
+     "host": "x402scan.com",
+     "reason": "requires_input: query: page, page_size, sort_by",
+     "pick": "top"
+    },
+    {
+     "host": "x402.forgemesh.io",
+     "reason": "requires_input: method POST",
+     "pick": "top"
+    },
+    {
+     "host": "grokzilla.shop",
+     "reason": "requires_input: method POST/PUT/PATCH",
+     "pick": "top"
+    },
+    {
+     "host": "squeezeos-api.onrender.com",
+     "reason": "requires_input: query: q",
+     "pick": "top"
+    },
+    {
+     "host": "domaincheck.agentgate.workers.dev",
+     "reason": "requires_input: query: email",
+     "pick": "top"
+    },
+    {
+     "host": "api.vextorium.com",
+     "reason": "requires_input: method POST",
+     "pick": "top"
+    },
+    {
+     "host": "x402.apidirect.io",
+     "reason": "requires_input: query: url",
+     "pick": "top"
+    },
+    {
+     "host": "api.macaroonnetwork.com",
+     "reason": "requires_input: method POST/PUT/PATCH",
+     "pick": "top"
+    },
+    {
+     "host": "coord.taifoon.dev",
+     "reason": "requires_input: method POST/PUT/PATCH",
+     "pick": "top"
+    },
+    {
+     "host": "tienda.textokit.store",
+     "reason": "requires_input: method POST",
+     "pick": "top"
+    },
+    {
+     "host": "minifetch.com",
+     "reason": "requires_input: query: url",
+     "pick": "top"
+    },
+    {
+     "host": "dns.payapi.market",
+     "reason": "requires_input: method POST/PUT/PATCH",
+     "pick": "top"
+    },
+    {
+     "host": "agentproof-base.softcreek2.chatgpt.site",
+     "reason": "requires_input: query: address",
+     "pick": "top"
+    },
+    {
+     "host": "docs.tanod.dev",
+     "reason": "requires_input: method POST",
+     "pick": "top"
+    },
+    {
+     "host": "x402.agentindex.world",
+     "reason": "requires_input: method POST",
+     "pick": "top"
+    },
+    {
+     "host": "ask.singitai.app",
+     "reason": "requires_input: method POST",
+     "pick": "top"
+    },
+    {
+     "host": "gogeta2-u35175.vm.elestio.app",
+     "reason": "requires_input: query: token",
+     "pick": "top"
+    },
+    {
+     "host": "asin402.com",
+     "reason": "requires_input: query: selection",
+     "pick": "top"
+    },
+    {
+     "host": "fractalai.net.co",
+     "reason": "requires_input: method POST/PUT/PATCH",
+     "pick": "top"
+    },
+    {
+     "host": "agent-web-tools.agent-web-tools.workers.dev",
+     "reason": "requires_input: query: url",
+     "pick": "top"
+    },
+    {
+     "host": "api.eckari.com",
+     "reason": "requires_input: query: tracking_number",
+     "pick": "top"
+    },
+    {
+     "host": "domain-age-checker.underscoredone.com",
+     "reason": "requires_input: method POST/PUT/PATCH",
+     "pick": "top"
+    },
+    {
+     "host": "api.interzoid.com",
+     "reason": "requires_input: query: name",
+     "pick": "top"
+    },
+    {
+     "host": "api.orioncmd.com",
+     "reason": "requires_input: query: domain",
+     "pick": "top"
+    },
+    {
+     "host": "rubric-protocol.com",
+     "reason": "requires_input: method POST",
+     "pick": "top"
+    },
+    {
+     "host": "api.blockchain.info",
+     "reason": "requires_input: method POST",
+     "pick": "top"
+    },
+    {
+     "host": "pool.linkrra.com",
+     "reason": "requires_input: method POST",
+     "pick": "top"
+    },
+    {
+     "host": "aizamon.com",
+     "reason": "requires_input: query: q",
+     "pick": "top"
+    },
+    {
+     "host": "pulse.scrapemole.workers.dev",
+     "reason": "requires_input: query: q",
      "pick": "top"
     }
    ]
