@@ -47,3 +47,13 @@ test("initial phase: top 10, no random", () => {
   assert.equal(t.paid.top[0].host, "r0.example");
   assert.equal(t.paid.random.length, 0);
 });
+
+test('top_n "all": the whole ranking is a candidate, no random draw', () => {
+  const pop = { metric: "m", fetched_at: "", status: "ok" as const, rows: Array.from({ length: 190 }, (_, i) => ({ host: `r${i}.example`, tx_count: 1000 - i })) };
+  const many = { ...catalog, endpoints: pop.rows.map((r, i) => ep(`m${i}`, `https://${r.host}/x`, 0.005)) };
+  const t = buildTargets("2026-10-28", many, pop, { paid: { phase: "all_buyable", top_n: "all", random_n: 0 } });
+  assert.equal(t.paid.top_n, "all");
+  assert.equal(t.paid.top.length, 190);
+  assert.equal(t.paid.top_candidates!.length, 190);
+  assert.equal(t.paid.random.length, 0);
+});

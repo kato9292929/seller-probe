@@ -31,6 +31,10 @@ jobs:
       # Real payments only when the repository variable PROBE_PAID_ENABLED is "true"
       # (set it after a dry run has been checked). Until then every run is a dry run,
       # and a manual run with dry_run ticked is always one.
+      # Screen the whole ranking again right before buying (config/probe.json), so the paid
+      # set is what can be bought now, also on a manual run between the daily free runs.
+      - name: Select targets
+        run: npm run targets
       - name: Paid probe (caps $0.01/call, $5/7 days, enforced in code)
         run: npm run probe:paid
         env:
@@ -44,7 +48,7 @@ jobs:
         run: |
           git config user.name "seller-probe[bot]"
           git config user.email "seller-probe@users.noreply.github.com"
-          git add log
+          git add log targets
           git diff --cached --quiet && exit 0
           git commit -m "paid probe $(date -u +%F)"
           for i in 1 2 3; do git pull --rebase origin main && git push origin HEAD:main && exit 0; sleep $((i*5)); done

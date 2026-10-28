@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { balanceReserve, baseUsdc, solanaUsdc } from "../balance.js";
 import { spentLast7Days } from "../budget.js";
 import { LIMITS } from "../config.js";
 import { LOG_DIR, append } from "../log.js";
@@ -24,8 +25,22 @@ console.log(
     `payer sol=${payer.address.solana} base=${payer.address.base}; spent(7d)=${spentLast7Days()} / ${LIMITS.perWeek}` +
     (w.missing.length ? `; not configured: ${w.missing.join(", ")}` : ""),
 );
+// Each chain pays only up to the USDC it holds at the start; hosts past that (in rank order)
+// are recorded as deferred, not bought. A balance that cannot be read leaves that chain unchecked.
+const start: Record<string, bigint> = {};
+for (const [chain, read] of [["solana", solanaUsdc], ["base", baseUsdc]] as const) {
+  const addr = payer.address[chain];
+  if (!addr) continue;
+  try {
+    start[chain] = await read(addr);
+  } catch (e) {
+    console.log(`balance ${chain}: unreadable (${(e as Error).message}); not checked`);
+  }
+}
+console.log(`balance at start: ${Object.entries(start).map(([c, v]) => `${c}=${v}`).join(" ") || "-"}`);
+const reserve = balanceReserve(start);
 for (const target of list) {
-  const r = await probePaid(target, { payer, logDir: LOG_DIR(), attemptKind: "paid_attempt", resultKind: "paid", dryRun });
+  const r = await probePaid(target, { payer, logDir: LOG_DIR(), attemptKind: "paid_attempt", resultKind: "paid", dryRun, reserve });
   append(LOG_DIR(), { ...toRecord(r), pick: target.pick, targets_date: t.date });
   console.log(
     `${target.host}: ` +

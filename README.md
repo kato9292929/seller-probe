@@ -3,7 +3,7 @@
 x402 の売り手が「正しく動くか」を外から測り、ホストごとのスコアとして公開します（`probe.x402jp.com` を想定）。
 
 - **無料の測定**（毎日）：支払わずに 402 応答を取得し、形式を検査する。全対象。
-- **有料の測定**（週 1 回）：最小額で 1 コール購入し、決済と納品を検査する。上位の一部。
+- **有料の測定**（週 1 回）：最小額で 1 コール購入し、決済と納品を検査する。ランキング上位のうち、入力なしで買える売り手すべて。
 - **自社だけに当てる試験**（週 1 回）：同じ支払いヘッダの再送とキャッシュ。OSD・JIN にだけ当て、`self-check/` に別記録（スコアには入れない）。
 - 結果は JSON API（`GET /scores`、`GET /scores/:host`）と公開ページで出す。
 - x402 RFQ Market の買い手は、仕様 JSON の `min_probe_score` でスコアを見積もりの選定条件に使える（`kato9292929/RFQ` 側）。
@@ -32,7 +32,7 @@ src/
   cli/               npm scripts の入口（wallet-new.ts はウォレット生成）
 config/
   weights.json       スコアの重み（version と history で変更履歴を残す）
-  probe.json         有料の測定の対象数（初週は top 10 のみ）
+  probe.json         有料の測定の対象数（`top_n: "all"`＝買える売り手すべて）
   facilitators.json  feePayer → ファシリテーター名（出典を確認できたものだけ）
 log/                 全測定（YYYY-MM-DD.jsonl、追記のみ）
 self-check/          §3.3 の結果（追記のみ）
@@ -47,7 +47,7 @@ web/                 公開ページ（React + Vite + Tailwind + shadcn/ui）。
 1. `kato9292929/endpoint` の `main` を `git ls-remote` で解決し、そのコミットの `data/endpoints_full.json.gz` を読む（`targets/*.json` の `catalog.commit` に記録）。
 2. x402・USDC 建て・Solana か Base・https・パラメータのテンプレート（`{id}`）を含まない URL を抽出。
 3. **無料**：ホストごとに価格が最小のエンドポイントを 1 つ。
-4. **有料**：直近 7 日のコール数上位から、代表エンドポイントの価格が $0.01 以下のホストを `top_n` 件 ＋ 残りから無作為に `random_n` 件（乱数の種は日付。再現可能）。外したホストと理由は `paid.skipped_popular` に残す。
+4. **有料**：直近 7 日のコール数上位から、代表エンドポイントの価格が $0.01 以下のホストを `top_n` 件 ＋ 残りから無作為に `random_n` 件（乱数の種は日付。再現可能）。`top_n: "all"` ならランキング全件（約 190 ホスト）を候補にし、次の 5 の判定を通ったものをすべて買う（判定は 8 件ずつ並行）。外したホストと理由は `paid.skipped_popular` に残す。
 5. **実際に買える売り手だけで枠を埋める**：候補を上から順に見て、次のどれかに当たる売り手は理由付きで外し（`paid.screened.dropped` と `paid.skipped_popular`）、次点を繰り上げて `top_n` 件（無作為枠は `random_n` 件）にする。
    - `excluded: <category>`：`config/exclusions.json` の除外リストに載っている、またはホスト名・URL が除外の語（lottery・casino など）に当たる。**くじなどの賭博は買わない**（実際のお金で賭けをしたことになりうる＝刑法の賭博罪。当たり外れが結果そのものなので「届いたか」の判定も成り立たない）。理由は一覧に書く。有料の測定は買う直前にも同じ判定をし、targets に入っていても買わない（`skipped: "excluded: …"`）。無料の測定（支払いなしの GET）は対象のまま。
    - `no_402: …`：入力なしの GET で 402 が返らない（200・405・404・接続できない等）。
@@ -56,7 +56,9 @@ web/                 公開ページ（React + Vite + Tailwind + shadcn/ui）。
    - `requires_input (observed): …`：前回の購入で、売り手自身のエラー応答が入力不足を示した（`src/observed.ts`）。根拠にするのは構造化された項目だけで、自由文の言い回しは照合しない。①本文の `missing` 配列（例 loyalspark：`"error_code":"missing_fields","missing":["token_address","customer_address"]`）、②入力欠落を表すエラーコード（`error_code` / `code` が `missing_parameter` など決まった値。例 agents-trust：`"code":"MISSING_PARAMETER","parameter":"url"`）、③402 の `error` 欄の「use POST」の明示（例 freeq）。外した記録（`paid.screened.dropped[].evidence`）に、根拠にしたエラーの本文・時刻・HTTP ステータス・戻す日（`until`）を残す。**観測から 4 週間（28 日）たつと候補に戻して測り直す**（売り手が仕様を直すことがあるため）。その後の購入が成立すれば、その時点で外れなくなる。
 6. **入力が必要な売り手は外す**：有料の候補ごとに支払いなしの GET で 402 を取り、入力スキーマ（v2 の bazaar 拡張 `extensions.bazaar` の `schema.properties.input` / `info.input`、v1 の `accepts[].outputSchema.input`）に必須の入力があれば外す（`src/x402.ts` の `inputRequirement`）。必須とみなすのは、メソッドが GET/HEAD 以外・本文の必須項目（`body.required`）・クエリの必須項目（`queryParams.required` や `required: true` のフィールド）。外したホストは `paid.skipped_popular` と `paid.screened.requires_input` に `requires_input: <理由>` で残し、次点を繰り上げて `top_n` 件にする。URL の見た目では判定しない。スキーマを出していない売り手は対象に残す。買う直前にも同じ判定をし、必須入力があれば `skipped: "requires_input: …"`（スコアに数えない）。
 
-`config/probe.json` は初週用に `top_n: 10, random_n: 0` にしてある。挙動を確認したら `phase: "full", top_n: 50, random_n: 20` に変える（§5）。
+`config/probe.json` は 2026-10-28 から `phase: "all_buyable", top_n: "all", random_n: 0`（ランキング上位で買える売り手すべて、ランダム枠なし）。それまでは `top_n: 10, random_n: 0`。
+
+**残高による後回し**：有料の測定は開始時に各チェーンの USDC 残高を読み（`src/balance.ts`）、順位の高い順に払う。そのチェーンで残りが足りない売り手は買わずに `skipped: "deferred: balance: …"` と記録する（スコアに数えない。翌週以降に回る）。残高が読めなかったチェーンはこの判定をしない（上限 $0.01・$5 は常に効く）。
 
 ## 測定項目（§3）
 
@@ -126,7 +128,7 @@ score = 100 × Σ(重み × 合格率) ÷ Σ(重み)    （観測のない項目
 | 2 | `src/budget.ts:30` | `assertWithinBudget`：同じ上限を再検査し、7 日間 $5（`src/budget.ts:31`）も見る。署名の前に `src/probe-paid.ts:107` で呼ぶ |
 | 3 | `src/pay.ts:24` | 支払いライブラリ（`@x402/core`）の `spendControls.maxAmountPerPayment: "$0.01"`。上の 2 つを抜けても署名しない二重の柵 |
 
-署名は 1・2 を通った後の `src/probe-paid.ts:117`（`signFor`）でだけ行う。対象選定時のカタログ価格の上限（`src/config.ts:41` の `catalogMaxPriceUsd`）は対象を絞るためのもので、支払いの強制ではない。
+署名は 1・2 を通った後の `src/probe-paid.ts:119`（`signFor`）でだけ行う。対象選定時のカタログ価格の上限（`src/config.ts:41` の `catalogMaxPriceUsd`）は対象を絞るためのもので、支払いの強制ではない。
 
 ## 実行
 
