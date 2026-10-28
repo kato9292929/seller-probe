@@ -81,3 +81,19 @@ test("the listed lottery host is excluded as gambling; ordinary hosts are not", 
   assert.equal(exclusionReason({ host: "claw402.ai", url: "https://claw402.ai/api/v1/nofx/upbit/hot" }), null);
   assert.equal(exclusionReason({ host: "alphabet.example", url: "https://alphabet.example/x" }), null, "no loose 'bet' match");
 });
+
+test('top_n "all": every candidate is screened and every buyable one kept, in rank order', async () => {
+  const t = (host: string, rank: number) => ({ host, url: `https://${host}/`, endpoint_id: host, price_usd: 0.001, networks: ["Base"], tx_count: 100 - rank, rank });
+  const cands = Array.from({ length: 60 }, (_, i) => t(`h${i}`, i + 1));
+  const file: any = { paid: { top_n: "all", random_n: 0, top: cands, random: [], skipped_popular: [], top_candidates: cands, random_candidates: [] } };
+  const seen: string[] = [];
+  const out = await screenPaidTargets(file, async (c) => {
+    seen.push(c.host);
+    await new Promise((r) => setTimeout(r, Number(c.host.slice(1)) % 3));
+    return Number(c.host.slice(1)) % 4 === 0 ? { drop: true, reason: "no_402: HTTP 404 on GET" } : { drop: false, reason: null };
+  });
+  assert.equal(seen.length, 60);
+  assert.equal(out.paid.top.length, 45);
+  assert.deepEqual(out.paid.top.map((x: any) => x.rank), [...out.paid.top.map((x: any) => x.rank)].sort((a, b) => a - b));
+  assert.equal(out.paid.screened!.dropped.length, 15);
+});

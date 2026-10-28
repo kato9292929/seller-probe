@@ -59,7 +59,7 @@ export type PaidRun = PaidResult & { /** Kept for the self-check (replay of the 
 /** How long to look on chain for our own payment after a non-200 (tests set 0). */
 const FIND_MS = () => Number(process.env.PROBE_FIND_TIMEOUT_MS ?? 90_000);
 
-type Ctx = { payer: Payer; logDir: string; attemptKind: Kind; resultKind: "paid" | "self_check"; extra?: Record<string, unknown>; dryRun?: boolean };
+type Ctx = { payer: Payer; logDir: string; attemptKind: Kind; resultKind: "paid" | "self_check"; extra?: Record<string, unknown>; dryRun?: boolean; reserve?: (chain: string, amount: bigint) => string | null };
 
 function empty(kind: PaidResult["kind"], t: Target): PaidResult {
   return {
@@ -109,6 +109,8 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
     if (e instanceof BudgetError) return { ...out, skipped: `budget: ${e.message}`, ...(ctx.dryRun ? { cap_check: { pass: false, reason: e.message } } : {}) };
     throw e;
   }
+  const deferred = ctx.dryRun ? null : ctx.reserve?.(a.chain!, amount);
+  if (deferred) return { ...out, skipped: `deferred: ${deferred}` };
   if (ctx.dryRun) out.cap_check = { pass: true, reason: null };
 
   // 3. sign, and log our own signature/nonce BEFORE sending (counts against the budget from here on)
