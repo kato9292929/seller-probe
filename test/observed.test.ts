@@ -62,3 +62,13 @@ test("payment-identifier: when the seller declares it, the payment carries a val
   const s2 = await signFor(await makePayer(), plain, primaryAccept(plain)!);
   assert.equal(s2.payer_key.payment_identifier, undefined);
 });
+
+test("401 → auth (observed); 405 and INVALID_INPUT → input (observed); 404 and free text are not used", () => {
+  const row = (http_status: number, error_body: string) => ({ kind: "paid", ts: "2026-10-28T10:00:00Z", host: "h", skipped: null, tx: null, http_status, error_body });
+  assert.deepEqual([observedInputRequirement(row(401, '{"message":"Unauthorized"}'))?.kind, observedInputRequirement(row(401, ""))?.reason], ["auth", "HTTP 401"]);
+  assert.equal(observedInputRequirement(row(405, '{"error":"method_not_allowed"}'))?.kind, "input");
+  assert.equal(observedInputRequirement(row(400, '{"error_code":"INVALID_INPUT","message":"Both id and id_type are required"}'))?.reason, "code INVALID_INPUT");
+  assert.equal(observedInputRequirement(row(400, '{"error":{"code":"missing_param","message":"at least one of search_query"}}'))?.reason, "code missing_param");
+  assert.equal(observedInputRequirement(row(404, '{"error":{"message":"No API route matches /api/v1/candles."}}')), null);
+  assert.equal(observedInputRequirement(row(400, '{"error":"address required"}')), null);
+});

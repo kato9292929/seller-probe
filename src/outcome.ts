@@ -6,8 +6,11 @@
 //   not_delivered     transfer landed, then anything else (RFQ reason code 5)
 //   request_rejected  no transfer, and the seller answered 4xx (incl. 402): the purchase
 //                     never happened, so it is not a failure of the seller's delivery
-//   failed            no transfer and something else (5xx, timeout, 200 without a payment)
-export type PaidOutcome = "delivered" | "not_delivered" | "request_rejected" | "failed";
+//   delivered_unsettled  no transfer found (no settlement header, nothing on chain), yet the
+//                     seller answered 200 with a body: it gave the content away without
+//                     collecting. Not the seller failing the buyer, so not counted as a failure
+//   failed            no transfer and something else (5xx, timeout, 200 with an empty body)
+export type PaidOutcome = "delivered" | "not_delivered" | "request_rejected" | "delivered_unsettled" | "failed";
 
 export function classifyPaid(r: Record<string, unknown>): PaidOutcome | null {
   if (r.kind !== "paid" || r.skipped || r.dry_run) return null;
@@ -15,7 +18,16 @@ export function classifyPaid(r: Record<string, unknown>): PaidOutcome | null {
   const status = typeof r.http_status === "number" ? r.http_status : null;
   if (transferred) return status === 200 && Number(r.response_bytes ?? 0) > 0 ? "delivered" : "not_delivered";
   if (status !== null && status >= 400 && status < 500) return "request_rejected";
+  if (status === 200 && Number(r.response_bytes ?? 0) > 0) return "delivered_unsettled";
   return "failed";
+}
+
+const OUTCOMES = new Set<PaidOutcome>(["delivered", "not_delivered", "request_rejected", "delivered_unsettled", "failed"]);
+
+/** A row's outcome: an explicit one laid over it (paid_resolution), else classified from its fields. */
+export function outcomeOf(r: Record<string, unknown>): PaidOutcome | null {
+  if (r.kind === "paid" && !r.skipped && !r.dry_run && OUTCOMES.has(r.outcome as PaidOutcome) && r.resolution) return r.outcome as PaidOutcome;
+  return classifyPaid(r);
 }
 
 /** The seller's stated reason for a rejected purchase, best available field first. */
@@ -37,11 +49,21 @@ export function payerKeyOf(r: Record<string, unknown>): string | null {
  */
 export function applyReconciliations<T extends Record<string, unknown>>(records: T[]): T[] {
   const fix = new Map<string, Record<string, unknown>>();
-  for (const r of records) if (r.kind === "paid_reconciled" && typeof r.payer_key_value === "string") fix.set(r.payer_key_value, r);
-  if (!fix.size) return records;
+  const resolution = new Map<string, Record<string, unknown>>();
+  for (const r of records) {
+    if (typeof r.payer_key_value !== "string") continue;
+    if (r.kind === "paid_reconciled") fix.set(r.payer_key_value, r);
+    if (r.kind === "paid_resolution") resolution.set(r.payer_key_value, r);
+  }
+  if (!fix.size && !resolution.size) return records;
   return records.map((r) => {
-    if (r.kind !== "paid" || r.tx) return r;
+    if (r.kind !== "paid") return r;
     const key = payerKeyOf(r);
+    // `paid_resolution`: a later, explicit reading of a row's outcome (with its basis), e.g. a
+    // 200 that the chain search confirmed was never paid → delivered_unsettled.
+    const res = key ? resolution.get(key) : undefined;
+    if (res && !r.tx) return { ...r, outcome: res.outcome, resolution: { at: res.ts, basis: res.basis } } as T;
+    if (r.tx) return r;
     const f = key ? fix.get(key) : undefined;
     if (!f) return r;
     const merged: Record<string, unknown> = {

@@ -58,10 +58,29 @@ export function refuseReason(a: Accept | undefined, payer: Payer["address"]): st
   return null;
 }
 
+/** EIP-712 domain of official USDC on Base (name() / version() of 0x8335…2913). */
+export const BASE_USDC_EIP712 = { name: "USD Coin", version: "2" } as const;
+
+/**
+ * The EIP-712 domain to fill in when a Base accept names official USDC but its `extra` lacks
+ * name/version (signing needs both). Only for official USDC, whose values are known; any
+ * other asset is never filled (and is refused anyway).
+ */
+export function eip712Fill(a: Accept): Record<string, string> | null {
+  if (a.chain !== "base" || !isOfficialUsdc(a)) return null;
+  const extra = (a.raw as any)?.extra ?? {};
+  if (extra.name && extra.version) return null;
+  return { name: extra.name || BASE_USDC_EIP712.name, version: extra.version || BASE_USDC_EIP712.version };
+}
+
 /** Sign a payment for exactly this accept (the seller's other options are dropped). */
-export async function signFor(payer: Payer, parsed: Parsed402, a: Accept): Promise<{ payload: any; headers: Record<string, string>; payer_key: Record<string, string> }> {
+export async function signFor(
+  payer: Payer, parsed: Parsed402, a: Accept,
+): Promise<{ payload: any; headers: Record<string, string>; payer_key: Record<string, string>; eip712_filled: boolean }> {
   const doc = parsed.raw as any;
-  const payload = await payer.http.createPaymentPayload({ ...doc, accepts: [a.raw] });
+  const fill = eip712Fill(a);
+  const raw = fill ? { ...(a.raw as any), extra: { ...((a.raw as any)?.extra ?? {}), ...fill } } : a.raw;
+  const payload = await payer.http.createPaymentPayload({ ...doc, accepts: [raw] });
   // x402 `payment-identifier` extension: when the seller declares it, send a fresh id with
   // the payment (some sellers require it and answer 402 `payment_identifier_required`).
   // The id is an idempotency key, not a secret, and is logged with the attempt.
@@ -83,6 +102,7 @@ export async function signFor(payer: Payer, parsed: Parsed402, a: Accept): Promi
     payload,
     headers: payer.http.encodePaymentSignatureHeader(payload),
     payer_key: payment_identifier ? { ...payer_key, payment_identifier } : payer_key,
+    eip712_filled: !!fill,
   };
 }
 

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { generatePrivateKey } from "viem/accounts";
 import { facilitatorFromExtra } from "../src/facilitator.js";
-import { makePayer, refuseReason, signFor } from "../src/pay.js";
+import { eip712Fill, makePayer, refuseReason, signFor } from "../src/pay.js";
 import { selfTargets } from "../src/self-check.js";
 import { parse402, primaryAccept } from "../src/x402.js";
 
@@ -58,4 +58,23 @@ test("self-check refuses any host that is not ours", () => {
 
 test("an offer of amount 0 is refused: there is nothing to buy", () => {
   assert.match(refuseReason(primaryAccept(parsedOf(doc("0"))), { solana: null, base: "0xabc" })!, /nothing to buy/);
+});
+
+test("official USDC on Base without EIP-712 name/version: the known domain is filled in and flagged", async () => {
+  process.env.PROBE_EVM_PRIVATE_KEY = generatePrivateKey();
+  delete process.env.PROBE_SOLANA_SECRET_KEY;
+  const payer = await makePayer();
+  const bare = parsedOf(doc("1000", {}));
+  assert.deepEqual(eip712Fill(primaryAccept(bare)!), { name: "USD Coin", version: "2" });
+  const s = await signFor(payer, bare, primaryAccept(bare)!);
+  assert.equal(s.eip712_filled, true);
+  assert.equal(String(s.payload.payload.authorization.value), "1000");
+  const full = parsedOf(doc("1000"));
+  assert.equal(eip712Fill(primaryAccept(full)!), null);
+  assert.equal((await signFor(payer, full, primaryAccept(full)!)).eip712_filled, false);
+});
+
+test("a non-USDC asset is never filled", () => {
+  const a = primaryAccept(parsedOf(doc("1000", {})))!;
+  assert.equal(eip712Fill({ ...a, asset: "0x1111111111111111111111111111111111111111" }), null);
 });
