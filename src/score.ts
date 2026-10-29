@@ -35,6 +35,8 @@ export type HostScore = {
   items: Record<string, ItemStat>;
   last_free_at: string | null;
   last_paid_at: string | null;
+  /** Delivery Receipt: advertised (latest free measurement), ok (latest paid receipt checked). Not scored. */
+  receipt: { advertised: boolean | null; ok: boolean | null; reason: string | null };
   latest: {
     url: string | null;
     spec_version: string | null;
@@ -143,6 +145,14 @@ export function scoreHosts(records: LogRecord[], w: Weights, now = new Date()): 
       items,
       last_free_at: lastFree?.ts ?? null,
       last_paid_at: lastPaid?.ts ?? null,
+      receipt: (() => {
+        const checked = [...g.paid, ...g.unsettled].filter((r) => typeof r.receipt_ok === "boolean").sort((a, b) => a.ts.localeCompare(b.ts)).at(-1);
+        return {
+          advertised: typeof lastFree?.receipt_advertised === "boolean" ? (lastFree.receipt_advertised as boolean) : null,
+          ok: checked ? (checked.receipt_ok as boolean) : null,
+          reason: (checked?.receipt_reason ?? null) as string | null,
+        };
+      })(),
       latest: {
         url: (lastFree?.url ?? lastPaid?.url ?? null) as string | null,
         spec_version: (lastFree?.spec_version ?? null) as string | null,

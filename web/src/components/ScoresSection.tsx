@@ -109,6 +109,11 @@ export function ScoresSection({ data, error }: { data: Scores | null; error: str
                 <TableCell className={`text-right font-medium tabular-nums ${scoreTone(s.score)}`}>{s.score ?? "—"}</TableCell>
                 <TableCell>
                   <Badge variant={s.coverage === "full" ? "accent" : "outline"}>{s.coverage}</Badge>
+                  {s.receipt?.advertised && (
+                    <Badge variant="outline" className="ml-1" title={s.receipt.ok === false ? `レシートの検証に失敗：${s.receipt.reason ?? ""}` : "Delivery Receipt 対応（/.well-known/x402-receipt.json）"}>
+                      Receipt{s.receipt.ok === true ? " ✓" : s.receipt.ok === false ? " ✗" : ""}
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {s.n_free} / {s.n_paid}

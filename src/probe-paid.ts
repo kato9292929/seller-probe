@@ -5,6 +5,7 @@ import type { Target } from "./catalog.js";
 import { checkBaseTransfer, findBasePayment, verifyBaseTransfer } from "./chains/base.js";
 import { checkSolanaTransfer, findSolanaPayment, verifySolanaTransfer } from "./chains/solana.js";
 import { exclusionReason } from "./exclusions.js";
+import { RECEIPT_HEADER, receiptCheck } from "./receipt.js";
 import { facilitatorFromExtra, loadFeePayerMap } from "./facilitator.js";
 import { bodySnippet, errMsg, timedGet } from "./http.js";
 import { type Kind, append } from "./log.js";
@@ -52,6 +53,9 @@ export type PaidResult = {
   /** On a non-200 paid response: the 402's `error` field, and the first 300 characters of the body. */
   x402_error: string | null;
   error_body: string | null;
+  /** Delivery Receipt on the paid 200: verified (true/false), or null when the seller sent none (not scored). */
+  receipt_ok?: boolean | null;
+  receipt_reason?: string | null;
   /** The 402 named official USDC on Base without EIP-712 name/version; the known values were filled in to sign. */
   eip712_filled?: true;
 };
@@ -195,6 +199,9 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
     out.onchain_ok = false;
     out.onchain_detail = status === 200 ? "200 without a settlement tx (none found on chain)" : "no landed payment found";
   }
+  // Delivery Receipt: checked when the seller sends one (payment_id = tx on Solana, nonce on Base).
+  const receipt = status === 200 ? getHeader(RECEIPT_HEADER) : null;
+  Object.assign(out, await receiptCheck(receipt, body, t.url, a.chain === "solana" ? out.tx : signed.payer_key.authorization_nonce));
   // RFQ reason code 5: the transfer landed, the data did not come back.
   out.not_delivered = out.onchain_ok === true && status !== 200;
   out.outcome = classifyPaid(out as unknown as Record<string, unknown>);

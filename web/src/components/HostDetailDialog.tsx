@@ -50,6 +50,11 @@ export function HostDetailDialog({ host, onClose }: { host: string | null; onClo
                 {d.score ?? "—"}
               </span>
               <Badge variant={d.coverage === "full" ? "accent" : "outline"}>{d.coverage}</Badge>
+              {d.receipt?.advertised && (
+                <Badge variant="outline" className="ml-1">
+                  Delivery Receipt 対応{d.receipt.ok === true ? "・検証 OK" : d.receipt.ok === false ? `・検証 NG（${d.receipt.reason ?? ""}）` : ""}
+                </Badge>
+              )}
               <span className="text-sm text-muted-foreground">
                 {networkName(d.latest.network)} · {usd(d.latest.amount)} · {d.latest.spec_version ?? "—"}
               </span>

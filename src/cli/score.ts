@@ -18,7 +18,7 @@ const rfq = await refreshRfqSnapshot();
 const HISTORY_KEYS = [
   "ts", "kind", "url", "reachable", "http_status", "status_402", "spec_version", "fields_valid", "field_problems", "asset_known", "network",
   "pay_to", "amount", "payto_stable", "latency_402_ms", "error", "skipped", "settle_ok", "tx", "tx_source", "onchain_ok", "onchain_detail",
-  "delivered", "not_delivered", "latency_paid_ms", "cache_header", "facilitator", "outcome", "x402_error", "error_body", "dry_run",
+  "delivered", "not_delivered", "latency_paid_ms", "cache_header", "facilitator", "outcome", "x402_error", "error_body", "dry_run", "receipt_advertised", "receipt_ok", "receipt_reason", "eip712_filled",
 ];
 // `outcome` is read again for every paid row (rows written before a class existed, and rows a
 // `paid_resolution` re-reads); read-time only, the log is not rewritten.
