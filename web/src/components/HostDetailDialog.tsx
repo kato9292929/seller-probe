@@ -16,6 +16,8 @@ function outcome(r: Record<string, unknown>): string {
       return "納品（送金あり・200）";
     case "not_delivered":
       return `未納品：送金後に HTTP ${r.http_status}${why ? `（${why}）` : ""}`;
+    case "delivered_unsettled":
+      return "送金なしで納品：200 と本文が返ったが、決済ヘッダもチェーン上の送金もない";
     case "request_rejected":
       return `購入不成立：送金なしで HTTP ${r.http_status}${why ? `（${why}）` : "（理由は未記録）"}`;
     default:
@@ -88,12 +90,12 @@ export function HostDetailDialog({ host, onClose }: { host: string | null; onClo
                 ))}
               </ul>
             </div>
-            {(d.n_paid > 0 || d.n_rejected > 0) && (
+            {(d.n_paid > 0 || d.n_rejected > 0 || d.n_unsettled > 0) && (
               <div className="rounded-lg border p-4 text-sm">
                 <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">有料の測定の内訳</p>
                 <p>
                   納品 {d.paid_outcomes.delivered} ・ 未納品 {d.paid_outcomes.not_delivered} ・ 失敗 {d.paid_outcomes.failed}
-                  <span className="text-muted-foreground"> ／ 購入不成立 {d.n_rejected}（スコアには数えない）</span>
+                  <span className="text-muted-foreground"> ／ 購入不成立 {d.n_rejected} ・ 送金なしで納品 {d.n_unsettled ?? 0}（どちらもスコアには数えない）</span>
                 </p>
                 {d.last_rejection && (
                   <p className="mt-2 break-words text-muted-foreground">

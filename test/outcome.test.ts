@@ -169,3 +169,16 @@ test("a 200 without a settlement header, reconciled with the tx found on chain, 
   assert.equal(s.items.settle_ok.value, 0, "the missing header still counts against settle_ok");
   assert.equal(s.items.onchain_ok.value, 1);
 });
+
+test("200 with a body but no settlement and nothing on chain → delivered_unsettled; a paid_resolution re-reads an old row", async () => {
+  const { applyReconciliations, outcomeOf } = await import("../src/outcome.js");
+  const base = { kind: "paid", ts: "2026-10-28T09:51:24Z", host: "money-reactor.example", skipped: null, tx: null, response_bytes: 71, payer_key: { authorization_nonce: "0xabc" } };
+  assert.equal(classifyPaid({ ...base, http_status: 200 }), "delivered_unsettled");
+  assert.equal(classifyPaid({ ...base, http_status: 200, response_bytes: 0 }), "failed");
+  assert.equal(classifyPaid({ ...base, http_status: 502 }), "failed");
+  const old = { ...base, http_status: 200, outcome: "failed" };
+  const res = { kind: "paid_resolution", ts: "2026-10-29T00:00:00Z", host: base.host, payer_key_value: "0xabc", outcome: "delivered_unsettled", basis: "b" };
+  const [r] = applyReconciliations([old, res] as any[]);
+  assert.equal(outcomeOf(r), "delivered_unsettled");
+  assert.deepEqual((r as any).resolution, { at: res.ts, basis: "b" });
+});

@@ -124,11 +124,11 @@ score = 100 × Σ(重み × 合格率) ÷ Σ(重み)    （観測のない項目
 | 順 | ファイル:行 | 内容 |
 |---|---|---|
 | 定義 | `src/config.ts:37` | `perCall: 10_000n`（USDC 6 桁で $0.01）。env や設定ファイルからは変えられない |
-| 1 | `src/pay.ts:56` | `refuseReason`：402 の金額が `LIMITS.perCall` を超える提示は買わない（`src/probe-paid.ts:96` で呼ぶ） |
-| 2 | `src/budget.ts:30` | `assertWithinBudget`：同じ上限を再検査し、7 日間 $5（`src/budget.ts:31`）も見る。署名の前に `src/probe-paid.ts:107` で呼ぶ |
+| 1 | `src/pay.ts:56` | `refuseReason`：402 の金額が `LIMITS.perCall` を超える提示は買わない（`src/probe-paid.ts:98` で呼ぶ） |
+| 2 | `src/budget.ts:30` | `assertWithinBudget`：同じ上限を再検査し、7 日間 $5（`src/budget.ts:31`）も見る。署名の前に `src/probe-paid.ts:109` で呼ぶ |
 | 3 | `src/pay.ts:24` | 支払いライブラリ（`@x402/core`）の `spendControls.maxAmountPerPayment: "$0.01"`。上の 2 つを抜けても署名しない二重の柵 |
 
-署名は 1・2 を通った後の `src/probe-paid.ts:119`（`signFor`）でだけ行う。対象選定時のカタログ価格の上限（`src/config.ts:41` の `catalogMaxPriceUsd`）は対象を絞るためのもので、支払いの強制ではない。
+署名は 1・2 を通った後の `src/probe-paid.ts:121`（`signFor`）でだけ行う。対象選定時のカタログ価格の上限（`src/config.ts:41` の `catalogMaxPriceUsd`）は対象を絞るためのもので、支払いの強制ではない。
 
 ## 実行
 
@@ -250,11 +250,21 @@ GitHub → Settings → Secrets and variables → Actions。
 ```
 GET /scores
   { generated_at, window_days, weights_version, hosts, rfq: {status, fetched_at, used_in_score: false},
-    scores: [{ host, score, coverage, n_free, n_paid, last_free_at, last_paid_at, latest: {...}, rfq }] }
+    scores: [{ host, score, coverage, n_free, n_paid, n_rejected, n_unsettled, last_free_at, last_paid_at, latest: {...},
+               buyable_without_input, last_paid: { outcome } | null, rfq }] }
 
 GET /scores/:host     （ホストは小文字・ポートなし・先頭の www. を除いたもの）
-  { host, score, coverage, items: { reachable: {value, n, weight}, ... }, latest, rfq, history: [直近 60 件] }
+  { host, score, coverage, items: { reachable: {value, n, weight}, ... }, latest, rfq,
+    buyable_without_input, requires_input_reason, last_paid, history: [直近 60 件] }
 ```
+
+買い手が払う前に引く項目：
+
+- `buyable_without_input`：直近の選定で、入力なしの GET で買えると判定したか。`true`＝有料の対象に選んだ。`false`＝外した（入力が必要・認証が必要・402 を返さない・払える提示なし）。`null`＝判定していない（ランキング外・価格超過・除外）。
+- `requires_input_reason`：入力・認証が必要という理由で外したとき、その根拠。`{ source: "schema" | "observed", reason, evidence }`（`observed` は売り手自身のエラー応答。`evidence` に本文・時刻・戻す日）。
+- `last_paid`：直近の有料測定。`{ date, ts, outcome, amount, price_usd, network, latency_ms }`。
+
+結果の区分（`outcome`）：`delivered`（送金あり・200）、`not_delivered`（送金後に 200 以外）、`request_rejected`（送金なしで 4xx・402。購入不成立）、`delivered_unsettled`（200 と本文は返ったが、決済ヘッダもチェーン上の送金もない＝代金を取らずに渡した）、`failed`（それ以外）。`request_rejected` と `delivered_unsettled` はスコアに数えず、`n_rejected`・`n_unsettled` に件数を出す。後から区分を読み替えるときは、元の行を書き換えずに `paid_resolution` 行（`payer_key_value`・`outcome`・`basis`）を追記する。
 
 ## x402 RFQ Market との連携（§6）
 

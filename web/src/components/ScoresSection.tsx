@@ -148,7 +148,7 @@ export function ScoresSection({ data, error }: { data: Scores | null; error: str
         )}
       </div>
       <p className="mt-3 text-xs text-muted-foreground">
-        購入不成立は、支払いを送ったのに送金されないまま 4xx・402 が返った回数です（入力不足などで購入自体が成立しなかったもの）。納品の成否には数えていません。
+        購入不成立は、支払いを送ったのに送金されないまま 4xx・402 が返った回数です（入力不足などで購入自体が成立しなかったもの）。納品の成否には数えていません。200 と本文が返ったのに決済も送金もなかった回（送金なしで納品）も、失敗に数えず各ホストの詳細に別に出します。
       </p>
       <p className="mt-1 text-xs text-muted-foreground">RFQ 参考は x402 RFQ Market での成立 / 拒否 / 未納品の件数です。参考値で、スコアの計算には入れていません。</p>
       <HostDetailDialog host={host} onClose={() => setHost(null)} />

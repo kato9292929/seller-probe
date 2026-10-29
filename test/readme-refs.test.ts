@@ -11,9 +11,9 @@ const REFS: [string, number, string][] = [
   ["src/pay.ts", 56, "BigInt(a.amount) > LIMITS.perCall"],
   ["src/budget.ts", 30, "amount > LIMITS.perCall"],
   ["src/budget.ts", 31, "spent + amount > LIMITS.perWeek"],
-  ["src/probe-paid.ts", 96, "refuseReason(a, ctx.payer.address)"],
-  ["src/probe-paid.ts", 107, "assertWithinBudget(amount, spentLast7Days())"],
-  ["src/probe-paid.ts", 119, "signFor(ctx.payer, parsed, a)"],
+  ["src/probe-paid.ts", 98, "refuseReason(a, ctx.payer.address)"],
+  ["src/probe-paid.ts", 109, "assertWithinBudget(amount, spentLast7Days())"],
+  ["src/probe-paid.ts", 121, "signFor(ctx.payer, parsed, a)"],
 ];
 
 const root = new URL("../", import.meta.url);

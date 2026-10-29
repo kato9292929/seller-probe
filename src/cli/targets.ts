@@ -25,7 +25,7 @@ const t = await screenPaidTargets(buildTargets(date, catalog, pop, loadProbeConf
   const ex = exclusionReason(c, exclusions);
   if (ex) return { drop: true, reason: ex };
   const ob = observed.get(c.host);
-  if (ob) return { drop: true, reason: `requires_input (observed): ${ob.reason}`, evidence: { ...ob.evidence, until: ob.until } };
+  if (ob) return { drop: true, reason: `${ob.kind === "auth" ? "requires_auth" : "requires_input"} (observed): ${ob.reason}`, evidence: { ...ob.evidence, until: ob.until } };
   try {
     const r = await timedGet(c.url);
     if (r.res.status !== 402) return { drop: true, reason: `no_402: HTTP ${r.res.status} on GET` };

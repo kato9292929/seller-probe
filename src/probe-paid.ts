@@ -52,6 +52,8 @@ export type PaidResult = {
   /** On a non-200 paid response: the 402's `error` field, and the first 300 characters of the body. */
   x402_error: string | null;
   error_body: string | null;
+  /** The 402 named official USDC on Base without EIP-712 name/version; the known values were filled in to sign. */
+  eip712_filled?: true;
 };
 
 export type PaidRun = PaidResult & { /** Kept for the self-check (replay of the same header). */ _payment_headers?: Record<string, string>; _body?: Buffer };
@@ -121,13 +123,14 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
     return { ...out, skipped: `could not sign: ${errMsg(e)}` };
   }
   out.payer_key = signed.payer_key;
+  if (signed.eip712_filled) out.eip712_filled = true;
   // Dry run stops here: the signed header is never sent and never written anywhere
   // (a signed EIP-3009 authorization can be submitted by anyone, a signed Solana tx
   // while its blockhash is valid). Only the payer-side identifiers above are kept.
   if (ctx.dryRun) return { ...out, skipped: "dry_run: signed, not sent" };
   append(ctx.logDir, {
     kind: ctx.attemptKind, host: t.host, url: t.url, network: a.network, chain: a.chain, amount: a.amount, pay_to: a.payTo,
-    payer: out.payer, ...signed.payer_key, ...(ctx.extra ?? {}),
+    payer: out.payer, ...signed.payer_key, ...(signed.eip712_filled ? { eip712_filled: true } : {}), ...(ctx.extra ?? {}),
   });
 
   // 4. paid request

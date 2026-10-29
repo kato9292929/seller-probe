@@ -17,7 +17,8 @@ export type ScoreRow = {
   n_free: number;
   n_paid: number;
   n_rejected: number;
-  paid_outcomes: { delivered: number; not_delivered: number; request_rejected: number; failed: number };
+  n_unsettled: number;
+  paid_outcomes: { delivered: number; not_delivered: number; request_rejected: number; delivered_unsettled: number; failed: number };
   last_rejection: { ts: string; http_status: number | null; error: string | null } | null;
   last_free_at: string | null;
   last_paid_at: string | null;
