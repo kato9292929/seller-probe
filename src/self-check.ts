@@ -1,11 +1,16 @@
 // §3.3 Tests that are attacks if aimed at someone else, so they run ONLY against our
 // own sellers (OSD, JIN): replaying a used payment header, and serving a paid
 // response from cache. Results go to self-check/, never into the public score.
+// A seller that advertises Delivery Receipts (/.well-known/x402-receipt.json) is asked for a
+// refetch instead of a replay: the same payment header plus X-Payment-Refetch must return the
+// same body, with a receipt that verifies, and without settling again (no PAYMENT-RESPONSE).
 import { hostKey } from "./catalog.js";
 import { errMsg, timedGet } from "./http.js";
 import { SELF_CHECK_DIR, append } from "./log.js";
 import type { Payer } from "./pay.js";
 import { probePaid, toRecord } from "./probe-paid.js";
+import { RECEIPT_HEADER, receiptCheck, wellKnownOf } from "./receipt.js";
+import { REFETCH_HEADER } from "./receipt/verify.js";
 
 /** Our own sellers. The allowlist is hard-coded on purpose; URLs come from env but must be on these hosts. */
 export const SELF_HOSTS = ["jin.x402jp.com", "osd.x402jp.com"] as const;
@@ -30,12 +35,32 @@ export async function selfCheck(payer: Payer): Promise<Record<string, unknown>[]
     });
     const rec: Record<string, unknown> = { kind: "self_check", host, target: s.name, paid: toRecord(paid) };
     if (paid.delivered && paid._payment_headers) {
-      // Replay: the exact same payment header again. Must not get the data a second time.
-      try {
-        const r = await timedGet(s.url, paid._payment_headers, 60_000);
-        rec.replay = { http_status: r.res.status, response_bytes: r.body.length, rejected: r.res.status !== 200 };
-      } catch (e) {
-        rec.replay = { error: errMsg(e), rejected: null };
+      const wk = await wellKnownOf(s.url);
+      rec.receipt_advertised = wk.advertised;
+      const paymentId = paid.chain === "solana" ? paid.tx : (paid.payer_key?.authorization_nonce ?? null);
+      if (wk.advertised && wk.wellKnown && paymentId) {
+        // Refetch: same payment header + X-Payment-Refetch → same body, verified receipt, no new settlement.
+        try {
+          const r = await timedGet(s.url, { ...paid._payment_headers, [REFETCH_HEADER]: paymentId }, 60_000);
+          const v = await receiptCheck(r.res.headers.get(RECEIPT_HEADER), r.body, s.url, paymentId, wk.wellKnown);
+          const sameBody = paid._body ? r.body.equals(paid._body) : false;
+          const charged = !!(r.res.headers.get("payment-response") || r.res.headers.get("x-payment-response"));
+          rec.refetch = {
+            http_status: r.res.status, same_body_as_paid: sameBody, receipt_ok: v.receipt_ok, receipt_reason: v.receipt_reason,
+            settled_again: charged, ok: r.res.status === 200 && sameBody && v.receipt_ok === true && !charged,
+          };
+        } catch (e) {
+          rec.refetch = { error: errMsg(e), ok: null };
+        }
+        rec.replay = { skipped: "receipt advertised: refetch tested instead of replay" };
+      } else {
+        // Replay: the exact same payment header again. Must not get the data a second time.
+        try {
+          const r = await timedGet(s.url, paid._payment_headers, 60_000);
+          rec.replay = { http_status: r.res.status, response_bytes: r.body.length, rejected: r.res.status !== 200 };
+        } catch (e) {
+          rec.replay = { error: errMsg(e), rejected: null };
+        }
       }
       // Cache: no payment at all, right after a paid 200. Must be a 402, not the paid body.
       try {

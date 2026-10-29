@@ -22,6 +22,7 @@ export type ScoreRow = {
   last_rejection: { ts: string; http_status: number | null; error: string | null } | null;
   last_free_at: string | null;
   last_paid_at: string | null;
+  receipt?: { advertised: boolean | null; ok: boolean | null; reason: string | null };
   latest: Latest;
   rfq: RfqRef;
 };

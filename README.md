@@ -86,13 +86,23 @@ GET が 405 のときだけ空の JSON 本文で POST して 402 を取る（`me
 | `delivered` | 送金成立（`tx` あり）かつ 200 と空でない本文 | 成功 |
 | `not_delivered` | 送金成立かつ 200 以外（または空の本文） | 失敗 |
 | `request_rejected` | 送金なし（`tx` なし）で 4xx または 402 | **失敗に数えない**。納品の成否の分母にも分子にも入れず、件数（`n_rejected`）と直近の理由（`last_rejection`）だけを出す |
-| `failed` | 送金なしでそれ以外（5xx・タイムアウト・送金のない 200） | 失敗（従来どおり） |
+| `delivered_unsettled` | 送金なし（決済ヘッダもチェーン上の送金もない）で 200 と空でない本文 | **失敗に数えない**。代金を取らずに渡したもの。件数（`n_unsettled`）だけを出す |
+| `failed` | 送金なしでそれ以外（5xx・タイムアウト・空の 200） | 失敗（従来どおり） |
 
 **決済の応答ヘッダが無いとき**：200 が返っても PAYMENT-RESPONSE / X-PAYMENT-RESPONSE が無ければ、送信前に記録した自分の署名（Base は nonce）でチェーンを探す。見つかれば `tx`（`tx_source: "onchain_search"`）が入り `delivered` になる。ヘッダの欠落は売り手の不備なので `settle_ok: false` として減点に残す（2026-10-26 の glim.sh：決済して 2KB を返したがヘッダが無かった）。
 
 **後から見つけた支払いの照合**（`npm run reconcile`、`src/cli/reconcile.ts`）：`tx` の無い有料の行について、自分の署名・nonce でチェーンを探し、見つかれば `kind: "paid_reconciled"`（元の行の `payer_key_value`、`tx`、`onchain_ok`）を**追記**する。元の行は書き換えない。集計と公開用の履歴は、照合の行を元の行に重ねて読む（`applyReconciliations`）。見つからなかった行はそのまま（送金なしが確定）。
 
 **2026-10-19 分の読み替え**：10/19 の行は `outcome` を記録する前のもの。ログは書き換えず、集計（`src/score.ts`）と公開用の履歴（`src/cli/score.ts`）で、上の条件をそのまま当てはめて読み替える。`tx` が null で `http_status` が 400〜499（402 を含む）の行は `request_rejected`、`tx` があって 200 以外の行（x402.sniperx.fun の 400）は `not_delivered` のまま。10/19 の行には `x402_error` / `error_body` が無いので、理由は「未記録」と表示する。
+
+**EIP-712 の補完**：Base の 402 が公式 USDC を指しているのに `extra` に `name`・`version` が無いときだけ、公式 USDC の値（`USD Coin`・`2`。チェーン上の `name()`・`version()`）で補って署名し、行に `eip712_filled: true` を残す（`src/pay.ts` の `eip712Fill`）。公式 USDC 以外は補わない（買わない）。
+
+**Delivery Receipt**（`kato9292929/delivery-receipt`、検証は `src/receipt/verify.ts` に取り込み）：
+
+- 無料：402 を返したホストにだけ `/.well-known/x402-receipt.json` を引き、鍵が 1 本以上あれば `receipt_advertised: true`（無い・不正は false、届かないは null）。
+- 有料：200 に `X-Delivery-Receipt` があれば、署名・本文のハッシュ・`payment_id`（Solana は tx、Base は nonce）を検証して `receipt_ok`（理由は `receipt_reason`）。レシートの無い売り手は null で、**減点しない**（スコアの項目に入れていない）。
+- 公開ページと `/scores` に `receipt: { advertised, ok, reason }`。対応している売り手には「Receipt」の表示。
+- 自社試験：`receipt_advertised` の売り手（自社の OSD・JIN）には「同じ支払いヘッダの再送が拒否されるか」の代わりに、「同じ支払いヘッダ＋`X-Payment-Refetch` で、課金なし（PAYMENT-RESPONSE なし）に同じ本文と検証の通るレシートが返るか」を当てる（`refetch`）。
 
 有料で買うのは GET で 402 を返す、`exact`・公式 USDC・Solana/Base 本番の提示だけです（Base は EIP-3009 のみ、Permit2 は買わない）。買わなかった理由は `skipped` に残し、スコアには数えません。
 
@@ -124,11 +134,11 @@ score = 100 × Σ(重み × 合格率) ÷ Σ(重み)    （観測のない項目
 | 順 | ファイル:行 | 内容 |
 |---|---|---|
 | 定義 | `src/config.ts:37` | `perCall: 10_000n`（USDC 6 桁で $0.01）。env や設定ファイルからは変えられない |
-| 1 | `src/pay.ts:56` | `refuseReason`：402 の金額が `LIMITS.perCall` を超える提示は買わない（`src/probe-paid.ts:98` で呼ぶ） |
-| 2 | `src/budget.ts:30` | `assertWithinBudget`：同じ上限を再検査し、7 日間 $5（`src/budget.ts:31`）も見る。署名の前に `src/probe-paid.ts:109` で呼ぶ |
+| 1 | `src/pay.ts:56` | `refuseReason`：402 の金額が `LIMITS.perCall` を超える提示は買わない（`src/probe-paid.ts:102` で呼ぶ） |
+| 2 | `src/budget.ts:30` | `assertWithinBudget`：同じ上限を再検査し、7 日間 $5（`src/budget.ts:31`）も見る。署名の前に `src/probe-paid.ts:113` で呼ぶ |
 | 3 | `src/pay.ts:24` | 支払いライブラリ（`@x402/core`）の `spendControls.maxAmountPerPayment: "$0.01"`。上の 2 つを抜けても署名しない二重の柵 |
 
-署名は 1・2 を通った後の `src/probe-paid.ts:121`（`signFor`）でだけ行う。対象選定時のカタログ価格の上限（`src/config.ts:41` の `catalogMaxPriceUsd`）は対象を絞るためのもので、支払いの強制ではない。
+署名は 1・2 を通った後の `src/probe-paid.ts:125`（`signFor`）でだけ行う。対象選定時のカタログ価格の上限（`src/config.ts:41` の `catalogMaxPriceUsd`）は対象を絞るためのもので、支払いの強制ではない。
 
 ## 実行
 
@@ -265,6 +275,25 @@ GET /scores/:host     （ホストは小文字・ポートなし・先頭の www
 - `last_paid`：直近の有料測定。`{ date, ts, outcome, amount, price_usd, network, latency_ms }`。
 
 結果の区分（`outcome`）：`delivered`（送金あり・200）、`not_delivered`（送金後に 200 以外）、`request_rejected`（送金なしで 4xx・402。購入不成立）、`delivered_unsettled`（200 と本文は返ったが、決済ヘッダもチェーン上の送金もない＝代金を取らずに渡した）、`failed`（それ以外）。`request_rejected` と `delivered_unsettled` はスコアに数えず、`n_rejected`・`n_unsettled` に件数を出す。後から区分を読み替えるときは、元の行を書き換えずに `paid_resolution` 行（`payer_key_value`・`outcome`・`basis`）を追記する。
+
+## 売り手の点検（/check）
+
+`https://probe.x402jp.com/check` に URL を 1 つ入れると、その場で支払いなしに検査する（API は `GET /check?url=https://…`、JSON）。
+GET を 1 回と `/.well-known/x402-receipt.json` を 1 回だけ送る。再送・負荷など攻撃と区別がつかない試験はしない。同じホストは 1 分に 1 回まで（関数のインスタンスごと、最善努力）。
+
+| 項目 | 基準 |
+|---|---|
+| 402 を返すか | 支払いなしの GET で 402（リダイレクトは追わない） |
+| 402 の必須項目 | scheme・network・asset・payTo・金額・resource |
+| asset が公式 USDC か | 各チェーンのアドレスと一致 |
+| EIP-712 の name・version | Base の USDC で extra にあるか |
+| 入力スキーマ | 必須の入力があるか、書かれているか |
+| 支払い識別子 | payment-identifier を必須にしているか |
+| Delivery Receipt | `/.well-known/x402-receipt.json` があるか |
+| Probe の記録 | 直近の有料測定の結果と、購入不成立の理由（決済ヘッダは支払わないと分からないので、点検では検査しない） |
+
+各項目に直し方を 1 行付ける。https・公開ホスト名・公開アドレスの URL だけを検査する（`src/check.ts` の `validateTarget`。社内アドレスや localhost は断る）。
+関数は `api/check.js`（`npm run build:api` で `src/api-check.ts` から作ってコミットする。テストが最新かを確かめる）。`vercel.json` で `/check?url=…` を関数へ、`/check` をページへ回す。
 
 ## x402 RFQ Market との連携（§6）
 

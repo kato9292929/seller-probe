@@ -19,4 +19,4 @@ if (process.env.GITHUB_ACTIONS && process.env.PROBE_PAID_ENABLED !== "true") {
   process.exit(0);
 }
 const results = await selfCheck(await makePayer());
-for (const r of results) console.log(JSON.stringify({ target: r.target, replay: r.replay, cache: r.cache, tx: (r.paid as any)?.tx }));
+for (const r of results) console.log(JSON.stringify({ target: r.target, receipt_ok: (r.paid as any)?.receipt_ok ?? null, refetch: r.refetch ?? null, replay: r.replay, cache: r.cache, tx: (r.paid as any)?.tx }));

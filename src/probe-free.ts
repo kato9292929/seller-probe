@@ -1,6 +1,7 @@
 // §3.1 Free probe: GET without paying, check the 402.
 import type { Target } from "./catalog.js";
 import { bodySnippet, errMsg, timedGet } from "./http.js";
+import { wellKnownOf } from "./receipt.js";
 import { type Parsed402, fieldProblems, isOfficialUsdc, parse402, primaryAccept } from "./x402.js";
 
 export type FreeResult = {
@@ -28,6 +29,8 @@ export type FreeResult = {
   error: string | null;
   /** On a non-402 answer: the first 300 characters of the body. */
   error_body?: string | null;
+  /** Delivery Receipt: /.well-known/x402-receipt.json with ≥ 1 key (asked only of hosts that answered 402). */
+  receipt_advertised?: boolean | null;
 };
 
 /** previousPayTo(host, chain) → payTo from this host's last free measurement on that chain. */
@@ -49,7 +52,9 @@ export async function probeFree(t: Target, previousPayTo: (host: string, chain: 
     };
   }
   const res = r.res;
-  return { ...judge402(base, res.status, (n) => res.headers.get(n), r.body.toString("utf8"), r.headers_ms, previousPayTo), method };
+  const j = judge402(base, res.status, (n) => res.headers.get(n), r.body.toString("utf8"), r.headers_ms, previousPayTo);
+  const receipt_advertised = j.status_402 ? (await wellKnownOf(t.url)).advertised : null;
+  return { ...j, method, receipt_advertised };
 }
 
 /** Pure part of the free probe (fixture-testable). */

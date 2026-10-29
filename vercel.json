@@ -3,22 +3,54 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/scores", "destination": "/data/scores.json" },
-    { "source": "/scores/:host", "destination": "/data/hosts/:host.json" }
+    {
+      "source": "/check",
+      "has": [
+        {
+          "type": "query",
+          "key": "url"
+        }
+      ],
+      "destination": "/api/check"
+    },
+    {
+      "source": "/check",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/scores",
+      "destination": "/data/scores.json"
+    },
+    {
+      "source": "/scores/:host",
+      "destination": "/data/hosts/:host.json"
+    }
   ],
   "headers": [
     {
       "source": "/scores/:path*",
       "headers": [
-        { "key": "access-control-allow-origin", "value": "*" },
-        { "key": "cache-control", "value": "public, max-age=300" }
+        {
+          "key": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "key": "cache-control",
+          "value": "public, max-age=300"
+        }
       ]
     },
     {
       "source": "/data/:path*",
       "headers": [
-        { "key": "access-control-allow-origin", "value": "*" },
-        { "key": "cache-control", "value": "public, max-age=300" }
+        {
+          "key": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "key": "cache-control",
+          "value": "public, max-age=300"
+        }
       ]
     }
   ]

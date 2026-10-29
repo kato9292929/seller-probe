@@ -4,6 +4,7 @@ const LINKS = [
   { href: "#formula", label: "Formula" },
   { href: "#method", label: "Method" },
   { href: "#api", label: "API" },
+  { href: "/check", label: "Check" },
 ];
 
 export function Nav() {

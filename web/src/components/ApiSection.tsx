@@ -12,6 +12,8 @@ export function ApiSection() {
       <pre className="overflow-x-auto rounded-xl border bg-card/60 p-5 text-sm leading-relaxed">
         {`GET /scores          全ホストのスコア一覧
 GET /scores/:host    ホスト別の詳細と直近の測定履歴（未測定のホストは 404）
+                     buyable_without_input・requires_input_reason・last_paid（買う前の照会用）
+GET /check?url=…     売り手の点検（支払いなしでその場で検査。同じホストは 1 分に 1 回）
 
 curl https://probe.x402jp.com/scores/sol.blockrun.ai`}
       </pre>
