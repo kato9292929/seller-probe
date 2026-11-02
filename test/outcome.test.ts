@@ -194,3 +194,9 @@ test("price check: catalog / 402 / chain compared; more on chain than offered is
   assert.deepEqual(priceCheck(null, 1000n, null).mismatch, [], "no catalog price, nothing on chain: nothing to compare");
   assert.equal(classifyPaid({ kind: "paid", skipped: null, tx: "0xabc", http_status: 200, response_bytes: 10, overcharged: true }), "overcharged");
 });
+
+test("a settlement-header tx the chain does not have moved nothing (settlement_pending)", () => {
+  const r = { kind: "paid", skipped: null, tx: "0x969e", tx_source: "settle_header", onchain_ok: false, onchain_detail: "receipt not found", http_status: 402, response_bytes: 2 };
+  assert.equal(classifyPaid(r), "request_rejected");
+  assert.equal(classifyPaid({ ...r, onchain_detail: "USDC Transfer value 2000 != 1000" }), "not_delivered", "money that moved wrongly still counts");
+});
