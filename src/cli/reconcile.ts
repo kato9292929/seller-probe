@@ -10,7 +10,10 @@ import { payerKeyOf } from "../outcome.js";
 const days = Number(process.env.RECONCILE_DAYS ?? 14);
 const recs = readRecords(LOG_DIR(), days);
 const done = new Set(recs.filter((r) => r.kind === "paid_reconciled").map((r) => String(r.payer_key_value)));
-const todo = recs.filter((r) => r.kind === "paid" && !r.skipped && !r.dry_run && !r.tx && payerKeyOf(r) && !done.has(payerKeyOf(r)!));
+// RECONCILE_ONLY_200=1: only rows that got a 200 without a tx (the ones a late-found payment
+// would turn from delivered_unsettled into delivered); with thousands of rows a full pass is slow.
+const only200 = process.env.RECONCILE_ONLY_200 === "1";
+const todo = recs.filter((r) => r.kind === "paid" && !r.skipped && !r.dry_run && !r.tx && payerKeyOf(r) && !done.has(payerKeyOf(r)!) && (!only200 || r.http_status === 200));
 console.log(`reconcile: ${todo.length} paid row(s) without a tx in the last ${days} days`);
 for (const r of todo) {
   const key = payerKeyOf(r)!;
