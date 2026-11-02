@@ -21,7 +21,7 @@ src/
   probe-paid.ts      §3.2 有料の測定（not_delivered の判定を含む）
   outcome.ts         有料の測定の区分（delivered / not_delivered / request_rejected / failed）。古いログも同じ規則で読む
   pay.ts             支払いクライアント（@x402/* 2.28、exact・公式 USDC・Solana/Base 本番のみ）
-  budget.ts          1 コール $0.01・7 日間 $5 の強制
+  budget.ts          1 コール $0.01・7 日間 $25 の強制
   chains/solana.ts   自分の署名の抽出、tx の照会、USDC 送金の照合
   chains/base.ts     EIP-3009 の nonce、receipt の照会、USDC Transfer の照合
   facilitator.ts     402 の extra からファシリテーターを判定
@@ -56,9 +56,11 @@ web/                 公開ページ（React + Vite + Tailwind + shadcn/ui）。
    - `requires_input (observed): …`：前回の購入で、売り手自身のエラー応答が入力不足を示した（`src/observed.ts`）。根拠にするのは構造化された項目だけで、自由文の言い回しは照合しない。①本文の `missing` 配列（例 loyalspark：`"error_code":"missing_fields","missing":["token_address","customer_address"]`）、②入力欠落を表すエラーコード（`error_code` / `code` が `missing_parameter` など決まった値。例 agents-trust：`"code":"MISSING_PARAMETER","parameter":"url"`）、③402 の `error` 欄の「use POST」の明示（例 freeq）。外した記録（`paid.screened.dropped[].evidence`）に、根拠にしたエラーの本文・時刻・HTTP ステータス・戻す日（`until`）を残す。**観測から 4 週間（28 日）たつと候補に戻して測り直す**（売り手が仕様を直すことがあるため）。その後の購入が成立すれば、その時点で外れなくなる。
 6. **入力が必要な売り手は外す**：有料の候補ごとに支払いなしの GET で 402 を取り、入力スキーマ（v2 の bazaar 拡張 `extensions.bazaar` の `schema.properties.input` / `info.input`、v1 の `accepts[].outputSchema.input`）に必須の入力があれば外す（`src/x402.ts` の `inputRequirement`）。必須とみなすのは、メソッドが GET/HEAD 以外・本文の必須項目（`body.required`）・クエリの必須項目（`queryParams.required` や `required: true` のフィールド）。外したホストは `paid.skipped_popular` と `paid.screened.requires_input` に `requires_input: <理由>` で残し、次点を繰り上げて `top_n` 件にする。URL の見た目では判定しない。スキーマを出していない売り手は対象に残す。買う直前にも同じ判定をし、必須入力があれば `skipped: "requires_input: …"`（スコアに数えない）。
 
+**全カタログ（2026-11-02 から）**：`config/probe.json` の `catalog.rotation_groups: 4`。ランキング外でも、直近の無料の測定で払える 402（exact・公式 USDC・Solana/Base・0 < 金額 ≤ $0.01）を返したホストを有料の候補にし（`paid.catalog`）、上と同じ判定で絞る。ホスト名のハッシュで 4 群に分け、毎週 1 群（4 週で一巡）。ランキングの売り手は毎週。候補はカタログの価格の安い順。週次の実行（`PROBE_CATALOG=1`）だけがカタログを候補にし、毎日の選定はランキングだけを見る。初回は `PROBE_ROTATION=all` で全群を買った。購入は 6 件ずつ並行（`PROBE_PAID_CONCURRENCY`）、直近 20 時間に買ったホストは買い直さない。
+
 `config/probe.json` は 2026-10-28 から `phase: "all_buyable", top_n: "all", random_n: 0`（ランキング上位で買える売り手すべて、ランダム枠なし）。それまでは `top_n: 10, random_n: 0`。
 
-**残高による後回し**：有料の測定は開始時に各チェーンの USDC 残高を読み（`src/balance.ts`）、順位の高い順に払う。そのチェーンで残りが足りない売り手は買わずに `skipped: "deferred: balance: …"` と記録する（スコアに数えない。翌週以降に回る）。残高が読めなかったチェーンはこの判定をしない（上限 $0.01・$5 は常に効く）。
+**残高による後回し**：有料の測定は開始時に各チェーンの USDC 残高を読み（`src/balance.ts`）、順位の高い順に払う。そのチェーンで残りが足りない売り手は買わずに `skipped: "deferred: balance: …"` と記録する（スコアに数えない。翌週以降に回る）。残高が読めなかったチェーンはこの判定をしない（上限 $0.01・$25 は常に効く）。
 
 ## 測定項目（§3）
 
@@ -125,7 +127,7 @@ score = 100 × Σ(重み × 合格率) ÷ Σ(重み)    （観測のない項目
 
 ## 支払いの上限（§5）
 
-`src/config.ts` の `LIMITS`（1 コール 10000 = $0.01、7 日間 5000000 = $5）。`src/budget.ts` が**署名する前**に検査し、超える購入は止めて `skipped: "budget: …"` を記録する。
+`src/config.ts` の `LIMITS`（1 コール 10000 = $0.01、7 日間 25000000 = $25。2026-11-01 までは $5）。`src/budget.ts` が**署名する前**に検査し、超える購入は止めて `skipped: "budget: …"` を記録する。
 使った額は `log/` と `self-check/` の `*_attempt` レコード（送信前に書く）を直近 7 日分足して求めるので、決済されなかった試行も使ったものとして数える（安全側）。
 支払いライブラリ側にも `$0.01` の上限を重ねている。
 
@@ -134,11 +136,11 @@ score = 100 × Σ(重み × 合格率) ÷ Σ(重み)    （観測のない項目
 | 順 | ファイル:行 | 内容 |
 |---|---|---|
 | 定義 | `src/config.ts:37` | `perCall: 10_000n`（USDC 6 桁で $0.01）。env や設定ファイルからは変えられない |
-| 1 | `src/pay.ts:56` | `refuseReason`：402 の金額が `LIMITS.perCall` を超える提示は買わない（`src/probe-paid.ts:102` で呼ぶ） |
-| 2 | `src/budget.ts:30` | `assertWithinBudget`：同じ上限を再検査し、7 日間 $5（`src/budget.ts:31`）も見る。署名の前に `src/probe-paid.ts:113` で呼ぶ |
+| 1 | `src/pay.ts:56` | `refuseReason`：402 の金額が `LIMITS.perCall` を超える提示は買わない（`src/probe-paid.ts:113` で呼ぶ） |
+| 2 | `src/budget.ts:30` | `assertWithinBudget`：同じ上限を再検査し、7 日間 $25（`src/budget.ts:31`、定義は `src/config.ts:39`）も見る。署名の前に `src/probe-paid.ts:127` で呼ぶ。並行して買うときは、上限の検査・署名・試行の記録を 1 件ずつ順に行う（`SpendTracker`）ので、同時に上限を越えることはない |
 | 3 | `src/pay.ts:24` | 支払いライブラリ（`@x402/core`）の `spendControls.maxAmountPerPayment: "$0.01"`。上の 2 つを抜けても署名しない二重の柵 |
 
-署名は 1・2 を通った後の `src/probe-paid.ts:125`（`signFor`）でだけ行う。対象選定時のカタログ価格の上限（`src/config.ts:41` の `catalogMaxPriceUsd`）は対象を絞るためのもので、支払いの強制ではない。
+署名は 1・2 を通った後の `src/probe-paid.ts:139`（`signFor`）でだけ行う。対象選定時のカタログ価格の上限（`src/config.ts:41` の `catalogMaxPriceUsd`）は対象を絞るためのもので、支払いの強制ではない。
 
 ## 実行
 
@@ -169,12 +171,12 @@ npm run wallet:new
 - 最後に「Secret 名 → 貼り付ける値」を表示する（Solana は base58、Base は 0x hex）。名前は下の Secrets 一覧と同じ。
 - Autonomous Agent の鍵・ウォレットは使わない（AA の購入記録と混ぜないため）。
 
-**入金の目安**（7 日 $5 の上限に合わせる）：
+**入金の目安**（2026-11-02 からの全カタログ購入で、1 週あたり Base 約 $3・Solana 約 $0.2。7 日上限は $25）：
 
 | チェーン | USDC | ガス代 |
 |---|---|---|
 | Solana | $5 | SOL 少額（例 0.01 SOL。手数料は通常ファシリテーターが払うので予備） |
-| Base | $5 | ETH 少額（例 0.0005 ETH。EIP-3009 なので通常は不要、予備） |
+| Base | $10 | ETH 少額（例 0.0005 ETH。EIP-3009 なので通常は不要、予備） |
 
 ## 本番前の確認（--dry-run）
 
@@ -275,6 +277,26 @@ GET /scores/:host     （ホストは小文字・ポートなし・先頭の www
 - `last_paid`：直近の有料測定。`{ date, ts, outcome, amount, price_usd, network, latency_ms }`。
 
 結果の区分（`outcome`）：`delivered`（送金あり・200）、`not_delivered`（送金後に 200 以外）、`request_rejected`（送金なしで 4xx・402。購入不成立）、`delivered_unsettled`（200 と本文は返ったが、決済ヘッダもチェーン上の送金もない＝代金を取らずに渡した）、`failed`（それ以外）。`request_rejected` と `delivered_unsettled` はスコアに数えず、`n_rejected`・`n_unsettled` に件数を出す。後から区分を読み替えるときは、元の行を書き換えずに `paid_resolution` 行（`payer_key_value`・`outcome`・`basis`）を追記する。
+
+## 価格の3点照合と購入ごとの証拠
+
+有料の測定ごとに、カタログの価格（x402 Endpoint のスナップショット）・402 の提示額・チェーン上で実際に動いた USDC を比べて `price_check`（`catalog`・`offered`・`transferred`、違った場所 `mismatch`、差額）を記録する。どれか1つでも違えば `price_mismatch: true`。送金が提示額を超えたら `overcharged: true` で、結果の区分も `overcharged` になり、未納品と同じ重さの失敗に数える（`not_delivered` の項目が 0）。件数は `/scores` の `price_mismatch`（購入数・ホスト数）、ホストごとに `n_price_mismatch`・`last_price_mismatch`。
+
+各購入の行には `tx`・本文の SHA-256（`response_sha256`）・受け取ったレシートの原文（`receipt`）を残し、`GET /scores/{ホスト}` の `history` にも載せる。公開ページのホストの詳細に、購入ごとのエクスプローラ（basescan / solscan）へのリンクを出す。第三者が「その日にその額を払い、その本文が返った」ことを確かめられる。
+
+## 買い手からの報告（POST /reports）
+
+`@x402jp/safe-buy` の買い手が許可したときだけ送る匿名の報告の受け口。保存するのは `host`・`url`（クエリなし）・`network`・`amount`・`outcome`・`http_status`・`latency_ms`・`settled_header`・`onchain_found`・`receipt_ok`・`refetched`・`sdk`・`ts` だけで、支払い元・tx・本文は送られても捨てる。Probe 自身の測定とは別に保存し（Upstash、`reports:*`）、公開ページでは別の行に件数だけ出す。スコアには入れない。1 IP あたり 1 分 30 件まで。
+
+## 売り手の継続監視（POST /monitor）
+
+売り手が自分の URL と webhook を登録すると（`POST /monitor` に `{ "url": "https://…", "webhook": "https://…" }`、x402 で $0.10・30 日分。Solana か Base の USDC、Probe のウォレット宛て、PayAI で決済）、毎日その URL を支払いなしで測り、前日から変わったときに webhook へ通知する：402 を返さなくなった（`no_402`）・形式が崩れた（`format_broken`）・価格が変わった（`price_changed`）・payTo が変わった（`payto_changed`）・Delivery Receipt の鍵が消えた（`receipt_keys_gone`）・402 に戻った（`recovered`）。Probe の週次の購入にそのホストが入っていれば、結果の区分と売り手の返した理由も送る（`paid_result`）。
+
+- 登録の検証（https・公開ホスト）は支払いの前に行い、通らなければ決済しない。決済が成立してから保存する（`src/paywall.ts`）。
+- 通知には `X-Probe-Signature: sha256=<HMAC-SHA256(secret, 本文)>` を付ける。secret は登録時に1回だけ返す。
+- 通知は `npm run notify`（free-daily の後）と `npm run notify -- --paid`（paid-weekly の後）。測った結果は `log/` に書かない（登録は測定ではない）。
+- 保存先は Upstash（`UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`。Vercel の環境変数と GitHub の Secrets の両方）。未設定なら `/reports`・`/monitor` は 503、通知は何もしない。
+- 掲載は無料のまま。監視は掲載・スコアに影響しない。
 
 ## 売り手の点検（/check）
 

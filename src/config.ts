@@ -35,8 +35,8 @@ export function chainOf(network: string | undefined): Chain | null {
 export const LIMITS = {
   /** $0.01 per call. */
   perCall: 10_000n,
-  /** $5 per rolling 7 days. */
-  perWeek: 5_000_000n,
+  /** $25 per rolling 7 days (whole-catalog purchases from 2026-11-02; $5 before). */
+  perWeek: 25_000_000n,
   /** Catalog price ceiling for paid targets, in USD. */
   catalogMaxPriceUsd: 0.01,
 } as const;

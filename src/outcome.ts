@@ -10,10 +10,34 @@
 //                     seller answered 200 with a body: it gave the content away without
 //                     collecting. Not the seller failing the buyer, so not counted as a failure
 //   failed            no transfer and something else (5xx, timeout, 200 with an empty body)
-export type PaidOutcome = "delivered" | "not_delivered" | "request_rejected" | "delivered_unsettled" | "failed";
+//   overcharged       the transfer on chain took more than the 402 offered: a failure as heavy
+//                     as not_delivered, whatever came back
+export type PaidOutcome = "delivered" | "not_delivered" | "request_rejected" | "delivered_unsettled" | "failed" | "overcharged";
+
+/**
+ * Three prices of one purchase, compared: the catalog's (x402 Endpoint snapshot, USD), the 402's
+ * offer and the USDC that actually moved on chain (atomic). Any difference is a price_mismatch,
+ * with where it was; more on chain than offered is overcharged.
+ */
+export type PriceCheck = {
+  catalog: string | null; offered: string; transferred: string | null;
+  mismatch: ("catalog_vs_402" | "402_vs_transfer")[]; diff_catalog: string | null; diff_transfer: string | null; overcharged: boolean;
+};
+export function priceCheck(catalogUsd: number | null | undefined, offered: bigint, transferred: bigint | null | undefined): PriceCheck {
+  const cat = typeof catalogUsd === "number" && catalogUsd > 0 ? BigInt(Math.round(catalogUsd * 1e6)) : null;
+  const tr = typeof transferred === "bigint" ? transferred : null;
+  const mismatch: PriceCheck["mismatch"] = [];
+  if (cat !== null && cat !== offered) mismatch.push("catalog_vs_402");
+  if (tr !== null && tr !== offered) mismatch.push("402_vs_transfer");
+  return {
+    catalog: cat === null ? null : String(cat), offered: String(offered), transferred: tr === null ? null : String(tr), mismatch,
+    diff_catalog: cat === null ? null : String(offered - cat), diff_transfer: tr === null ? null : String(tr - offered), overcharged: tr !== null && tr > offered,
+  };
+}
 
 export function classifyPaid(r: Record<string, unknown>): PaidOutcome | null {
   if (r.kind !== "paid" || r.skipped || r.dry_run) return null;
+  if (r.overcharged === true) return "overcharged";
   const transferred = typeof r.tx === "string" && r.tx.length > 0;
   const status = typeof r.http_status === "number" ? r.http_status : null;
   if (transferred) return status === 200 && Number(r.response_bytes ?? 0) > 0 ? "delivered" : "not_delivered";
@@ -22,7 +46,7 @@ export function classifyPaid(r: Record<string, unknown>): PaidOutcome | null {
   return "failed";
 }
 
-const OUTCOMES = new Set<PaidOutcome>(["delivered", "not_delivered", "request_rejected", "delivered_unsettled", "failed"]);
+const OUTCOMES = new Set<PaidOutcome>(["delivered", "not_delivered", "request_rejected", "delivered_unsettled", "failed", "overcharged"]);
 
 /** A row's outcome: an explicit one laid over it (paid_resolution), else classified from its fields. */
 export function outcomeOf(r: Record<string, unknown>): PaidOutcome | null {

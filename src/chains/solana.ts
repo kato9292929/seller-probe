@@ -24,7 +24,8 @@ export function payerSignature(payload: any, payer: string): string {
   return bs58.encode(sig);
 }
 
-export type TransferCheck = { ok: boolean; reason: string; slot?: number; err?: unknown; fee_payer?: string };
+/** `transferred`: USDC (atomic) that actually left the payer in this tx, when it could be read. */
+export type TransferCheck = { ok: boolean; reason: string; slot?: number; err?: unknown; fee_payer?: string; transferred?: bigint };
 
 /** Pure: does a jsonParsed getTransaction result move exactly `amount` USDC from `payer` to `payTo`? */
 export function checkSolanaTransfer(tx: any, w: { payer: string; payTo: string; amount: bigint }): TransferCheck {
@@ -38,9 +39,10 @@ export function checkSolanaTransfer(tx: any, w: { payer: string; payTo: string; 
   };
   const toPayTo = delta(w.payTo);
   const fromPayer = delta(w.payer);
-  if (toPayTo !== w.amount) return { ok: false, reason: `payTo USDC delta ${toPayTo} != ${w.amount}`, slot: tx.slot, fee_payer };
-  if (fromPayer !== -w.amount) return { ok: false, reason: `payer USDC delta ${fromPayer} != -${w.amount}`, slot: tx.slot, fee_payer };
-  return { ok: true, reason: "USDC transfer matches 402", slot: tx.slot, fee_payer };
+  const transferred = -fromPayer;
+  if (toPayTo !== w.amount) return { ok: false, reason: `payTo USDC delta ${toPayTo} != ${w.amount}`, slot: tx.slot, fee_payer, transferred };
+  if (fromPayer !== -w.amount) return { ok: false, reason: `payer USDC delta ${fromPayer} != -${w.amount}`, slot: tx.slot, fee_payer, transferred };
+  return { ok: true, reason: "USDC transfer matches 402", slot: tx.slot, fee_payer, transferred };
 }
 
 export async function getSolanaTx(sig: string): Promise<any> {

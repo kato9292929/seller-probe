@@ -18,7 +18,8 @@ export type ScoreRow = {
   n_paid: number;
   n_rejected: number;
   n_unsettled: number;
-  paid_outcomes: { delivered: number; not_delivered: number; request_rejected: number; delivered_unsettled: number; failed: number };
+  n_price_mismatch?: number;
+  paid_outcomes: { delivered: number; not_delivered: number; request_rejected: number; delivered_unsettled: number; failed: number; overcharged?: number };
   last_rejection: { ts: string; http_status: number | null; error: string | null } | null;
   last_free_at: string | null;
   last_paid_at: string | null;
@@ -33,6 +34,8 @@ export type Scores = {
   weights_version: number;
   hosts: number;
   rfq: { status: string; fetched_at: string | null; note: string | null; used_in_score: false };
+  price_mismatch?: { hosts: number; purchases: number };
+  reports?: { received: number; hosts: number } | null;
   paid_targets: {
     date: string;
     phase: string;

@@ -10,7 +10,10 @@ import { wellKnownOf } from "./receipt.js";
 import { type Parsed402, fieldProblems, inputRequirement, isOfficialUsdc, parse402, primaryAccept } from "./x402.js";
 
 export type CheckStatus = "pass" | "fail" | "warn" | "info" | "na";
-export type CheckItem = { id: string; label: string; status: CheckStatus; detail: string; fix: string | null };
+export type CheckItem = { id: string; label: string; status: CheckStatus; detail: string; fix: string | null; link?: string };
+
+/** Integration steps for Delivery Receipt (npm @x402jp/delivery-receipt-seller). */
+export const RECEIPT_GUIDE = "https://github.com/kato9292929/delivery-receipt#組み込み手順";
 export type CheckReport = { url: string; host: string; checked_at: string; items: CheckItem[] };
 
 export const CHECK_INTERVAL_MS = 60_000;
@@ -161,7 +164,8 @@ export async function checkSeller(url: URL, deps: { get?: Get; probeRecord?: (ho
   items.push(wk.advertised === true
     ? item("receipt", "Delivery Receipt", "pass", `/.well-known/x402-receipt.json あり（鍵 ${wk.wellKnown!.keys.length} 本・再取得 ${Math.round(wk.wellKnown!.refetch_window_s / 3600)} 時間）`)
     : item("receipt", "Delivery Receipt", "warn", wk.advertised === false ? `/.well-known/x402-receipt.json なし（${wk.error ?? "鍵がない"}）` : `確認できない（${wk.error}）`,
-      "kato9292929/delivery-receipt の packages/seller を x402 ミドルウェアの後段に入れ、/.well-known/x402-receipt.json を出す（任意。Probe は減点しない）"));
+      "npm の @x402jp/delivery-receipt-seller を x402 ミドルウェアの後段に入れ、/.well-known/x402-receipt.json を出す（任意。Probe は減点しない）"));
+  if (wk.advertised !== true) items[items.length - 1].link = RECEIPT_GUIDE;
 
   // Settlement headers need a payment: not tested here. The Probe's paid record is shown instead.
   let rec: ProbeRecord = null;

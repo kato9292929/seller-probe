@@ -73,9 +73,10 @@ test("one check per host per minute", async () => {
   assert.equal((await handleCheck(new Request("https://probe.test/check"), deps)).status, 400);
 });
 
-test("api/check.js is the current bundle of src/api-check.ts", () => {
-  const out = join(mkdtempSync(join(tmpdir(), "api-")), "check.js");
-  const cmd = JSON.parse(readFileSync("package.json", "utf8")).scripts["build:api"].replace("--outfile=api/check.js", `--outfile=${out}`);
+test("api/*.js are the current bundles of src/api-*.ts", () => {
+  const out = mkdtempSync(join(tmpdir(), "api-"));
+  const cmd = JSON.parse(readFileSync("package.json", "utf8")).scripts["build:api"].replace("--outdir=api", `--outdir=${out}`);
   execFileSync("sh", ["-c", `npx ${cmd} --log-level=error`]);
-  assert.equal(readFileSync(out, "utf8"), readFileSync("api/check.js", "utf8"), "run npm run build:api and commit api/check.js");
+  for (const f of ["check.js", "reports.js", "monitor.js"])
+    assert.equal(readFileSync(join(out, f), "utf8"), readFileSync(join("api", f), "utf8"), `run npm run build:api and commit api/${f}`);
 });

@@ -35,6 +35,12 @@ jobs:
           RFQ_INDEXER_URL: ${{ vars.RFQ_INDEXER_URL }}
       - name: Check scores build
         run: npm run score
+      - name: Monitoring notifications
+        if: ${{ always() }}
+        run: npm run notify
+        env:
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
       - name: Commit
         run: |
           git config user.name "seller-probe[bot]"

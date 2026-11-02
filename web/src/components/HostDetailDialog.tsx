@@ -6,6 +6,17 @@ import { type HostDetail, ITEM_LABELS, getJson, networkName, scoreTone, usd } fr
 
 const pct = (v: number | null) => (v === null ? "—" : `${Math.round(v * 100)}%`);
 
+/** Block explorer link for a purchase's payment tx, so anyone can check it. */
+function explorer(r: Record<string, unknown>): string | null {
+  const tx = typeof r.tx === "string" ? r.tx : null;
+  if (!tx) return null;
+  const net = String(r.network ?? r.chain ?? "");
+  if (net.startsWith("eip155:8453") || net === "base" || tx.startsWith("0x")) return `https://basescan.org/tx/${tx}`;
+  return `https://solscan.io/tx/${tx}`;
+}
+
+const atomicUsd = (v: unknown) => (typeof v === "string" && /^\d+$/.test(v) ? `$${Number(v) / 1e6}` : "—");
+
 function outcome(r: Record<string, unknown>): string {
   if (r.kind === "free") return r.status_402 ? `402 ${r.spec_version ?? ""}` : r.reachable ? `HTTP ${r.http_status}` : `応答なし${r.error ? `（${r.error}）` : ""}`;
   if (r.dry_run) return "dry-run（送信なし）";
@@ -16,6 +27,8 @@ function outcome(r: Record<string, unknown>): string {
       return "納品（送金あり・200）";
     case "not_delivered":
       return `未納品：送金後に HTTP ${r.http_status}${why ? `（${why}）` : ""}`;
+    case "overcharged":
+      return "過大請求：チェーン上の送金が 402 の提示額を超えた（未納品と同じ扱い）";
     case "delivered_unsettled":
       return "送金なしで納品：200 と本文が返ったが、決済ヘッダもチェーン上の送金もない";
     case "request_rejected":
@@ -90,7 +103,25 @@ export function HostDetailDialog({ host, onClose }: { host: string | null; onClo
                   <li key={i} className="flex gap-3">
                     <span className="shrink-0 tabular-nums text-muted-foreground">{String(r.ts).slice(0, 16).replace("T", " ")}</span>
                     <span className="shrink-0 text-muted-foreground">{r.kind === "free" ? "無料" : "有料"}</span>
-                    <span className="min-w-0 break-words">{outcome(r)}</span>
+                    <span className="min-w-0 break-words">
+                      {outcome(r)}
+                      {r.kind === "paid" && (explorer(r) || r.response_sha256 || r.price_mismatch) ? (
+                        <span className="block text-xs text-muted-foreground">
+                          {explorer(r) && (
+                            <a className="underline underline-offset-4" href={explorer(r)!} target="_blank" rel="noreferrer">
+                              tx {String(r.tx).slice(0, 10)}…
+                            </a>
+                          )}
+                          {r.response_sha256 ? <span className="ml-2 break-all">本文 SHA-256 {String(r.response_sha256).slice(0, 16)}…</span> : null}
+                          {r.receipt ? <span className="ml-2">レシートあり{r.receipt_ok === true ? "（検証 OK）" : r.receipt_ok === false ? "（検証 NG）" : ""}</span> : null}
+                          {r.price_mismatch ? (
+                            <span className="ml-2 text-bad">
+                              価格の不一致：カタログ {atomicUsd((r.price_check as any)?.catalog)}・402 {atomicUsd((r.price_check as any)?.offered)}・送金 {atomicUsd((r.price_check as any)?.transferred)}
+                            </span>
+                          ) : null}
+                        </span>
+                      ) : null}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -99,7 +130,7 @@ export function HostDetailDialog({ host, onClose }: { host: string | null; onClo
               <div className="rounded-lg border p-4 text-sm">
                 <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">有料の測定の内訳</p>
                 <p>
-                  納品 {d.paid_outcomes.delivered} ・ 未納品 {d.paid_outcomes.not_delivered} ・ 失敗 {d.paid_outcomes.failed}
+                  納品 {d.paid_outcomes.delivered} ・ 未納品 {d.paid_outcomes.not_delivered} ・ 過大請求 {d.paid_outcomes.overcharged ?? 0} ・ 失敗 {d.paid_outcomes.failed} ・ 価格の不一致 {d.n_price_mismatch ?? 0}
                   <span className="text-muted-foreground"> ／ 購入不成立 {d.n_rejected} ・ 送金なしで納品 {d.n_unsettled ?? 0}（どちらもスコアには数えない）</span>
                 </p>
                 {d.last_rejection && (

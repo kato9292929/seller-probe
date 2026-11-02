@@ -30,6 +30,9 @@ export type HostScore = {
   n_rejected: number;
   /** 200 with a body but no settlement and nothing on chain: given away unpaid. Not a failure, not scored. */
   n_unsettled: number;
+  /** Purchases whose catalog / 402 / on-chain prices did not all agree (price_check), and the latest such check. */
+  n_price_mismatch: number;
+  last_price_mismatch: { ts: string; mismatch: string[]; catalog: string | null; offered: string; transferred: string | null } | null;
   paid_outcomes: Record<PaidOutcome, number>;
   last_rejection: { ts: string; http_status: number | null; error: string | null } | null;
   items: Record<string, ItemStat>;
@@ -74,8 +77,9 @@ export function paidValues(r: LogRecord, w: Weights): Record<PaidItem, number | 
     settle_ok: b(r.settle_ok),
     onchain_ok: b(r.onchain_ok),
     delivered: b(r.delivered),
-    // Bad outcome → scored as 1 - rate.
-    not_delivered: r.not_delivered === true ? 0 : r.not_delivered === false ? 1 : null,
+    // Bad outcome → scored as 1 - rate. Overcharged (more moved on chain than the 402 offered)
+    // weighs the same as not_delivered.
+    not_delivered: r.not_delivered === true || r.overcharged === true ? 0 : r.not_delivered === false ? 1 : null,
     latency_paid: r.delivered === true && typeof r.latency_paid_ms === "number" ? latencyScore(r.latency_paid_ms, w) : null,
     cache_header: b(r.cache_header),
   };
@@ -107,7 +111,7 @@ export function scoreHosts(records: LogRecord[], w: Weights, now = new Date()): 
     g.paid.sort((a, b) => a.ts.localeCompare(b.ts));
     g.rejected.sort((a, b) => a.ts.localeCompare(b.ts));
     const outcomes: Record<PaidOutcome, number> = {
-      delivered: 0, not_delivered: 0, request_rejected: g.rejected.length, delivered_unsettled: g.unsettled.length, failed: 0,
+      delivered: 0, not_delivered: 0, request_rejected: g.rejected.length, delivered_unsettled: g.unsettled.length, failed: 0, overcharged: 0,
     };
     for (const r of g.paid) {
       const o = outcomeOf(r);
@@ -138,6 +142,14 @@ export function scoreHosts(records: LogRecord[], w: Weights, now = new Date()): 
       n_paid: g.paid.length,
       n_rejected: g.rejected.length,
       n_unsettled: g.unsettled.length,
+      ...(() => {
+        const mm = [...g.paid, ...g.unsettled].filter((r) => r.price_mismatch === true).sort((a, b) => a.ts.localeCompare(b.ts));
+        const last = mm.at(-1)?.price_check as Record<string, any> | undefined;
+        return {
+          n_price_mismatch: mm.length,
+          last_price_mismatch: last ? { ts: mm.at(-1)!.ts, mismatch: last.mismatch, catalog: last.catalog, offered: last.offered, transferred: last.transferred } : null,
+        };
+      })(),
       paid_outcomes: outcomes,
       last_rejection: lastRej
         ? { ts: lastRej.ts, http_status: (lastRej.http_status as number | null) ?? null, error: rejectionText(lastRej) }

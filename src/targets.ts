@@ -7,9 +7,26 @@ import { ROOT } from "./config.js";
 import type { Popularity } from "./popularity.js";
 
 /** `top_n: "all"`: every ranked host that passes screening (the whole ranking is scanned). */
-export type ProbeConfig = { paid: { top_n: number | "all"; random_n: number; phase: string; note?: string } };
+export type ProbeConfig = {
+  paid: { top_n: number | "all"; random_n: number; phase: string; note?: string; catalog?: { rotation_groups: number } };
+};
 
 export const quota = (n: number | "all") => (n === "all" ? Infinity : n);
+
+export type Pick = "top" | "random" | "catalog";
+
+/** Rotation group of a host: a stable FNV-1a hash of the host name, mod `groups`. */
+export function rotationGroup(host: string, groups: number): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < host.length; i++) h = Math.imul(h ^ host.charCodeAt(i), 0x01000193) >>> 0;
+  return h % groups;
+}
+
+/** The group a date's weekly run covers: ISO-ish week count since 1970-01-05 (a Monday), mod `groups`. */
+export function weekGroup(date: string, groups: number): number {
+  const weeks = Math.floor((Date.parse(`${date}T00:00:00Z`) - Date.parse("1970-01-05T00:00:00Z")) / (7 * 86_400_000));
+  return ((weeks % groups) + groups) % groups;
+}
 
 export type TargetsFile = {
   date: string;
@@ -24,6 +41,14 @@ export type TargetsFile = {
     seed: string;
     top: (Target & { tx_count: number; rank: number })[];
     random: Target[];
+    /**
+     * Beyond the ranking: every catalog host whose latest free measurement offered a payable 402
+     * (exact, official USDC, ≤ $0.01), in `rotation_groups` groups by host hash; one group a week
+     * (`group`), or all of them ("all"). Screened like the ranking.
+     */
+    catalog?: Target[];
+    catalog_meta?: { rotation_groups: number; group: number | "all"; candidates: number };
+    catalog_candidates?: Target[];
     /** Popular hosts left out of the paid set and why (price ceiling, not in catalog, requires_input). */
     skipped_popular: { host: string; rank: number; reason: string }[];
     /** Eligible hosts in order, beyond top_n / random_n: what screening promotes from. */
@@ -36,8 +61,8 @@ export type TargetsFile = {
      */
     screened?: {
       at: string;
-      dropped: { host: string; reason: string; pick: "top" | "random"; evidence?: Record<string, unknown> }[];
-      requires_input: { host: string; reason: string; pick: "top" | "random"; evidence?: Record<string, unknown> }[];
+      dropped: { host: string; reason: string; pick: Pick; evidence?: Record<string, unknown> }[];
+      requires_input: { host: string; reason: string; pick: Pick; evidence?: Record<string, unknown> }[];
     };
   };
 };
@@ -61,7 +86,10 @@ export function rng(seed: string): () => number {
   };
 }
 
-export function buildTargets(date: string, catalog: Catalog, pop: Popularity, cfg: ProbeConfig): TargetsFile {
+export function buildTargets(
+  date: string, catalog: Catalog, pop: Popularity, cfg: ProbeConfig,
+  opts: { payable?: Set<string>; group?: number | "all" } = {},
+): TargetsFile {
   const free = representatives(catalog.endpoints);
   const byHost = new Map(free.map((t) => [t.host, t]));
   const top: TargetsFile["paid"]["top"] = [];
@@ -82,6 +110,16 @@ export function buildTargets(date: string, catalog: Catalog, pop: Popularity, cf
     const j = Math.floor(rand() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
+  // Catalog hosts outside the ranking that offered a payable 402 (opts.payable, from the free
+  // measurements), cheapest first; one rotation group, or all.
+  const groups = cfg.paid.catalog?.rotation_groups ?? 0;
+  const group = opts.group ?? (groups ? weekGroup(date, groups) : "all");
+  const ranked = new Set(pop.rows.map((r) => r.host));
+  const catalogCands = groups && opts.payable
+    ? free
+        .filter((t) => opts.payable!.has(t.host) && !ranked.has(t.host) && paidEligible(t) && (group === "all" || rotationGroup(t.host, groups) === group))
+        .sort((a, b) => a.price_usd - b.price_usd || a.host.localeCompare(b.host))
+    : [];
   const { rows, ...popMeta } = pop;
   return {
     date,
@@ -95,6 +133,7 @@ export function buildTargets(date: string, catalog: Catalog, pop: Popularity, cf
       // Only reasons for hosts that would have been in the quota; stand-ins are not "skipped".
       skipped_popular: skipped.filter((s) => s.rank <= (top[n - 1]?.rank ?? Infinity)),
       top_candidates: top, random_candidates: pool.slice(0, cfg.paid.random_n + CANDIDATE_SLACK),
+      ...(groups ? { catalog: catalogCands, catalog_candidates: catalogCands, catalog_meta: { rotation_groups: groups, group, candidates: catalogCands.length } } : {}),
     },
   };
 }
@@ -137,8 +176,8 @@ export type Screen = { drop: boolean; reason: string | null; evidence?: Record<s
  * host in its place, so each slot is a host that can actually be bought.
  */
 export async function screenPaidTargets(t: TargetsFile, screen: (t: Target) => Promise<Screen>): Promise<TargetsFile> {
-  const dropped: { host: string; reason: string; pick: "top" | "random"; evidence?: Record<string, unknown> }[] = [];
-  const fill = async <T extends Target>(cands: T[], n: number, pick: "top" | "random") => {
+  const dropped: { host: string; reason: string; pick: Pick; evidence?: Record<string, unknown> }[] = [];
+  const fill = async <T extends Target>(cands: T[], n: number, pick: Pick) => {
     // Unlimited quota: every candidate is screened anyway, so screen several at once (order kept).
     const pre = n === Infinity ? await mapPool(cands, SCREEN_CONCURRENCY, screen) : null;
     const out: T[] = [];
@@ -153,6 +192,10 @@ export async function screenPaidTargets(t: TargetsFile, screen: (t: Target) => P
   const top = await fill(t.paid.top_candidates ?? t.paid.top, quota(t.paid.top_n), "top");
   const taken = new Set(top.map((x) => x.host));
   const random = await fill((t.paid.random_candidates ?? t.paid.random).filter((x) => !taken.has(x.host)), t.paid.random_n, "random");
+  for (const x of random) taken.add(x.host);
+  const catalog = t.paid.catalog_candidates
+    ? await fill(t.paid.catalog_candidates.filter((x) => !taken.has(x.host)), Infinity, "catalog")
+    : undefined;
   const ranks = new Map((t.paid.top_candidates ?? []).map((c) => [c.host, c.rank]));
   return {
     ...t,
@@ -160,6 +203,7 @@ export async function screenPaidTargets(t: TargetsFile, screen: (t: Target) => P
       ...t.paid,
       top,
       random,
+      ...(catalog ? { catalog } : {}),
       skipped_popular: [
         ...t.paid.skipped_popular,
         ...dropped.filter((d) => d.pick === "top").map((d) => ({ host: d.host, rank: ranks.get(d.host) ?? -1, reason: d.reason })),
