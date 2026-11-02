@@ -53,7 +53,10 @@ export async function probeFree(t: Target, previousPayTo: (host: string, chain: 
   }
   const res = r.res;
   const j = judge402(base, res.status, (n) => res.headers.get(n), r.body.toString("utf8"), r.headers_ms, previousPayTo);
-  const receipt_advertised = j.status_402 ? (await wellKnownOf(t.url)).advertised : null;
+  // The receipt document is per host: asked of hosts that answered 402, and of priced catalog
+  // entries that answered 2xx (the catalog sometimes lists a seller by its site root, e.g. JIN/OSD).
+  const ask = j.status_402 || (j.http_status !== null && j.http_status >= 200 && j.http_status < 300 && t.price_usd > 0);
+  const receipt_advertised = ask ? (await wellKnownOf(t.url)).advertised : null;
   return { ...j, method, receipt_advertised };
 }
 

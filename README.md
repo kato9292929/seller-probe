@@ -101,7 +101,7 @@ GET が 405 のときだけ空の JSON 本文で POST して 402 を取る（`me
 
 **Delivery Receipt**（`kato9292929/delivery-receipt`、検証は `src/receipt/verify.ts` に取り込み）：
 
-- 無料：402 を返したホストにだけ `/.well-known/x402-receipt.json` を引き、鍵が 1 本以上あれば `receipt_advertised: true`（無い・不正は false、届かないは null）。
+- 無料：402 を返したホストと、カタログで価格の付いたエンドポイントが 2xx を返したホスト（カタログがサイトのトップを載せている場合）に `/.well-known/x402-receipt.json` を引き、鍵が 1 本以上あれば `receipt_advertised: true`（無い・不正は false、届かないは null）。
 - 有料：200 に `X-Delivery-Receipt` があれば、署名・本文のハッシュ・`payment_id`（Solana は tx、Base は nonce）を検証して `receipt_ok`（理由は `receipt_reason`）。レシートの無い売り手は null で、**減点しない**（スコアの項目に入れていない）。
 - 公開ページと `/scores` に `receipt: { advertised, ok, reason }`。対応している売り手には「Receipt」の表示。
 - 自社試験：`receipt_advertised` の売り手（自社の OSD・JIN）には「同じ支払いヘッダの再送が拒否されるか」の代わりに、「同じ支払いヘッダ＋`X-Payment-Refetch` で、課金なし（PAYMENT-RESPONSE なし）に同じ本文と検証の通るレシートが返るか」を当てる（`refetch`）。
