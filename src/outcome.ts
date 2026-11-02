@@ -10,6 +10,7 @@
 //                     seller answered 200 with a body: it gave the content away without
 //                     collecting. Not the seller failing the buyer, so not counted as a failure
 //   failed            no transfer and something else (5xx, timeout, 200 with an empty body)
+//   (a tx from the settlement header that is not on chain counts as no transfer)
 //   overcharged       the transfer on chain took more than the 402 offered: a failure as heavy
 //                     as not_delivered, whatever came back
 export type PaidOutcome = "delivered" | "not_delivered" | "request_rejected" | "delivered_unsettled" | "failed" | "overcharged";
@@ -38,7 +39,10 @@ export function priceCheck(catalogUsd: number | null | undefined, offered: bigin
 export function classifyPaid(r: Record<string, unknown>): PaidOutcome | null {
   if (r.kind !== "paid" || r.skipped || r.dry_run) return null;
   if (r.overcharged === true) return "overcharged";
-  const transferred = typeof r.tx === "string" && r.tx.length > 0;
+  // A tx named by the settlement header that the chain does not have (seen 2026-11-02: 402 with
+  // settle error "settlement_pending", and our authorization nonce never used) moved nothing.
+  const unseen = r.onchain_ok === false && /not found/.test(String(r.onchain_detail ?? ""));
+  const transferred = typeof r.tx === "string" && r.tx.length > 0 && !unseen;
   const status = typeof r.http_status === "number" ? r.http_status : null;
   if (transferred) return status === 200 && Number(r.response_bytes ?? 0) > 0 ? "delivered" : "not_delivered";
   if (status !== null && status >= 400 && status < 500) return "request_rejected";
@@ -87,7 +91,7 @@ export function applyReconciliations<T extends Record<string, unknown>>(records:
     // 200 that the chain search confirmed was never paid → delivered_unsettled.
     const res = key ? resolution.get(key) : undefined;
     if (res && !r.tx) return { ...r, outcome: res.outcome, resolution: { at: res.ts, basis: res.basis } } as T;
-    if (r.tx) return r;
+    if (r.tx && !(r.onchain_ok === false && /not found/.test(String(r.onchain_detail ?? "")))) return r;
     const f = key ? fix.get(key) : undefined;
     if (!f) return r;
     const merged: Record<string, unknown> = {

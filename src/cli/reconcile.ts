@@ -13,7 +13,9 @@ const done = new Set(recs.filter((r) => r.kind === "paid_reconciled").map((r) =>
 // RECONCILE_ONLY_200=1: only rows that got a 200 without a tx (the ones a late-found payment
 // would turn from delivered_unsettled into delivered); with thousands of rows a full pass is slow.
 const only200 = process.env.RECONCILE_ONLY_200 === "1";
-const todo = recs.filter((r) => r.kind === "paid" && !r.skipped && !r.dry_run && !r.tx && payerKeyOf(r) && !done.has(payerKeyOf(r)!) && (!only200 || r.http_status === 200));
+// Also rows whose settlement header named a tx the chain did not have at the time ("not found").
+const unseen = (r: Record<string, unknown>) => r.onchain_ok === false && /not found/.test(String(r.onchain_detail ?? ""));
+const todo = recs.filter((r) => r.kind === "paid" && !r.skipped && !r.dry_run && (!r.tx || unseen(r)) && payerKeyOf(r) && !done.has(payerKeyOf(r)!) && (!only200 || r.http_status === 200 || unseen(r)));
 console.log(`reconcile: ${todo.length} paid row(s) without a tx in the last ${days} days`);
 for (const r of todo) {
   const key = payerKeyOf(r)!;
