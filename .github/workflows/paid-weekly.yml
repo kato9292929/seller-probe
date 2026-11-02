@@ -16,7 +16,7 @@ concurrency:
 jobs:
   paid:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,6 +31,8 @@ jobs:
       # set is what can be bought now, also on a manual run between the daily free runs.
       - name: Select targets
         run: npm run targets
+        env:
+          PROBE_CATALOG: "1" # the ranking + this week's rotation group of the whole catalog
       # Without the wallet secrets this records "secrets not configured (未設定)" and exits 0.
       # Real payments only when the repository variable PROBE_PAID_ENABLED is "true"
       # (set it after a dry run has been checked). Until then every run is a dry run,
@@ -43,6 +45,12 @@ jobs:
           PROBE_EVM_PRIVATE_KEY: ${{ secrets.PROBE_EVM_PRIVATE_KEY }}
           SOLANA_RPC_URL: ${{ secrets.SOLANA_RPC_URL }}
           BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
+      - name: Monitoring notifications (paid results)
+        if: ${{ always() }}
+        run: npm run notify -- --paid
+        env:
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
       - name: Commit
         if: always()
         run: |

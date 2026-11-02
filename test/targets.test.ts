@@ -57,3 +57,21 @@ test('top_n "all": the whole ranking is a candidate, no random draw', () => {
   assert.equal(t.paid.top_candidates!.length, 190);
   assert.equal(t.paid.random.length, 0);
 });
+
+test("catalog rotation: hosts outside the ranking that offered a payable 402, in 4 stable groups", async () => {
+  const { rotationGroup, weekGroup } = await import("../src/targets.js");
+  const pop = { metric: "m", fetched_at: "", status: "ok" as const, rows: [{ host: "r0.example", tx_count: 9 }] };
+  const many = { ...catalog, endpoints: Array.from({ length: 40 }, (_, i) => ep(`c${i}`, `https://c${i}.example/x`, 0.001 * ((i % 9) + 1))) };
+  const payable = new Set(Array.from({ length: 40 }, (_, i) => `c${i}.example`).filter((_, i) => i % 5 !== 0));
+  const cfg = { paid: { phase: "catalog_rotation", top_n: "all" as const, random_n: 0, catalog: { rotation_groups: 4 } } };
+  const all = buildTargets("2026-11-02", many, pop, cfg, { payable, group: "all" });
+  assert.equal(all.paid.catalog!.length, 32, "only hosts that offered a payable 402");
+  assert.ok(all.paid.catalog!.every((t, i, a) => i === 0 || a[i - 1].price_usd <= t.price_usd), "cheapest first");
+  const g = weekGroup("2026-11-02", 4);
+  const week = buildTargets("2026-11-02", many, pop, cfg, { payable });
+  assert.ok(week.paid.catalog!.every((t) => rotationGroup(t.host, 4) === g));
+  const union = new Set([0, 1, 2, 3].flatMap((k) => buildTargets("2026-11-02", many, pop, cfg, { payable, group: k }).paid.catalog!.map((t) => t.host)));
+  assert.equal(union.size, 32, "the 4 groups cover every host once");
+  assert.notEqual(weekGroup("2026-11-02", 4), weekGroup("2026-11-09", 4));
+  assert.equal(weekGroup("2026-11-02", 4), weekGroup("2026-11-30", 4));
+});

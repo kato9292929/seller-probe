@@ -182,3 +182,15 @@ test("200 with a body but no settlement and nothing on chain → delivered_unset
   assert.equal(outcomeOf(r), "delivered_unsettled");
   assert.deepEqual((r as any).resolution, { at: res.ts, basis: "b" });
 });
+
+test("price check: catalog / 402 / chain compared; more on chain than offered is overcharged", async () => {
+  const { priceCheck } = await import("../src/outcome.js");
+  const same = priceCheck(0.001, 1000n, 1000n);
+  assert.deepEqual([same.mismatch, same.overcharged], [[], false]);
+  const cat = priceCheck(0.002, 1000n, 1000n);
+  assert.deepEqual([cat.mismatch, cat.diff_catalog], [["catalog_vs_402"], "-1000"]);
+  const over = priceCheck(0.001, 1000n, 1500n);
+  assert.deepEqual([over.mismatch, over.diff_transfer, over.overcharged], [["402_vs_transfer"], "500", true]);
+  assert.deepEqual(priceCheck(null, 1000n, null).mismatch, [], "no catalog price, nothing on chain: nothing to compare");
+  assert.equal(classifyPaid({ kind: "paid", skipped: null, tx: "0xabc", http_status: 200, response_bytes: 10, overcharged: true }), "overcharged");
+});

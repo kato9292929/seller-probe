@@ -1,6 +1,6 @@
 // §3.2 Paid probe: buy one call at the seller's price (≤ $0.01) and check settlement,
 // the on-chain transfer and delivery. Also the building block for §3.3 self-checks.
-import { BudgetError, assertWithinBudget, spentLast7Days } from "./budget.js";
+import { BudgetError, type SpendTracker, assertWithinBudget, spentLast7Days } from "./budget.js";
 import type { Target } from "./catalog.js";
 import { checkBaseTransfer, findBasePayment, verifyBaseTransfer } from "./chains/base.js";
 import { checkSolanaTransfer, findSolanaPayment, verifySolanaTransfer } from "./chains/solana.js";
@@ -10,7 +10,8 @@ import { facilitatorFromExtra, loadFeePayerMap } from "./facilitator.js";
 import { bodySnippet, errMsg, timedGet } from "./http.js";
 import { type Kind, append } from "./log.js";
 import { type Payer, refuseReason, settleFrom, signFor } from "./pay.js";
-import { type PaidOutcome, classifyPaid } from "./outcome.js";
+import { createHash } from "node:crypto";
+import { type PaidOutcome, type PriceCheck, classifyPaid, priceCheck } from "./outcome.js";
 import { type Accept, type Parsed402, inputRequirement, parse402, primaryAccept, x402Error } from "./x402.js";
 
 export type PaidResult = {
@@ -53,6 +54,13 @@ export type PaidResult = {
   /** On a non-200 paid response: the 402's `error` field, and the first 300 characters of the body. */
   x402_error: string | null;
   error_body: string | null;
+  /** Catalog / 402 / on-chain prices compared (outcome.ts priceCheck); price_mismatch when any differ. */
+  price_check?: PriceCheck | null;
+  price_mismatch?: boolean;
+  overcharged?: boolean;
+  /** Evidence: SHA-256 of the body returned for this purchase, and the receipt header as received. */
+  response_sha256?: string | null;
+  receipt?: string | null;
   /** Delivery Receipt on the paid 200: verified (true/false), or null when the seller sent none (not scored). */
   receipt_ok?: boolean | null;
   receipt_reason?: string | null;
@@ -65,7 +73,10 @@ export type PaidRun = PaidResult & { /** Kept for the self-check (replay of the 
 /** How long to look on chain for our own payment after a non-200 (tests set 0). */
 const FIND_MS = () => Number(process.env.PROBE_FIND_TIMEOUT_MS ?? 90_000);
 
-type Ctx = { payer: Payer; logDir: string; attemptKind: Kind; resultKind: "paid" | "self_check"; extra?: Record<string, unknown>; dryRun?: boolean; reserve?: (chain: string, amount: bigint) => string | null };
+type Ctx = {
+  payer: Payer; logDir: string; attemptKind: Kind; resultKind: "paid" | "self_check"; extra?: Record<string, unknown>; dryRun?: boolean;
+  reserve?: (chain: string, amount: bigint) => string | null; tracker?: SpendTracker;
+};
 
 function empty(kind: PaidResult["kind"], t: Target): PaidResult {
   return {
@@ -108,34 +119,43 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
     facilitator: fac.facilitator, facilitator_by: fac.by, fee_payer: fac.fee_payer,
   });
 
-  // 2. hard caps, before anything is signed
-  try {
-    assertWithinBudget(amount, spentLast7Days());
-  } catch (e) {
-    if (e instanceof BudgetError) return { ...out, skipped: `budget: ${e.message}`, ...(ctx.dryRun ? { cap_check: { pass: false, reason: e.message } } : {}) };
-    throw e;
-  }
-  const deferred = ctx.dryRun ? null : ctx.reserve?.(a.chain!, amount);
-  if (deferred) return { ...out, skipped: `deferred: ${deferred}` };
-  if (ctx.dryRun) out.cap_check = { pass: true, reason: null };
+  // 2–3. Caps, signing and the attempt record run one purchase at a time (ctx.tracker), so
+  // concurrent purchases cannot pass the caps together; the attempt counts as spent from here.
+  const gate = async (): Promise<{ stop: PaidRun } | { signed: Awaited<ReturnType<typeof signFor>> }> => {
+    // 2. hard caps, before anything is signed
+    try {
+      assertWithinBudget(amount, ctx.tracker ? ctx.tracker.spent : spentLast7Days());
+    } catch (e) {
+      if (e instanceof BudgetError) return { stop: { ...out, skipped: `budget: ${e.message}`, ...(ctx.dryRun ? { cap_check: { pass: false, reason: e.message } } : {}) } };
+      throw e;
+    }
+    const deferred = ctx.dryRun ? null : ctx.reserve?.(a.chain!, amount);
+    if (deferred) return { stop: { ...out, skipped: `deferred: ${deferred}` } };
+    if (ctx.dryRun) out.cap_check = { pass: true, reason: null };
 
-  // 3. sign, and log our own signature/nonce BEFORE sending (counts against the budget from here on)
-  let signed;
-  try {
-    signed = await signFor(ctx.payer, parsed, a);
-  } catch (e) {
-    return { ...out, skipped: `could not sign: ${errMsg(e)}` };
-  }
-  out.payer_key = signed.payer_key;
-  if (signed.eip712_filled) out.eip712_filled = true;
-  // Dry run stops here: the signed header is never sent and never written anywhere
-  // (a signed EIP-3009 authorization can be submitted by anyone, a signed Solana tx
-  // while its blockhash is valid). Only the payer-side identifiers above are kept.
-  if (ctx.dryRun) return { ...out, skipped: "dry_run: signed, not sent" };
-  append(ctx.logDir, {
-    kind: ctx.attemptKind, host: t.host, url: t.url, network: a.network, chain: a.chain, amount: a.amount, pay_to: a.payTo,
-    payer: out.payer, ...signed.payer_key, ...(signed.eip712_filled ? { eip712_filled: true } : {}), ...(ctx.extra ?? {}),
-  });
+    // 3. sign, and log our own signature/nonce BEFORE sending (counts against the budget from here on)
+    let signed;
+    try {
+      signed = await signFor(ctx.payer, parsed, a);
+    } catch (e) {
+      return { stop: { ...out, skipped: `could not sign: ${errMsg(e)}` } };
+    }
+    out.payer_key = signed.payer_key;
+    if (signed.eip712_filled) out.eip712_filled = true;
+    // Dry run stops here: the signed header is never sent and never written anywhere
+    // (a signed EIP-3009 authorization can be submitted by anyone, a signed Solana tx
+    // while its blockhash is valid). Only the payer-side identifiers above are kept.
+    if (ctx.dryRun) return { stop: { ...out, skipped: "dry_run: signed, not sent" } };
+    append(ctx.logDir, {
+      kind: ctx.attemptKind, host: t.host, url: t.url, network: a.network, chain: a.chain, amount: a.amount, pay_to: a.payTo,
+      payer: out.payer, ...signed.payer_key, ...(signed.eip712_filled ? { eip712_filled: true } : {}), ...(ctx.extra ?? {}),
+    });
+    if (ctx.tracker) ctx.tracker.spent += amount;
+    return { signed };
+  };
+  const g = ctx.tracker ? await ctx.tracker.exclusive(gate) : await gate();
+  if ("stop" in g) return g.stop;
+  const signed = g.signed;
 
   // 4. paid request
   let status: number;
@@ -155,6 +175,7 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
   }
   out.http_status = status || null;
   out.response_bytes = body.length;
+  out.response_sha256 = body.length ? createHash("sha256").update(body).digest("hex") : null;
   if (status !== 200) {
     out.error_body = bodySnippet(body);
     if (status === 402) out.x402_error = x402Error(parse402(getHeader, body.toString("utf8")));
@@ -168,6 +189,7 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
   out._payment_headers = signed.headers;
   out._body = body;
   const want = { payer: out.payer!, payTo: a.payTo!, amount };
+  let transferred: bigint | null = null;
 
   // 5. find and check the transfer
   if (settle?.transaction) {
@@ -185,6 +207,7 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
       out.tx = found.tx;
       out.tx_source = "onchain_search";
       out.onchain_ok = found.check.ok;
+      transferred = found.check.transferred ?? null;
       out.onchain_detail = found.check.reason;
       out.settled_by = found.check.fee_payer ?? null;
     }
@@ -193,6 +216,7 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
     const check = a.chain === "solana" ? await verifySolanaTransfer(out.tx, want) : await verifyBaseTransfer(out.tx, want);
     out.onchain_ok = check.ok;
     out.onchain_detail = check.reason;
+    transferred = check.transferred ?? null;
     out.settled_by = check.fee_payer ?? null;
   }
   if (!out.tx) {
@@ -201,9 +225,14 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
   }
   // Delivery Receipt: checked when the seller sends one (payment_id = tx on Solana, nonce on Base).
   const receipt = status === 200 ? getHeader(RECEIPT_HEADER) : null;
+  out.receipt = receipt;
   Object.assign(out, await receiptCheck(receipt, body, t.url, a.chain === "solana" ? out.tx : signed.payer_key.authorization_nonce));
   // RFQ reason code 5: the transfer landed, the data did not come back.
   out.not_delivered = out.onchain_ok === true && status !== 200;
+  // Catalog / 402 / chain: one record per purchase. Self-check targets carry no catalog price (0).
+  out.price_check = priceCheck(t.price_usd || null, amount, transferred);
+  out.price_mismatch = out.price_check.mismatch.length > 0;
+  out.overcharged = out.price_check.overcharged;
   out.outcome = classifyPaid(out as unknown as Record<string, unknown>);
   return out;
 }

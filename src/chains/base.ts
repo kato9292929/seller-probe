@@ -25,7 +25,8 @@ export function evmAuthorization(payload: any): { nonce: string; signature: stri
   return { nonce: p.authorization.nonce, signature: p.signature, from: p.authorization.from, to: p.authorization.to, value: String(p.authorization.value) };
 }
 
-export type TransferCheck = { ok: boolean; reason: string; block?: number; err?: unknown; fee_payer?: string };
+/** `transferred`: USDC (atomic) moved payer→payTo in this tx, when it could be read. */
+export type TransferCheck = { ok: boolean; reason: string; block?: number; err?: unknown; fee_payer?: string; transferred?: bigint };
 
 /** Pure: does a receipt contain a USDC Transfer of exactly `amount` from payer to payTo? */
 export function checkBaseTransfer(receipt: any, w: { payer: string; payTo: string; amount: bigint }): TransferCheck {
@@ -41,8 +42,9 @@ export function checkBaseTransfer(receipt: any, w: { payer: string; payTo: strin
       l.topics?.[2]?.toLowerCase() === topicAddr(w.payTo),
   );
   if (!hit) return { ok: false, reason: "no USDC Transfer payer→payTo in receipt", block, fee_payer };
-  if (BigInt(hit.data) !== w.amount) return { ok: false, reason: `USDC Transfer value ${BigInt(hit.data)} != ${w.amount}`, block, fee_payer };
-  return { ok: true, reason: "USDC transfer matches 402", block, fee_payer };
+  const transferred = BigInt(hit.data);
+  if (transferred !== w.amount) return { ok: false, reason: `USDC Transfer value ${transferred} != ${w.amount}`, block, fee_payer, transferred };
+  return { ok: true, reason: "USDC transfer matches 402", block, fee_payer, transferred };
 }
 
 export async function verifyBaseTransfer(txHash: string, w: { payer: string; payTo: string; amount: bigint }): Promise<TransferCheck> {

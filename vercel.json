@@ -4,6 +4,14 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/reports",
+      "destination": "/api/reports"
+    },
+    {
+      "source": "/monitor",
+      "destination": "/api/monitor"
+    },
+    {
       "source": "/check",
       "has": [
         {

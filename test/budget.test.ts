@@ -8,9 +8,26 @@ test("per-call cap is $0.01", () => {
   assert.throws(() => assertWithinBudget(0n, 0n), BudgetError);
 });
 
-test("weekly cap is $5", () => {
-  assert.doesNotThrow(() => assertWithinBudget(10_000n, 4_990_000n));
-  assert.throws(() => assertWithinBudget(10_000n, 4_990_001n), BudgetError);
+test("weekly cap is $25", () => {
+  assert.doesNotThrow(() => assertWithinBudget(10_000n, 24_990_000n));
+  assert.throws(() => assertWithinBudget(10_000n, 24_990_001n), BudgetError);
+});
+
+test("concurrent purchases go through the cap one at a time and cannot pass it together", async () => {
+  const { SpendTracker } = await import("../src/budget.js");
+  const tr = new SpendTracker(24_970_000n);
+  const results = await Promise.all(Array.from({ length: 6 }, () => tr.exclusive(async () => {
+    try {
+      assertWithinBudget(10_000n, tr.spent);
+    } catch {
+      return "refused";
+    }
+    await new Promise((r) => setTimeout(r, 5));
+    tr.spent += 10_000n;
+    return "paid";
+  })));
+  assert.deepEqual(results.filter((r) => r === "paid").length, 3);
+  assert.equal(tr.spent, 25_000_000n);
 });
 
 test("spend counts every attempt in the last 7 days, paid and self-check", () => {

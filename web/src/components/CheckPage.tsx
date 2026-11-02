@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Footer } from "./Footer";
 import { SectionTitle } from "./SectionTitle";
 
-type Item = { id: string; label: string; status: "pass" | "fail" | "warn" | "info" | "na"; detail: string; fix: string | null };
+type Item = { id: string; label: string; status: "pass" | "fail" | "warn" | "info" | "na"; detail: string; fix: string | null; link?: string };
 type Report = { url: string; host: string; checked_at: string; items: Item[] };
 
 const MARK: Record<Item["status"], { t: string; c: string }> = {
@@ -69,6 +69,10 @@ export function CheckPage() {
             {busy ? "検査中…" : "検査する"}
           </button>
         </form>
+        <p className="mt-4 text-sm text-muted-foreground">
+          継続監視：<code className="text-foreground">POST /monitor</code> に <code className="text-foreground">{"{ url, webhook }"}</code> を x402 で $0.10（30 日）払って送ると、毎日の測定で
+          402 を返さなくなった・形式が崩れた・価格や payTo が変わった・Delivery Receipt の鍵が消えたときと、有料の測定の結果が出たときに、その webhook へ通知します（署名付き）。
+        </p>
         {error && <p className="mt-6 text-sm text-bad">{error}</p>}
         {report && (
           <div className="mt-8">
@@ -83,6 +87,11 @@ export function CheckPage() {
                     <p className="font-medium">{i.label}</p>
                     <p className="break-words text-muted-foreground">{i.detail}</p>
                     {i.fix && i.status !== "pass" && <p className="mt-1 break-words">直し方：{i.fix}</p>}
+                    {i.link && i.status !== "pass" && (
+                      <a className="mt-1 inline-block underline underline-offset-4" href={i.link} target="_blank" rel="noreferrer">
+                        組み込み手順
+                      </a>
+                    )}
                   </div>
                 </li>
               ))}

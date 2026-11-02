@@ -2,6 +2,7 @@ import "dotenv/config";
 import { loadCatalog } from "../catalog.js";
 import { fetchPopularity } from "../popularity.js";
 import { exclusionReason, loadExclusions } from "../exclusions.js";
+import { LIMITS } from "../config.js";
 import { LOG_DIR, readRecords } from "../log.js";
 import { OBSERVED_TTL_DAYS, observedRequirements } from "../observed.js";
 import { errMsg, timedGet } from "../http.js";
@@ -21,7 +22,23 @@ const exclusions = loadExclusions();
 // Sellers whose own error answer to a recent purchase showed a required input (observed.ts);
 // they stay out for OBSERVED_TTL_DAYS after that answer, then are measured again.
 const observed = observedRequirements(readRecords(LOG_DIR(), OBSERVED_TTL_DAYS + 1));
-const t = await screenPaidTargets(buildTargets(date, catalog, pop, loadProbeConfig()), async (c) => {
+// Whole-catalog purchases (paid runs only, PROBE_CATALOG=1): hosts whose latest free measurement
+// offered a payable 402 — exact, official USDC on Solana/Base, 0 < amount <= $0.01. PROBE_ROTATION
+// = "all" takes every rotation group (the first full run); otherwise this week's group.
+let payable: Set<string> | undefined;
+if (process.env.PROBE_CATALOG === "1") {
+  const latest = new Map<string, Record<string, unknown>>();
+  for (const r of readRecords(LOG_DIR(), 3)) if (r.kind === "free") latest.set(r.host, r);
+  payable = new Set(
+    [...latest.values()]
+      .filter((r) => r.status_402 && r.fields_valid && r.asset_known && r.chain && /^\d+$/.test(String(r.amount)) &&
+        BigInt(String(r.amount)) > 0n && BigInt(String(r.amount)) <= LIMITS.perCall)
+      .map((r) => String(r.host)),
+  );
+}
+const rot = process.env.PROBE_ROTATION;
+const group = rot === "all" ? "all" : rot && /^\d+$/.test(rot) ? Number(rot) : undefined;
+const t = await screenPaidTargets(buildTargets(date, catalog, pop, loadProbeConfig(), { payable, group }), async (c) => {
   const ex = exclusionReason(c, exclusions);
   if (ex) return { drop: true, reason: ex };
   const ob = observed.get(c.host);
@@ -43,6 +60,6 @@ const t = await screenPaidTargets(buildTargets(date, catalog, pop, loadProbeConf
 const file = writeTargets(t);
 console.log(
   `targets ${date}: catalog ${t.catalog.commit?.slice(0, 7) ?? t.catalog.file} (${t.catalog.endpoints} endpoints) → ` +
-    `free ${t.free.length} hosts; paid [${t.paid.phase}] top ${t.paid.top.length} + random ${t.paid.random.length}; ` +
-    `dropped ${t.paid.screened?.dropped.length ?? 0} (${(t.paid.screened?.dropped ?? []).map((d) => `${d.host}: ${d.reason}`).join("; ")}); popularity ${t.popularity.metric} (${t.popularity.status}${t.popularity.note ? `: ${t.popularity.note}` : ""}) → ${file}`,
+    `free ${t.free.length} hosts; paid [${t.paid.phase}] top ${t.paid.top.length} + random ${t.paid.random.length} + catalog ${t.paid.catalog?.length ?? 0}${t.paid.catalog_meta ? ` (group ${t.paid.catalog_meta.group}/${t.paid.catalog_meta.rotation_groups}, ${t.paid.catalog_meta.candidates} candidates)` : ""}; ` +
+    `dropped ${t.paid.screened?.dropped.length ?? 0} (${Object.entries((t.paid.screened?.dropped ?? []).reduce((m: Record<string, number>, d) => ((m[d.reason.split(":")[0]] = (m[d.reason.split(":")[0]] ?? 0) + 1), m), {})).map(([k, v]) => `${k} ${v}`).join(", ")}); popularity ${t.popularity.metric} (${t.popularity.status}${t.popularity.note ? `: ${t.popularity.note}` : ""}) → ${file}`,
 );

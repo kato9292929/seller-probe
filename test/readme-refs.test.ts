@@ -6,14 +6,15 @@ import { test } from "node:test";
 // this fails so the README is updated with it.
 const REFS: [string, number, string][] = [
   ["src/config.ts", 37, "perCall: 10_000n"],
+  ["src/config.ts", 39, "perWeek: 25_000_000n"],
   ["src/config.ts", 41, "catalogMaxPriceUsd: 0.01"],
   ["src/pay.ts", 24, 'maxAmountPerPayment: "$0.01"'],
   ["src/pay.ts", 56, "BigInt(a.amount) > LIMITS.perCall"],
   ["src/budget.ts", 30, "amount > LIMITS.perCall"],
   ["src/budget.ts", 31, "spent + amount > LIMITS.perWeek"],
-  ["src/probe-paid.ts", 102, "refuseReason(a, ctx.payer.address)"],
-  ["src/probe-paid.ts", 113, "assertWithinBudget(amount, spentLast7Days())"],
-  ["src/probe-paid.ts", 125, "signFor(ctx.payer, parsed, a)"],
+  ["src/probe-paid.ts", 113, "refuseReason(a, ctx.payer.address)"],
+  ["src/probe-paid.ts", 127, "assertWithinBudget(amount, ctx.tracker ? ctx.tracker.spent : spentLast7Days())"],
+  ["src/probe-paid.ts", 139, "signFor(ctx.payer, parsed, a)"],
 ];
 
 const root = new URL("../", import.meta.url);

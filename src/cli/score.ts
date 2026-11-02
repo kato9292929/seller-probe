@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { ROOT } from "../config.js";
 import { LOG_DIR, readRecords } from "../log.js";
 import { refreshRfqSnapshot, rfqForHost } from "../rfq.js";
+import { reportSummary } from "../reports.js";
 import { applyReconciliations, outcomeOf } from "../outcome.js";
 import { type Weights, scoreHosts } from "../score.js";
 import { latestTargets } from "../targets.js";
@@ -14,11 +15,14 @@ const now = new Date();
 const records = applyReconciliations(readRecords(LOG_DIR(), weights.window_days, now));
 const scores = scoreHosts(records, weights, now);
 const rfq = await refreshRfqSnapshot();
+// Buyer reports (POST /reports): counted apart, never part of a score. null without a KV.
+const reports = await reportSummary();
 
 const HISTORY_KEYS = [
   "ts", "kind", "url", "reachable", "http_status", "status_402", "spec_version", "fields_valid", "field_problems", "asset_known", "network",
   "pay_to", "amount", "payto_stable", "latency_402_ms", "error", "skipped", "settle_ok", "tx", "tx_source", "onchain_ok", "onchain_detail",
   "delivered", "not_delivered", "latency_paid_ms", "cache_header", "facilitator", "outcome", "x402_error", "error_body", "dry_run", "receipt_advertised", "receipt_ok", "receipt_reason", "eip712_filled",
+  "chain", "payer", "response_sha256", "receipt", "price_check", "price_mismatch", "overcharged", "resolution",
 ];
 // `outcome` is read again for every paid row (rows written before a class existed, and rows a
 // `paid_resolution` re-reads); read-time only, the log is not rewritten.
@@ -32,8 +36,10 @@ const pick = (r: Record<string, unknown>) => {
 let paidTargets: Record<string, unknown> | null = null;
 // Per host, what the latest selection judged: buyable with a bare GET (selected), or not and why.
 const judged = new Map<string, { buyable: boolean; reason: string | null; evidence?: Record<string, unknown> }>();
+const catalogOf = new Map<string, { url: string; price_usd: number }>();
 try {
   const t = latestTargets();
+  for (const x of t.free) catalogOf.set(x.host, { url: x.url, price_usd: x.price_usd });
   for (const x of [...t.paid.top, ...t.paid.random]) judged.set(x.host, { buyable: true, reason: null });
   for (const d of t.paid.screened?.dropped ?? [])
     if (/^(requires_input|requires_auth|no_402|not_payable)/.test(d.reason)) judged.set(d.host, { buyable: false, reason: d.reason, evidence: d.evidence });
@@ -69,6 +75,8 @@ function buyerView(host: string) {
   const req = j?.reason && /^requires_(input|auth)/.test(j.reason) ? j.reason : null;
   const last = lastPaidBy.get(host);
   return {
+    catalog: catalogOf.get(host) ?? null,
+    buyer_reports: reports ? (reports.by_host[host] ?? 0) : null,
     buyable_without_input: j ? j.buyable : null,
     requires_input_reason: req
       ? { source: req.includes("(observed)") ? "observed" : "schema", reason: req, evidence: j?.evidence ?? null }
@@ -103,6 +111,8 @@ writeFileSync(
   JSON.stringify({
     generated_at, window_days: weights.window_days, weights_version: weights.version, hosts: list.length,
     rfq: { status: rfq.status, fetched_at: rfq.fetched_at, note: rfq.note ?? null, used_in_score: false },
+    reports: reports ? { received: reports.received, hosts: reports.hosts, used_in_score: false } : null,
+    price_mismatch: { hosts: list.filter((s) => s.n_price_mismatch > 0).length, purchases: list.reduce((n, s) => n + s.n_price_mismatch, 0) },
     paid_targets: paidTargets,
     scores: list,
   }) + "\n",

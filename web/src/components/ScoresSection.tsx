@@ -156,6 +156,16 @@ export function ScoresSection({ data, error }: { data: Scores | null; error: str
         購入不成立は、支払いを送ったのに送金されないまま 4xx・402 が返った回数です（入力不足などで購入自体が成立しなかったもの）。納品の成否には数えていません。200 と本文が返ったのに決済も送金もなかった回（送金なしで納品）も、失敗に数えず各ホストの詳細に別に出します。
       </p>
       <p className="mt-1 text-xs text-muted-foreground">RFQ 参考は x402 RFQ Market での成立 / 拒否 / 未納品の件数です。参考値で、スコアの計算には入れていません。</p>
+      {data?.price_mismatch && (
+        <p className="mt-1 text-xs text-muted-foreground">
+          価格の不一致（カタログ・402 の提示・チェーン上の送金のどれかが違った購入）：{data.price_mismatch.purchases} 件・{data.price_mismatch.hosts} ホスト。送金が提示を超えたもの（過大請求）は未納品と同じ重さの失敗に数えます。
+        </p>
+      )}
+      {data?.reports && (
+        <p className="mt-1 text-xs text-muted-foreground">
+          買い手からの報告（@x402jp/safe-buy、匿名）：{data.reports.received} 件・{data.reports.hosts} ホスト。Probe 自身の測定とは別に数え、スコアには入れていません。
+        </p>
+      )}
       <HostDetailDialog host={host} onClose={() => setHost(null)} />
     </section>
   );

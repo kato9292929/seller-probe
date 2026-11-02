@@ -29,5 +29,20 @@ export function assertWithinBudget(amount: bigint, spent: bigint): void {
   if (amount <= 0n) throw new BudgetError(`refusing non-positive amount ${amount}`);
   if (amount > LIMITS.perCall) throw new BudgetError(`amount ${amount} > per-call cap ${LIMITS.perCall} ($0.01)`);
   if (spent + amount > LIMITS.perWeek)
-    throw new BudgetError(`weekly cap: spent ${spent} + ${amount} > ${LIMITS.perWeek} ($5 per 7 days)`);
+    throw new BudgetError(`weekly cap: spent ${spent} + ${amount} > ${LIMITS.perWeek} ($25 per 7 days)`);
+}
+
+/**
+ * Spend for one run, for purchases made concurrently: starts from the logs (spentLast7Days)
+ * and adds each attempt as it is written. `exclusive` runs the cap check, signing and the
+ * attempt record one purchase at a time, so parallel purchases can never pass the cap together.
+ */
+export class SpendTracker {
+  private tail: Promise<unknown> = Promise.resolve();
+  constructor(public spent: bigint) {}
+  exclusive<T>(f: () => Promise<T>): Promise<T> {
+    const run = this.tail.then(f, f);
+    this.tail = run.catch(() => undefined);
+    return run;
+  }
 }
