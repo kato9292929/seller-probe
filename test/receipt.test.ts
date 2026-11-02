@@ -44,3 +44,10 @@ test("receipt_advertised: true with a key, false on 404 or no keys, null when un
   }
   assert.equal((await wellKnownOf("http://127.0.0.1:9/x")).advertised, null);
 });
+
+test("a header of the same name in another format is not a Delivery Receipt: null, not false", async () => {
+  const foreign = Buffer.from(JSON.stringify({ v: 1, resource: "/api/v1/gas", method: "GET", payer: "0xabc" })).toString("base64");
+  const r = await receiptCheck(foreign, body, payload.resource, "0xnonce", wellKnown);
+  assert.equal(r.receipt_ok, null);
+  assert.match(r.receipt_reason!, /^foreign_format/);
+});

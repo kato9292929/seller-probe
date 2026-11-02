@@ -4,7 +4,7 @@
 //   payment_id). A seller without receipts gets null — receipts are optional and never cost score.
 import { USER_AGENT } from "./config.js";
 import { errMsg } from "./http.js";
-import { RECEIPT_HEADER, WELL_KNOWN_PATH, type WellKnown, parseWellKnown, verifyReceipt } from "./receipt/verify.js";
+import { RECEIPT_HEADER, WELL_KNOWN_PATH, type WellKnown, decodeReceipt, parseWellKnown, verifyReceipt } from "./receipt/verify.js";
 
 export { RECEIPT_HEADER };
 
@@ -37,6 +37,14 @@ export async function wellKnownOf(url: string, timeoutMs = 5000, redirect: Reque
 export async function receiptCheck(header: string | null, body: Uint8Array, url: string, paymentId: string | null,
   wellKnown?: WellKnown | null): Promise<{ receipt_ok: boolean | null; receipt_reason: string | null }> {
   if (!header) return { receipt_ok: null, receipt_reason: null };
+  // A header of the same name in another scheme (seen 2026-11-02: base64 JSON without key_id/sig)
+  // is not a Delivery Receipt: not counted, like no receipt, with the reason kept.
+  try {
+    const r = decodeReceipt(header);
+    if (r.v !== 1 || !r.key_id || !r.sig) throw new Error("not v1 with key_id and sig");
+  } catch (e) {
+    return { receipt_ok: null, receipt_reason: `foreign_format: ${(e as Error).message}`.slice(0, 200) };
+  }
   const wk = wellKnown ?? (await wellKnownOf(url)).wellKnown;
   if (!wk) return { receipt_ok: false, receipt_reason: `receipt_key_unknown (no usable ${WELL_KNOWN_PATH})` };
   const v = verifyReceipt({ header, body, wellKnown: wk, expect: paymentId ? { payment_id: paymentId } : undefined });
