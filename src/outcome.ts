@@ -13,7 +13,9 @@
 //   (a tx from the settlement header that is not on chain counts as no transfer)
 //   overcharged       the transfer on chain took more than the 402 offered: a failure as heavy
 //                     as not_delivered, whatever came back
-export type PaidOutcome = "delivered" | "not_delivered" | "request_rejected" | "delivered_unsettled" | "failed" | "overcharged";
+//   invalid_target    the Probe's own mistake (e.g. a template URL bought as written): set only
+//                     by a paid_resolution row, and left out of every count and score
+export type PaidOutcome = "delivered" | "not_delivered" | "request_rejected" | "delivered_unsettled" | "failed" | "overcharged" | "invalid_target";
 
 /**
  * Three prices of one purchase, compared: the catalog's (x402 Endpoint snapshot, USD), the 402's
@@ -50,7 +52,7 @@ export function classifyPaid(r: Record<string, unknown>): PaidOutcome | null {
   return "failed";
 }
 
-const OUTCOMES = new Set<PaidOutcome>(["delivered", "not_delivered", "request_rejected", "delivered_unsettled", "failed", "overcharged"]);
+const OUTCOMES = new Set<PaidOutcome>(["delivered", "not_delivered", "request_rejected", "delivered_unsettled", "failed", "overcharged", "invalid_target"]);
 
 /** A row's outcome: an explicit one laid over it (paid_resolution), else classified from its fields. */
 export function outcomeOf(r: Record<string, unknown>): PaidOutcome | null {
@@ -90,7 +92,7 @@ export function applyReconciliations<T extends Record<string, unknown>>(records:
     // `paid_resolution`: a later, explicit reading of a row's outcome (with its basis), e.g. a
     // 200 that the chain search confirmed was never paid → delivered_unsettled.
     const res = key ? resolution.get(key) : undefined;
-    if (res && !r.tx) return { ...r, outcome: res.outcome, resolution: { at: res.ts, basis: res.basis } } as T;
+    if (res) return { ...r, outcome: res.outcome, resolution: { at: res.ts, basis: res.basis } } as T;
     if (r.tx && !(r.onchain_ok === false && /not found/.test(String(r.onchain_detail ?? "")))) return r;
     const f = key ? fix.get(key) : undefined;
     if (!f) return r;

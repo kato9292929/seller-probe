@@ -87,7 +87,7 @@ export function paidValues(r: LogRecord, w: Weights): Record<PaidItem, number | 
 
 export function scoreHosts(records: LogRecord[], w: Weights, now = new Date()): HostScore[] {
   const cutoff = now.getTime() - w.window_days * 86_400_000;
-  const by = new Map<string, { free: LogRecord[]; paid: LogRecord[]; rejected: LogRecord[]; unsettled: LogRecord[] }>();
+  const by = new Map<string, { free: LogRecord[]; paid: LogRecord[]; rejected: LogRecord[]; unsettled: LogRecord[]; invalid: LogRecord[] }>();
   for (const r of applyReconciliations(records)) {
     if (Date.parse(r.ts) < cutoff) continue;
     const isFree = r.kind === "free";
@@ -95,12 +95,18 @@ export function scoreHosts(records: LogRecord[], w: Weights, now = new Date()): 
     if (r.dry_run) continue;
     const isPaid = r.kind === "paid" && !r.skipped;
     if (!isFree && !isPaid) continue;
-    const g = by.get(r.host) ?? { free: [], paid: [], rejected: [], unsettled: [] };
+    const g = by.get(r.host) ?? { free: [], paid: [], rejected: [], unsettled: [], invalid: [] };
     // request_rejected (no transfer, 4xx/402) is read the same way for rows written before the
     // `outcome` field existed: it stays out of every paid item, numerator and denominator.
     if (isFree) g.free.push(r);
     else {
       const o = outcomeOf(r);
+      // The Probe's own measurement error (paid_resolution invalid_target): not the seller's, not counted.
+      if (o === "invalid_target") {
+        g.invalid.push(r);
+        by.set(r.host, g);
+        continue;
+      }
       (o === "request_rejected" ? g.rejected : o === "delivered_unsettled" ? g.unsettled : g.paid).push(r);
     }
     by.set(r.host, g);
@@ -111,7 +117,7 @@ export function scoreHosts(records: LogRecord[], w: Weights, now = new Date()): 
     g.paid.sort((a, b) => a.ts.localeCompare(b.ts));
     g.rejected.sort((a, b) => a.ts.localeCompare(b.ts));
     const outcomes: Record<PaidOutcome, number> = {
-      delivered: 0, not_delivered: 0, request_rejected: g.rejected.length, delivered_unsettled: g.unsettled.length, failed: 0, overcharged: 0,
+      delivered: 0, not_delivered: 0, request_rejected: g.rejected.length, delivered_unsettled: g.unsettled.length, failed: 0, overcharged: 0, invalid_target: g.invalid.length,
     };
     for (const r of g.paid) {
       const o = outcomeOf(r);
