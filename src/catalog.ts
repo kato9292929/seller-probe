@@ -68,6 +68,9 @@ export function isCandidate(e: CatalogEndpoint): boolean {
     e.price.amount > 0 &&
     (e.networks ?? []).some((n) => n === "Solana" || n === "Base") &&
     !/%7B|%7D|[{}]/i.test(e.url) &&
+    // Express-style path parameters (".../url/:domain") are templates too: bought as-is they
+    // can only fail (2026-11-02: api.paysponge.com answered invalid_url after settlement).
+    !/\/:[A-Za-z_]/.test(e.url) &&
     hostKey(e.url) !== null
   );
 }

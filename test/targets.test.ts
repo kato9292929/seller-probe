@@ -11,6 +11,7 @@ const endpoints = [
   ep("2", "https://a.example/cheap", 0.001),
   ep("3", "https://www.b.example/x", 0.02, ["Solana"]),
   ep("4", "https://c.example/{id}", 0.001),
+  ep("4b", "https://c2.example/url/:domain", 0.001),
   ep("5", "https://d.example/x", 0.001, ["Polygon"]),
   ep("6", "https://e.example/x", 0.001, ["Base"], "EURC"),
   ep("7", "http://f.example/x", 0.001),
@@ -23,7 +24,7 @@ test("one cheapest endpoint per host; only https, USDC, Solana/Base, concrete UR
   const a = reps.find((t) => t.host === "a.example")!;
   assert.equal(a.url, "https://a.example/cheap");
   assert.ok(reps.find((t) => t.host === "b.example"), "www. is stripped");
-  for (const h of ["c.example", "d.example", "e.example", "f.example"]) assert.ok(!reps.find((t) => t.host === h), h);
+  for (const h of ["c.example", "c2.example", "d.example", "e.example", "f.example"]) assert.ok(!reps.find((t) => t.host === h), h);
 });
 
 test("paid: popular hosts within $0.01, then a reproducible random draw", () => {
