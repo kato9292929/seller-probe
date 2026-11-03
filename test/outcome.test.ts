@@ -200,3 +200,17 @@ test("a settlement-header tx the chain does not have moved nothing (settlement_p
   assert.equal(classifyPaid(r), "request_rejected");
   assert.equal(classifyPaid({ ...r, onchain_detail: "USDC Transfer value 2000 != 1000" }), "not_delivered", "money that moved wrongly still counts");
 });
+
+test("invalid_target (a paid_resolution for the Probe's own mistake) leaves the row out of every count", async () => {
+  const { applyReconciliations, outcomeOf } = await import("../src/outcome.js");
+  const { scoreHosts } = await import("../src/score.js");
+  const w = JSON.parse((await import("node:fs")).readFileSync(new URL("../config/weights.json", import.meta.url), "utf8"));
+  const row = { kind: "paid", ts: "2026-11-02T04:51:07Z", host: "p.example", skipped: null, tx: "0xT", onchain_ok: true, http_status: 400, response_bytes: 10, not_delivered: true, payer_key: { authorization_nonce: "0xN" } };
+  const res = { kind: "paid_resolution", ts: "2026-11-03T00:00:00Z", host: "p.example", payer_key_value: "0xN", outcome: "invalid_target", basis: "template URL" };
+  const [r] = applyReconciliations([row, res] as any[]);
+  assert.equal(outcomeOf(r), "invalid_target");
+  const [s] = scoreHosts([row, res] as any[], w, new Date("2026-11-03T00:00:00Z"));
+  assert.equal(s.n_paid, 0);
+  assert.equal(s.paid_outcomes.not_delivered, 0);
+  assert.equal(s.paid_outcomes.invalid_target, 1);
+});

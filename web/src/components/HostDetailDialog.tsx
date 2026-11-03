@@ -27,6 +27,8 @@ function outcome(r: Record<string, unknown>): string {
       return "納品（送金あり・200）";
     case "not_delivered":
       return `未納品：送金後に HTTP ${r.http_status}${why ? `（${why}）` : ""}`;
+    case "invalid_target":
+      return "Probe 側の測定の誤り（集計に入れない）";
     case "overcharged":
       return "過大請求：チェーン上の送金が 402 の提示額を超えた（未納品と同じ扱い）";
     case "delivered_unsettled":
