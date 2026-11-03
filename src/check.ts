@@ -89,6 +89,18 @@ export const bareGet: Get = async (url) => {
 
 const item = (id: string, label: string, status: CheckStatus, detail: string, fix: string | null = null): CheckItem => ({ id, label, status, detail, fix });
 
+/** For a 402 that says x402Version 2: does it look like v2 (resource object, amount, not v1-only fields)? */
+export function v2Layout(p: Parsed402): { ok: boolean; problems: string[] } | null {
+  if (p.spec_version !== "v2") return null;
+  const doc: any = p.raw;
+  const problems: string[] = [];
+  if (!doc?.resource || typeof doc.resource !== "object" || typeof doc.resource.url !== "string") problems.push("resource オブジェクトがない");
+  const accepts: any[] = Array.isArray(doc?.accepts) ? doc.accepts : [];
+  if (accepts.some((x) => x?.maxAmountRequired !== undefined && x?.amount === undefined)) problems.push("amount ではなく v1 の maxAmountRequired");
+  if (accepts.some((x) => typeof x?.network === "string" && !x.network.includes(":"))) problems.push("network が CAIP-2 でない");
+  return { ok: problems.length === 0, problems };
+}
+
 /** The Probe's record of this host (its public /scores/:host document), if any. */
 export type ProbeRecord = {
   last_paid?: { date: string; outcome: string | null; price_usd: number | null } | null;
@@ -142,6 +154,14 @@ export async function checkSeller(url: URL, deps: { get?: Get; probeRecord?: (ho
   }
 
   if (parsed) {
+    // A 402 that says v2 but is laid out as v1 (no top-level resource object, v1-only fields):
+    // seen 2026-11-03 at a seller that refused a v2 payment (PAYMENT-SIGNATURE) and accepted the
+    // same payment as v1 (X-PAYMENT). Confirmed only by paying, so this is a warning, not a failure.
+    const v2Doc = v2Layout(parsed);
+    if (v2Doc) items.push(v2Doc.ok
+      ? item("v2_layout", "x402 v2 の形式", "pass", "v2 の 402：resource と accepts[].amount がそろっている")
+      : item("v2_layout", "x402 v2 の形式", "warn", `v2 を名乗っているが v2 の形になっていない（${v2Doc.problems.join("・")}）。v1 のヘッダ（X-PAYMENT）しか読まない実装の可能性がある`,
+        "v2 の買い手は PAYMENT-SIGNATURE ヘッダで払う。サーバが PAYMENT-SIGNATURE を読むようにし、402 は x402 v2 の形（resource オブジェクト、accepts[].amount、extra.name・version）で返す"));
     const need = inputRequirement(parsed);
     const doc: any = parsed.raw;
     const declared = !!doc?.extensions?.bazaar || parsed.accepts.some((x) => (x.raw as any)?.outputSchema?.input);

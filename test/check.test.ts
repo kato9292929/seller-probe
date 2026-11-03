@@ -20,7 +20,7 @@ const status = (r: { items: { id: string; status: string }[] }) => Object.fromEn
 
 test("a well-formed Base seller passes; missing EIP-712 domain fails with a fix", async () => {
   const ok = await checkSeller(new URL("https://s.example/x"), { get: async () => v2(baseAccept()), wellKnown: noReceipt, probeRecord: async () => null });
-  assert.deepEqual(status(ok), { status_402: "pass", fields: "pass", usdc: "pass", eip712: "pass", input: "warn", payment_identifier: "info", receipt: "warn", probe: "info" });
+  assert.deepEqual(status(ok), { status_402: "pass", fields: "pass", usdc: "pass", eip712: "pass", v2_layout: "pass", input: "warn", payment_identifier: "info", receipt: "warn", probe: "info" });
   const bad = await checkSeller(new URL("https://s.example/x"), { get: async () => v2(baseAccept({})), wellKnown: noReceipt, probeRecord: async () => null });
   const e = bad.items.find((i) => i.id === "eip712")!;
   assert.equal(e.status, "fail");
@@ -79,4 +79,17 @@ test("api/*.js are the current bundles of src/api-*.ts", () => {
   execFileSync("sh", ["-c", `npx ${cmd} --log-level=error`]);
   for (const f of ["check.js", "reports.js", "monitor.js"])
     assert.equal(readFileSync(join(out, f), "utf8"), readFileSync(join("api", f), "utf8"), `run npm run build:api and commit api/${f}`);
+});
+
+test("v2 layout: a 402 that says v2 without a resource object is flagged (seen at a v1-only seller)", async () => {
+  const { v2Layout } = await import("../src/check.js");
+  const { parse402 } = await import("../src/x402.js");
+  const enc = (d: unknown) => Buffer.from(JSON.stringify(d)).toString("base64");
+  const good = parse402((n) => (n.toLowerCase() === "payment-required" ? enc({ x402Version: 2, resource: { url: "https://s.example/x" }, accepts: [baseAccept()] }) : null), "{}");
+  assert.deepEqual(v2Layout(good), { ok: true, problems: [] });
+  const bad = parse402((n) => (n.toLowerCase() === "payment-required" ? enc({ x402Version: 2, accepts: [{ ...baseAccept(), extra: undefined }] }) : null), "{}");
+  assert.equal(v2Layout(bad)!.ok, false);
+  assert.match(v2Layout(bad)!.problems.join(), /resource/);
+  const r = await checkSeller(new URL("https://s.example/x"), { get: async () => v2(baseAccept()), wellKnown: noReceipt, probeRecord: async () => null });
+  assert.equal(r.items.find((i) => i.id === "v2_layout")?.status, "pass");
 });
