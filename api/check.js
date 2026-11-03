@@ -245,6 +245,16 @@ var bareGet = async (url) => {
   return { status: res.status, header: (h) => res.headers.get(h), body: Buffer.concat(chunks).toString("utf8") };
 };
 var item = (id, label, status, detail, fix = null) => ({ id, label, status, detail, fix });
+function v2Layout(p) {
+  if (p.spec_version !== "v2") return null;
+  const doc = p.raw;
+  const problems = [];
+  if (!doc?.resource || typeof doc.resource !== "object" || typeof doc.resource.url !== "string") problems.push("resource \u30AA\u30D6\u30B8\u30A7\u30AF\u30C8\u304C\u306A\u3044");
+  const accepts = Array.isArray(doc?.accepts) ? doc.accepts : [];
+  if (accepts.some((x) => x?.maxAmountRequired !== void 0 && x?.amount === void 0)) problems.push("amount \u3067\u306F\u306A\u304F v1 \u306E maxAmountRequired");
+  if (accepts.some((x) => typeof x?.network === "string" && !x.network.includes(":"))) problems.push("network \u304C CAIP-2 \u3067\u306A\u3044");
+  return { ok: problems.length === 0, problems };
+}
 async function checkSeller(url, deps = {}) {
   const get = deps.get ?? bareGet;
   const host = url.hostname.toLowerCase().replace(/^www\./, "");
@@ -297,6 +307,14 @@ async function checkSeller(url, deps = {}) {
     } else items.push(item("eip712", "EIP-712 \u306E name\u30FBversion", "na", "Base \u306E\u652F\u6255\u3044\u6761\u4EF6\u3067\u306F\u306A\u3044"));
   }
   if (parsed) {
+    const v2Doc = v2Layout(parsed);
+    if (v2Doc) items.push(v2Doc.ok ? item("v2_layout", "x402 v2 \u306E\u5F62\u5F0F", "pass", "v2 \u306E 402\uFF1Aresource \u3068 accepts[].amount \u304C\u305D\u308D\u3063\u3066\u3044\u308B") : item(
+      "v2_layout",
+      "x402 v2 \u306E\u5F62\u5F0F",
+      "warn",
+      `v2 \u3092\u540D\u4E57\u3063\u3066\u3044\u308B\u304C v2 \u306E\u5F62\u306B\u306A\u3063\u3066\u3044\u306A\u3044\uFF08${v2Doc.problems.join("\u30FB")}\uFF09\u3002v1 \u306E\u30D8\u30C3\u30C0\uFF08X-PAYMENT\uFF09\u3057\u304B\u8AAD\u307E\u306A\u3044\u5B9F\u88C5\u306E\u53EF\u80FD\u6027\u304C\u3042\u308B`,
+      "v2 \u306E\u8CB7\u3044\u624B\u306F PAYMENT-SIGNATURE \u30D8\u30C3\u30C0\u3067\u6255\u3046\u3002\u30B5\u30FC\u30D0\u304C PAYMENT-SIGNATURE \u3092\u8AAD\u3080\u3088\u3046\u306B\u3057\u3001402 \u306F x402 v2 \u306E\u5F62\uFF08resource \u30AA\u30D6\u30B8\u30A7\u30AF\u30C8\u3001accepts[].amount\u3001extra.name\u30FBversion\uFF09\u3067\u8FD4\u3059"
+    ));
     const need = inputRequirement(parsed);
     const doc = parsed.raw;
     const declared = !!doc?.extensions?.bazaar || parsed.accepts.some((x) => x.raw?.outputSchema?.input);
