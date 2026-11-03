@@ -30,7 +30,18 @@ const all = [
   ...t.paid.random.map((x) => ({ ...x, pick: "random" })),
   ...(t.paid.catalog ?? []).map((x) => ({ ...x, pick: "catalog" })),
 ];
-const list = dryRun ? all : all.filter((x) => !recent.has(x.host));
+// PROBE_RETRY_DEFERRED=1 (after a top-up): buy only the hosts whose latest purchase in the last
+// 8 days was deferred for want of balance, from the URL and price that row recorded.
+const retry = process.env.PROBE_RETRY_DEFERRED === "1";
+const deferred = (() => {
+  const last = new Map<string, Record<string, unknown>>();
+  for (const r of readRecords(LOG_DIR(), 8)) if (r.kind === "paid" && !r.dry_run) last.set(r.host, r);
+  return [...last.values()]
+    .filter((r) => typeof r.skipped === "string" && r.skipped.startsWith("deferred"))
+    .map((r) => ({ host: String(r.host), url: String(r.url), endpoint_id: "deferred", price_usd: Number(r.amount ?? 0) / 1e6, networks: [], pick: "deferred" }));
+})();
+const list = retry ? deferred : dryRun ? all : all.filter((x) => !recent.has(x.host));
+if (retry) console.log(`retrying ${deferred.length} host(s) deferred for want of balance`);
 if (list.length < all.length) console.log(`${all.length - list.length} hosts already bought in the last 20 hours: not bought again`);
 const payer = await makePayer();
 console.log(
