@@ -3,7 +3,7 @@ import { generateKeyPairSync, sign } from "node:crypto";
 import { createServer } from "node:http";
 import { test } from "node:test";
 import { receiptCheck, wellKnownOf } from "../src/receipt.js";
-import { base64urlEncode, encodeReceipt, receiptSigningBytes, sha256Hex } from "../src/receipt/verify.js";
+import { base64urlEncode, encodeReceipt, receiptSigningBytes, sha256Hex } from "@x402jp/delivery-receipt-verify";
 
 // A throwaway Ed25519 key for this test only.
 const { publicKey, privateKey } = generateKeyPairSync("ed25519");

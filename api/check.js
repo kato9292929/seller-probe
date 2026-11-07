@@ -29,28 +29,8 @@ function chainOf(network) {
 // src/http.ts
 var errMsg = (e) => e?.name === "TimeoutError" ? "timeout" : `${e?.message ?? e}${e?.cause?.code ? ` (${e.cause.code})` : ""}`;
 
-// src/receipt/verify.ts
-var WELL_KNOWN_PATH = "/.well-known/x402-receipt.json";
-var MIN_REFETCH_WINDOW_S = 86400;
-function parseWellKnown(doc) {
-  const d = doc;
-  if (!d || typeof d !== "object" || !Array.isArray(d.keys)) throw new Error("well-known: missing keys");
-  for (const k of d.keys) {
-    if (!k || typeof k.key_id !== "string" || typeof k.public_key !== "string" || k.alg !== "Ed25519") {
-      throw new Error("well-known: bad key entry");
-    }
-    if (k.revoked_at !== void 0 && Number.isNaN(Date.parse(k.revoked_at))) {
-      throw new Error("well-known: bad revoked_at");
-    }
-  }
-  if (typeof d.refetch_window_s !== "number" || d.refetch_window_s < MIN_REFETCH_WINDOW_S) {
-    throw new Error("well-known: refetch_window_s must be >= 86400");
-  }
-  if (typeof d.refetch_header !== "string") throw new Error("well-known: missing refetch_header");
-  return d;
-}
-
 // src/receipt.ts
+import { RECEIPT_HEADER, WELL_KNOWN_PATH, decodeReceipt, parseWellKnown, verifyReceipt } from "@x402jp/delivery-receipt-verify";
 async function wellKnownOf(url, timeoutMs = 5e3, redirect = "follow") {
   let origin;
   try {

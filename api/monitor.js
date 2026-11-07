@@ -16,6 +16,9 @@ var NETWORKS = {
   base: { caip2: "eip155:8453", v1: ["base", "base-mainnet"] }
 };
 
+// src/receipt.ts
+import { RECEIPT_HEADER, WELL_KNOWN_PATH, decodeReceipt, parseWellKnown, verifyReceipt } from "@x402jp/delivery-receipt-verify";
+
 // src/check.ts
 var MAX_BODY = 256 * 1024;
 function isPrivateAddress(ip) {

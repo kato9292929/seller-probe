@@ -10,7 +10,7 @@ import { SELF_CHECK_DIR, append } from "./log.js";
 import type { Payer } from "./pay.js";
 import { probePaid, toRecord } from "./probe-paid.js";
 import { RECEIPT_HEADER, receiptCheck, wellKnownOf } from "./receipt.js";
-import { REFETCH_HEADER } from "./receipt/verify.js";
+import { REFETCH_HEADER } from "@x402jp/delivery-receipt-verify";
 
 /** Our own sellers. The allowlist is hard-coded on purpose; URLs come from env but must be on these hosts. */
 export const SELF_HOSTS = ["jin.x402jp.com", "osd.x402jp.com"] as const;
