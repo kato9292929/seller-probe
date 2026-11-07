@@ -99,7 +99,7 @@ GET が 405 のときだけ空の JSON 本文で POST して 402 を取る（`me
 
 **EIP-712 の補完**：Base の 402 が公式 USDC を指しているのに `extra` に `name`・`version` が無いときだけ、公式 USDC の値（`USD Coin`・`2`。チェーン上の `name()`・`version()`）で補って署名し、行に `eip712_filled: true` を残す（`src/pay.ts` の `eip712Fill`）。公式 USDC 以外は補わない（買わない）。
 
-**Delivery Receipt**（`kato9292929/delivery-receipt`、検証は `src/receipt/verify.ts` に取り込み）：
+**Delivery Receipt**（`kato9292929/delivery-receipt`、検証は npm の `@x402jp/delivery-receipt-verify`）：
 
 - 無料：402 を返したホストと、カタログで価格の付いたエンドポイントが 2xx を返したホスト（カタログがサイトのトップを載せている場合）に `/.well-known/x402-receipt.json` を引き、鍵が 1 本以上あれば `receipt_advertised: true`（無い・不正は false、届かないは null）。
 - 有料：200 に `X-Delivery-Receipt` があれば、署名・本文のハッシュ・`payment_id`（Solana は tx、Base は nonce）を検証して `receipt_ok`（理由は `receipt_reason`）。レシートの無い売り手は null で、**減点しない**（スコアの項目に入れていない）。

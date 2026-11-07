@@ -4,7 +4,7 @@
 //   payment_id). A seller without receipts gets null — receipts are optional and never cost score.
 import { USER_AGENT } from "./config.js";
 import { errMsg } from "./http.js";
-import { RECEIPT_HEADER, WELL_KNOWN_PATH, type WellKnown, decodeReceipt, parseWellKnown, verifyReceipt } from "./receipt/verify.js";
+import { RECEIPT_HEADER, WELL_KNOWN_PATH, type WellKnown, decodeReceipt, parseWellKnown, verifyReceipt } from "@x402jp/delivery-receipt-verify";
 
 export { RECEIPT_HEADER };
 
