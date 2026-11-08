@@ -134,7 +134,7 @@ test("checks: schema, empty/error/placeholder, input reflected, freshness, data 
   assert.deepEqual(bad.map((c) => c.result), ["fail", "pass", "fail", "fail", "pass"]);
   const err = contentChecks({ body: Buffer.from('{"error":"upstream unavailable"}'), contentType: "application/json", description: null, output: null, values: [], now });
   assert.equal(err.find((c) => c.name === "not_empty")!.result, "fail");
-  const verbatim = contentChecks({ body: Buffer.from('{"price":1}'), contentType: "application/json", description: null, output, values: [], now });
+  const verbatim = contentChecks({ body: Buffer.from('{"price":1}'), contentType: "application/json", description: null, output, values: [{ name: "symbol", value: "AAPL" }], now });
   assert.match(verbatim.find((c) => c.name === "not_empty")!.detail, /published example/);
   const tts = contentChecks({ body: Buffer.from('{"ok":true}'), contentType: "application/json", description: "Text-to-speech audio (mp3)", output: null, values: [], now });
   assert.equal(tts.find((c) => c.name === "data_kind")!.result, "fail");
@@ -150,7 +150,11 @@ test("categories: old bare-GET not_delivered rows are re-read by status; every c
   assert.equal(categorize(row({ http_status: 200 }))!.category, "as_described");
   assert.equal(categorize(row({ http_status: 200, checks: [{ name: "not_empty", result: "fail", detail: "empty JSON" }] }))!.category, "not_as_described");
   assert.equal(categorize(row({ http_status: 200, tx: null, onchain_ok: false }))!.category, "delivered_without_payment");
+  assert.equal(categorize(row({ http_status: 200, checks: [{ name: "input_reflected", result: "fail", detail: "none of network=ethereum appears in the output" }] }))!.category, "as_described", "a chain/network is not expected back");
   assert.equal(categorize(row({ http_status: 402, tx: null, onchain_ok: false }))!.category, "not_settled");
+  assert.equal(categorize(row({ http_status: 200, request: { values: [] }, checks: [{ name: "not_empty", result: "fail", detail: "the body is the published example, verbatim" }] }))!.category, "as_described");
+  assert.equal(categorize(row({ http_status: 200, checks: [{ name: "output_schema", result: "fail", detail: "$.type: missing" }] }))!.category, "as_described");
+  assert.equal(fromBazaarShape("bazaar", "b", { method: "GET" }, null, { type: "json" }, { type: "object", properties: { type: { type: "string" } }, required: ["type"] })!.output!.schema, null, "wrapper schema is not the body's");
   assert.equal(categorize(row({ skipped: "not paid: amount 20000 > per-call cap 10000" }))!.category, "over_price");
   assert.equal(categorize(row({ skipped: "HTTP 400 on POST, not 402" }))!.category, "input_mismatch");
   assert.equal(categorize(row({ skipped: "no_usage: 402: no definition" }))!.category, "no_usage");

@@ -102,7 +102,11 @@ export function fromBazaarShape(source: Definition["source"], detail: string, in
     else body_example = input.body;
   }
   if (sp.body?.properties) body = mergeFields(fieldsFromSchema(sp.body), body ?? {});
-  const exSchema = outputSchema?.properties?.example ?? (outputSchema?.type && outputSchema?.properties && !outputSchema.properties.example ? outputSchema : null);
+  // The Bazaar/402 output is a wrapper { type, example, schema? }: its schema describes the wrapper,
+  // and only properties.example (when given) describes the body.
+  const wrapperKeys = Object.keys(outputSchema?.properties ?? {});
+  const isWrapper = wrapperKeys.length > 0 && wrapperKeys.every((k) => ["type", "example", "schema"].includes(k));
+  const exSchema = outputSchema?.properties?.example ?? (outputSchema?.type && outputSchema?.properties && !isWrapper ? outputSchema : null);
   return {
     source, source_detail: detail, method, query, body, body_example, query_example,
     body_type: input?.bodyType ?? (body || body_example !== null ? "json" : null),
