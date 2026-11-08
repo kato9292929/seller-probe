@@ -91,7 +91,8 @@ export function promisedFreshness(description: string | null | undefined): { ms:
     const n = Number(every[1]) * (every[2].startsWith("h") ? 3_600_000 : every[2].startsWith("m") ? 60_000 : 1000);
     return { ms: Math.max(n * 3, 3_600_000), said: every[0] };
   }
-  const m = d.match(/real[- ]?time|\blive\b|\blatest\b|up[- ]to[- ]the[- ]minute|current/);
+  // "current" alone is not a frequency (a daily index is "current" too), so it promises nothing measurable.
+  const m = d.match(/real[- ]?time|\blive\b|\blatest\b|up[- ]to[- ]the[- ]minute/);
   if (m) return { ms: 6 * 3_600_000, said: m[0] };
   if (/\bhourly\b/.test(d)) return { ms: 6 * 3_600_000, said: "hourly" };
   if (/\bdaily\b/.test(d)) return { ms: 3 * 86_400_000, said: "daily" };
@@ -107,7 +108,11 @@ function expectedKind(description: string | null | undefined, outputType: string
   return null;
 }
 
-const REFLECT_NAME = /^(symbol|ticker|address|wallet|token_?address|contract|city|location|pair|coin|coin_?id|ids?|username|handle|domain|url|chain|network)$/i;
+// Inputs a correct answer names back. A chain/network is a setting (a block number need not
+// repeat "ethereum"), so it is not expected in the output (from 2026-11-08, also when re-read).
+// A username is not expected either: posts carry an author id, not the handle asked for.
+const REFLECT_NAME = /^(symbol|ticker|address|wallet|token_?address|contract|city|location|pair|coin|coin_?id|ids?|domain|url)$/i;
+const SETTING_ONLY = /^none of ((chain|network|username|handle)=[^,]+(, )?)+ appears in the output$/;
 
 /**
  * The five checks on a delivered body. `values` are the request's inputs (with where they came
@@ -145,7 +150,8 @@ export function contentChecks(a: {
     else if (keys.length <= 3 && keys.some((k) => ERROR_KEYS.includes(k)) && (o.error || o.errors) ) empty = `error object: ${JSON.stringify(o).slice(0, 120)}`;
   }
   if (!empty && PLACEHOLDER_BODY.test(trimmed.slice(0, 5000))) empty = `placeholder text: "${trimmed.match(PLACEHOLDER_BODY)![0]}"`;
-  if (!empty && a.output?.example && json !== undefined && JSON.stringify(json) === JSON.stringify(a.output.example)) empty = "the body is the published example, verbatim";
+  // Only when the request carried inputs: a call without inputs (a ping, a static list) may well answer its example.
+  if (!empty && a.values.length && a.output?.example && json !== undefined && JSON.stringify(json) === JSON.stringify(a.output.example)) empty = "the body is the published example, verbatim";
   checks.push(empty ? { name: "not_empty", result: "fail", detail: empty } : { name: "not_empty", result: "pass", detail: `${a.body.length} bytes` });
 
   // 3. input reflected in the output
@@ -204,7 +210,16 @@ export function categorize(r: Record<string, unknown>): { category: Category; re
   const o = outcomeOf(r);
   if (o === "invalid_target" || o === null) return null;
   const status = typeof r.http_status === "number" ? r.http_status : 0;
-  const failed = ((r.checks as { name: string; result: string; detail: string }[] | undefined) ?? []).filter((c) => c.result === "fail");
+  const failed = ((r.checks as { name: string; result: string; detail: string }[] | undefined) ?? [])
+    .filter((c) => c.result === "fail")
+    // rows checked before chain/network left REFLECT_NAME are read with the current rule
+    .filter((c) => !(c.name === "input_reflected" && SETTING_ONLY.test(c.detail)))
+    // Read with the rules as of 2026-11-08 (rows checked earlier that day are re-read, not rewritten):
+    // the published example returned for a call without inputs, and the {type, example} wrapper
+    // misread as the output schema, are not failures.
+    .filter((c) => !(c.name === "not_empty" && /published example/.test(c.detail) && !((r.request as any)?.values ?? []).length))
+    .filter((c) => !(c.name === "output_schema" && c.detail === "$.type: missing"))
+    .filter((c) => !(c.name === "freshness" && /^"current" promised/.test(c.detail)));
   switch (o) {
     case "delivered":
       return failed.length ? { category: "not_as_described", reason: failed.map((c) => `${c.name}: ${c.detail}`).join(" / ") } : { category: "as_described", reason: r.checks ? "all checks passed or not applicable" : "delivered (content not checked: bought before the checks existed)" };
