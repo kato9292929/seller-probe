@@ -44,7 +44,9 @@ export function classifyPaid(r: Record<string, unknown>): PaidOutcome | null {
   // A tx named by the settlement header that the chain does not have (seen 2026-11-02: 402 with
   // settle error "settlement_pending", and our authorization nonce never used) moved nothing.
   const unseen = r.onchain_ok === false && /not found/.test(String(r.onchain_detail ?? ""));
-  const transferred = typeof r.tx === "string" && r.tx.length > 0 && !unseen;
+  // authorization_used: the EIP-3009 nonce is spent on chain (the signed transfer happened) even
+  // where no RPC's logs located the tx (seen 2026-11-08).
+  const transferred = (typeof r.tx === "string" && r.tx.length > 0 && !unseen) || r.authorization_used === true;
   const status = typeof r.http_status === "number" ? r.http_status : null;
   if (transferred) return status === 200 && Number(r.response_bytes ?? 0) > 0 ? "delivered" : "not_delivered";
   if (status !== null && status >= 400 && status < 500) return "request_rejected";
@@ -97,7 +99,8 @@ export function applyReconciliations<T extends Record<string, unknown>>(records:
     const f = key ? fix.get(key) : undefined;
     if (!f) return r;
     const merged: Record<string, unknown> = {
-      ...r, tx: f.tx, tx_source: "onchain_search", onchain_ok: f.onchain_ok, onchain_detail: f.onchain_detail,
+      ...r, tx: f.tx, tx_source: f.authorization_used ? "authorization_state" : "onchain_search", onchain_ok: f.onchain_ok, onchain_detail: f.onchain_detail,
+      ...(f.authorization_used ? { authorization_used: true } : {}),
       settled_by: f.settled_by ?? r.settled_by ?? null, reconciled_at: f.ts,
     };
     merged.not_delivered = merged.onchain_ok === true && merged.http_status !== 200;

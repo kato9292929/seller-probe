@@ -53,7 +53,11 @@ let onchain_detail: string | null = null;
 const want = { payer: payer.address.base!, payTo: a.payTo!, amount };
 if (!tx) {
   const f = await findBasePayment(want.payer, auth.nonce, 60_000);
-  if (f) {
+  if (f && f.hash === null) {
+    tx_source = "authorization_state";
+    onchain_ok = true;
+    onchain_detail = "authorization nonce used on chain (USDC authorizationState); tx not located in the logs";
+  } else if (f) {
     tx = f.hash;
     tx_source = "onchain_search";
     const c = checkBaseTransfer(f.receipt, want);
@@ -67,7 +71,7 @@ if (!tx) {
 const row: Record<string, unknown> = {
   kind: "paid", host, url, skipped: null, network: a.network, chain: "base", amount: a.amount, pay_to: a.payTo, payer: payer.address.base,
   payer_key, http_status: r.res.status, settle_ok: settle ? settle.success : false, settle_error: settle?.error ?? null, tx, tx_source,
-  onchain_ok, onchain_detail, delivered: r.res.status === 200 && r.body.length > 0, not_delivered: onchain_ok === true && r.res.status !== 200,
+  onchain_ok, onchain_detail, ...(tx_source === "authorization_state" ? { authorization_used: true } : {}), delivered: r.res.status === 200 && r.body.length > 0, not_delivered: onchain_ok === true && r.res.status !== 200,
   latency_paid_ms: r.total_ms, response_bytes: r.body.length, response_sha256: r.body.length ? createHash("sha256").update(r.body).digest("hex") : null,
   error_body: r.res.status !== 200 ? bodySnippet(r.body) : null, x402_error: r.res.status === 402 ? ((parse402((n) => r.res.headers.get(n), r.body.toString("utf8")).raw as any)?.error ?? null) : null,
   ...(filled ? { eip712_filled: true } : {}), payment_form: "x402v1", pick: "manual_v1_retry",

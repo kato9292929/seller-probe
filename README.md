@@ -154,11 +154,11 @@ score = 100 × Σ(重み × 合格率) ÷ Σ(重み)    （観測のない項目
 | 順 | ファイル:行 | 内容 |
 |---|---|---|
 | 定義 | `src/config.ts:37` | `perCall: 10_000n`（USDC 6 桁で $0.01）。env や設定ファイルからは変えられない |
-| 1 | `src/pay.ts:56` | `refuseReason`：402 の金額が `LIMITS.perCall` を超える提示は買わない（`src/probe-paid.ts:118` で呼ぶ） |
-| 2 | `src/budget.ts:30` | `assertWithinBudget`：同じ上限を再検査し、7 日間 $25（`src/budget.ts:31`、定義は `src/config.ts:39`）も見る。署名の前に `src/probe-paid.ts:132` で呼ぶ。並行して買うときは、上限の検査・署名・試行の記録を 1 件ずつ順に行う（`SpendTracker`）ので、同時に上限を越えることはない |
+| 1 | `src/pay.ts:56` | `refuseReason`：402 の金額が `LIMITS.perCall` を超える提示は買わない（`src/probe-paid.ts:120` で呼ぶ） |
+| 2 | `src/budget.ts:30` | `assertWithinBudget`：同じ上限を再検査し、7 日間 $25（`src/budget.ts:31`、定義は `src/config.ts:39`）も見る。署名の前に `src/probe-paid.ts:134` で呼ぶ。並行して買うときは、上限の検査・署名・試行の記録を 1 件ずつ順に行う（`SpendTracker`）ので、同時に上限を越えることはない |
 | 3 | `src/pay.ts:24` | 支払いライブラリ（`@x402/core`）の `spendControls.maxAmountPerPayment: "$0.01"`。上の 2 つを抜けても署名しない二重の柵 |
 
-署名は 1・2 を通った後の `src/probe-paid.ts:144`（`signFor`）でだけ行う。対象選定時のカタログ価格の上限（`src/config.ts:41` の `catalogMaxPriceUsd`）は対象を絞るためのもので、支払いの強制ではない。
+署名は 1・2 を通った後の `src/probe-paid.ts:146`（`signFor`）でだけ行う。対象選定時のカタログ価格の上限（`src/config.ts:41` の `catalogMaxPriceUsd`）は対象を絞るためのもので、支払いの強制ではない。
 
 ## 実行
 

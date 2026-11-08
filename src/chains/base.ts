@@ -56,25 +56,57 @@ export async function verifyBaseTransfer(txHash: string, w: { payer: string; pay
   return { ok: false, reason: "receipt not found" };
 }
 
-/** After a failed paid request: the tx that consumed our authorization nonce, if any. */
+/** RPCs tried in turn for log searches: the configured one, then a public one that serves eth_getLogs. */
+const LOG_RPCS = () => [...new Set([BASE_RPC(), "https://base-rpc.publicnode.com"])];
+
+/**
+ * EIP-3009 `authorizationState(authorizer, nonce)` on USDC: true once the nonce has been used,
+ * i.e. the signed transfer (exactly this value to this payTo) happened. An eth_call, so it does
+ * not depend on any RPC's log index (which can refuse or come back incomplete).
+ */
+export async function authorizationUsed(payer: string, nonce: string): Promise<boolean | null> {
+  const data = "0xe94a0102" + payer.toLowerCase().replace(/^0x/, "").padStart(64, "0") + nonce.toLowerCase().replace(/^0x/, "").padStart(64, "0");
+  for (const url of LOG_RPCS()) {
+    try {
+      return BigInt(await rpc<string>(url, "eth_call", [{ to: USDC.base, data }, "latest"], 2)) !== 0n;
+    } catch {
+      /* next RPC */
+    }
+  }
+  return null;
+}
+
+/**
+ * After a paid request without a settlement tx: the tx that consumed our authorization nonce.
+ * `{ hash: null, used: true }` when the nonce is used on chain but no RPC's logs locate the tx
+ * (seen 2026-11-08: mainnet.base.org refuses eth_getLogs, publicnode answers incompletely);
+ * null only when the nonce is unused (or nothing could be read).
+ */
 export async function findBasePayment(
   payer: string, nonce: string, timeoutMs = 90_000, at?: Date,
-): Promise<{ hash: string; receipt: any } | null> {
+): Promise<{ hash: string; receipt: any } | { hash: null; receipt: null; used: true } | null> {
   const until = Date.now() + timeoutMs;
-  while (Date.now() < until) {
-    const latest = parseInt(await rpc<string>(BASE_RPC(), "eth_blockNumber", []), 16);
-    // Recent payment: the last ~hour. Older one (`at`): a narrow window around its time (2 s blocks).
-    const centre = at ? latest - Math.round((Date.now() - at.getTime()) / 2000) : latest;
-    const from = Math.max(0, at ? centre - 900 : latest - 1800);
-    const to = at ? Math.min(latest, centre + 900) : latest;
-    const logs: any[] = await rpc(BASE_RPC(), "eth_getLogs", [
-      { address: USDC.base, fromBlock: "0x" + from.toString(16), toBlock: "0x" + to.toString(16), topics: [AUTHORIZATION_USED, topicAddr(payer), nonce.toLowerCase()] },
-    ]).catch(() => []);
-    if (logs.length) {
-      const hash = logs[0].transactionHash;
-      return { hash, receipt: await rpc(BASE_RPC(), "eth_getTransactionReceipt", [hash]).catch(() => null) };
+  do {
+    for (const url of LOG_RPCS()) {
+      try {
+        const latest = parseInt(await rpc<string>(url, "eth_blockNumber", [], 2), 16);
+        // Recent payment: the last ~hour. Older one (`at`): a narrow window around its time (2 s blocks).
+        const centre = at ? latest - Math.round((Date.now() - at.getTime()) / 2000) : latest;
+        const from = Math.max(0, at ? centre - 900 : latest - 1800);
+        const to = at ? Math.min(latest, centre + 900) : latest;
+        const logs: any[] = await rpc(url, "eth_getLogs", [
+          { address: USDC.base, fromBlock: "0x" + from.toString(16), toBlock: "0x" + to.toString(16), topics: [AUTHORIZATION_USED, topicAddr(payer), nonce.toLowerCase()] },
+        ], 2);
+        if (logs.length) {
+          const hash = logs[0].transactionHash;
+          return { hash, receipt: await rpc(url, "eth_getTransactionReceipt", [hash]).catch(() => null) };
+        }
+      } catch {
+        /* refused or failed: the next RPC */
+      }
     }
-    await sleep(5000);
-  }
+    if (await authorizationUsed(payer, nonce)) return { hash: null, receipt: null, used: true };
+    if (Date.now() < until) await sleep(5000);
+  } while (Date.now() < until);
   return null;
 }

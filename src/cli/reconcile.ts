@@ -23,7 +23,11 @@ for (const r of todo) {
   const found =
     r.chain === "solana"
       ? await findSolanaPayment(want.payer, key, 1, 200).then((f) => f && { tx: f.signature, check: checkSolanaTransfer(f.tx, want) })
-      : await findBasePayment(want.payer, key, 1, new Date(r.ts)).then((f) => f && { tx: f.hash, check: checkBaseTransfer(f.receipt, want) });
+      : await findBasePayment(want.payer, key, 1, new Date(r.ts)).then((f) =>
+          !f ? null
+          : f.hash === null
+            ? { tx: null, used: true, check: { ok: true, reason: "authorization nonce used on chain (USDC authorizationState); tx not located in the logs", fee_payer: undefined } }
+            : { tx: f.hash, check: checkBaseTransfer(f.receipt, want) });
   if (!found) {
     console.log(`  ${r.host} ${r.ts}: no payment on chain`);
     continue;
@@ -31,6 +35,7 @@ for (const r of todo) {
   append(LOG_DIR(), {
     kind: "paid_reconciled", host: r.host, of_ts: r.ts, chain: r.chain, payer_key_value: key,
     tx: found.tx, onchain_ok: found.check.ok, onchain_detail: found.check.reason, settled_by: found.check.fee_payer ?? null,
+    ...("used" in found ? { authorization_used: true } : {}),
   });
   console.log(`  ${r.host} ${r.ts}: tx ${found.tx} (${found.check.reason})`);
 }

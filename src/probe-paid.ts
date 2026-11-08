@@ -35,7 +35,7 @@ export type PaidResult = {
   settle_error: string | null;
   /** Payment tx: from the settle header, or found on chain by our own signature/nonce. */
   tx: string | null;
-  tx_source: "settle_header" | "onchain_search" | null;
+  tx_source: "settle_header" | "onchain_search" | "authorization_state" | null;
   onchain_ok: boolean | null;
   onchain_detail: string | null;
   settled_by: string | null;
@@ -65,6 +65,8 @@ export type PaidResult = {
   receipt_ok?: boolean | null;
   receipt_reason?: string | null;
   response_content_type?: string | null;
+  /** Base: our authorization nonce is used on chain (the transfer happened) though no log located its tx. */
+  authorization_used?: true;
   /** The 402 named official USDC on Base without EIP-712 name/version; the known values were filled in to sign. */
   eip712_filled?: true;
 };
@@ -208,8 +210,19 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
     const found =
       a.chain === "solana"
         ? await findSolanaPayment(out.payer!, signed.payer_key.payer_signature, FIND_MS()).then((f) => f && { tx: f.signature, check: checkSolanaTransfer(f.tx, want) })
-        : await findBasePayment(out.payer!, signed.payer_key.authorization_nonce, FIND_MS()).then((f) => f && { tx: f.hash, check: checkBaseTransfer(f.receipt, want) });
-    if (found) {
+        : await findBasePayment(out.payer!, signed.payer_key.authorization_nonce, FIND_MS()).then((f) =>
+            !f ? null
+            : f.hash === null
+              // EIP-3009 moves exactly the signed value to the signed payTo, so a used nonce is that transfer.
+              ? { tx: null, check: { ok: true, reason: "authorization nonce used on chain (USDC authorizationState); tx not located in the logs", transferred: amount, fee_payer: undefined } }
+              : { tx: f.hash, check: checkBaseTransfer(f.receipt, want) });
+    if (found && found.tx === null) {
+      out.authorization_used = true;
+      out.tx_source = "authorization_state";
+      out.onchain_ok = true;
+      out.onchain_detail = found.check.reason;
+      transferred = amount;
+    } else if (found) {
       out.tx = found.tx;
       out.tx_source = "onchain_search";
       out.onchain_ok = found.check.ok;
@@ -225,7 +238,7 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
     transferred = check.transferred ?? null;
     out.settled_by = check.fee_payer ?? null;
   }
-  if (!out.tx) {
+  if (!out.tx && !out.authorization_used) {
     out.onchain_ok = false;
     out.onchain_detail = status === 200 ? "200 without a settlement tx (none found on chain)" : "no landed payment found";
   }
