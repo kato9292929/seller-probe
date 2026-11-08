@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ApiSection } from "@/components/ApiSection";
 import { CheckPage } from "@/components/CheckPage";
+import { CuratedSection } from "@/components/CuratedSection";
 import { Footer } from "@/components/Footer";
 import { FormulaSection } from "@/components/FormulaSection";
 import { Hero } from "@/components/Hero";
@@ -27,6 +28,7 @@ function Home() {
     <>
       <Hero />
       <main>
+        <CuratedSection />
         <ScoresSection data={scores} error={error} />
         <FormulaSection w={weights} />
         <MethodSection data={scores} />

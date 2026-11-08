@@ -1,5 +1,6 @@
 const LINKS = [
   { href: "#top", label: "Home", active: true },
+  { href: "#curated", label: "Purchases" },
   { href: "#scores", label: "Scores" },
   { href: "#formula", label: "Formula" },
   { href: "#method", label: "Method" },

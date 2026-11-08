@@ -2,7 +2,9 @@ import "dotenv/config";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { ROOT } from "../config.js";
-import { LOG_DIR, readRecords } from "../log.js";
+import { LOG_DIR, SELF_CHECK_DIR, readRecords } from "../log.js";
+import { curatedReport } from "../curated/publish.js";
+import { existsSync } from "node:fs";
 import { refreshRfqSnapshot, rfqForHost } from "../rfq.js";
 import { reportSummary } from "../reports.js";
 import { applyReconciliations, outcomeOf } from "../outcome.js";
@@ -116,6 +118,17 @@ writeFileSync(
     paid_targets: paidTargets,
     scores: list,
   }) + "\n",
+);
+// Curated purchases (§3 categories with evidence), old "paid, not delivered" re-read, JIN/OSD apart.
+const curatedFile = resolve(ROOT, "targets/curated.json");
+writeFileSync(
+  resolve(OUT, "curated.json"),
+  JSON.stringify(curatedReport({
+    records: applyReconciliations(readRecords(LOG_DIR(), 60, now)) as any,
+    selfChecks: readRecords(SELF_CHECK_DIR(), 60, now) as any,
+    curated: existsSync(curatedFile) ? JSON.parse(readFileSync(curatedFile, "utf8")) : null,
+    now,
+  })) + "\n",
 );
 writeFileSync(resolve(OUT, "weights.json"), JSON.stringify(weights, null, 1) + "\n");
 console.log(`scored ${list.length} hosts (${list.filter((s) => s.coverage === "full").length} full, rest free_only) from ${records.length} records → ${OUT}`);

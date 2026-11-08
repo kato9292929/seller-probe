@@ -7,7 +7,7 @@ import { checkSolanaTransfer, findSolanaPayment, verifySolanaTransfer } from "./
 import { exclusionReason } from "./exclusions.js";
 import { RECEIPT_HEADER, receiptCheck } from "./receipt.js";
 import { facilitatorFromExtra, loadFeePayerMap } from "./facilitator.js";
-import { bodySnippet, errMsg, timedGet } from "./http.js";
+import { bodySnippet, errMsg, timedGet, timedRequest } from "./http.js";
 import { type Kind, append } from "./log.js";
 import { type Payer, refuseReason, settleFrom, signFor } from "./pay.js";
 import { createHash } from "node:crypto";
@@ -64,6 +64,7 @@ export type PaidResult = {
   /** Delivery Receipt on the paid 200: verified (true/false), or null when the seller sent none (not scored). */
   receipt_ok?: boolean | null;
   receipt_reason?: string | null;
+  response_content_type?: string | null;
   /** The 402 named official USDC on Base without EIP-712 name/version; the known values were filled in to sign. */
   eip712_filled?: true;
 };
@@ -76,6 +77,8 @@ const FIND_MS = () => Number(process.env.PROBE_FIND_TIMEOUT_MS ?? 90_000);
 type Ctx = {
   payer: Payer; logDir: string; attemptKind: Kind; resultKind: "paid" | "self_check"; extra?: Record<string, unknown>; dryRun?: boolean;
   reserve?: (chain: string, amount: bigint) => string | null; tracker?: SpendTracker;
+  /** Curated purchase: the documented request (method, URL with query, body). Without it, a bare GET of t.url. */
+  request?: { method: string; url: string; body?: unknown; content_type?: string | null };
 };
 
 function empty(kind: PaidResult["kind"], t: Target): PaidResult {
@@ -96,10 +99,12 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
   let parsed: Parsed402;
   let a: Accept | undefined;
   try {
-    const r = await timedGet(t.url);
-    // Only GET is bought: a POST-only endpoint needs an input we do not know, and a
-    // 4xx after payment would be our fault, not the seller's.
-    if (r.res.status !== 402) return { ...out, skipped: `HTTP ${r.res.status} on GET, not 402`, http_status: r.res.status };
+    const r = ctx.request ? await timedRequest(ctx.request) : await timedGet(t.url);
+    // Without a documented request only a bare GET is bought: a POST-only endpoint needs an
+    // input we do not know, and a 4xx after payment would be our fault, not the seller's.
+    // With one, the same request unpaid must answer 402 first, or nothing is paid.
+    if (r.res.status !== 402)
+      return { ...out, skipped: `HTTP ${r.res.status} on ${ctx.request?.method ?? "GET"}, not 402`, http_status: r.res.status, error_body: bodySnippet(r.body) };
     parsed = parse402((n) => r.res.headers.get(n), r.body.toString("utf8"));
     a = primaryAccept(parsed);
   } catch (e) {
@@ -108,7 +113,7 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
   if (a) Object.assign(out, { network: a.network ?? null, chain: a.chain, amount: a.amount ?? null, pay_to: a.payTo ?? null });
   // Only endpoints that can be bought with a bare GET: a required body/query/method would
   // make any failure ours. Judged from the 402's own schemas; no schema = no known input.
-  const need = inputRequirement(parsed);
+  const need = ctx.request ? { requires: false, reason: null } : inputRequirement(parsed);
   if (need.requires) return { ...out, skipped: `requires_input: ${need.reason}` };
   const refuse = refuseReason(a, ctx.payer.address);
   if (refuse || !a) return { ...out, skipped: `not paid: ${refuse}`, ...(ctx.dryRun ? { cap_check: { pass: false, reason: refuse } } : {}) };
@@ -162,7 +167,7 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
   let body: Buffer;
   let getHeader: (n: string) => string | null;
   try {
-    const r = await timedGet(t.url, signed.headers, 60_000);
+    const r = ctx.request ? await timedRequest(ctx.request, signed.headers, 60_000) : await timedGet(t.url, signed.headers, 60_000);
     status = r.res.status;
     body = r.body;
     getHeader = (n) => r.res.headers.get(n);
@@ -184,6 +189,7 @@ export async function probePaid(t: Target, ctx: Ctx): Promise<PaidRun> {
   out.settle_ok = settle ? settle.success : false;
   out.settle_error = settle ? settle.error : "no PAYMENT-RESPONSE / X-PAYMENT-RESPONSE header";
   out.cache_control = getHeader("cache-control");
+  out.response_content_type = getHeader("content-type");
   out.cache_header = status === 200 ? /(^|,)\s*no-store\s*(,|$)/i.test(out.cache_control ?? "") : null;
   out.delivered = status === 200 && body.length > 0;
   out._payment_headers = signed.headers;
