@@ -1,9 +1,11 @@
 {
   "paid": {
-    "phase": "catalog_rotation",
+    "phase": "curated",
     "top_n": "all",
     "random_n": 0,
-    "catalog": { "rotation_groups": 4 },
-    "note": "毎週：x402scan の7日ランキング全件から入力なしで買える売り手すべて＋ランキング外のカタログのうち、無料の測定で払える 402（exact・公式 USDC・$0.01 以下）を返したホストを4分割した1群（4週で一巡）。2026-11-02 から。初回は全群（PROBE_ROTATION=all）。各チェーンの残高を超える分は後回し（deferred）。"
+    "catalog": {
+      "rotation_groups": 4
+    },
+    "note": "2026-11-08 から：毎週月曜、targets/curated.json の厳選エンドポイント（50〜80件・1運営者3件まで）を、公開された使い方どおりの要求で1回ずつ買う（npm run probe:curated）。選び直しは毎月1日（npm run curate）。カタログ全体を入力なしの GET で買う週次購入は停止。無料の測定は毎日全ホストで継続。"
   }
 }

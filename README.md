@@ -62,6 +62,24 @@ web/                 公開ページ（React + Vite + Tailwind + shadcn/ui）。
 
 **残高による後回し**：有料の測定は開始時に各チェーンの USDC 残高を読み（`src/balance.ts`）、順位の高い順に払う。そのチェーンで残りが足りない売り手は買わずに `skipped: "deferred: balance: …"` と記録する（スコアに数えない。翌週以降に回る）。残高が読めなかったチェーンはこの判定をしない（上限 $0.01・$25 は常に効く）。
 
+## 厳選エンドポイントを使い方どおりに買う（2026-11-08 から）
+
+有料の測定は、カタログ全体を入力なしの GET で買う方式をやめ、**実際に使われているエンドポイントを選び、売り手が公開している呼び方どおりに 1 回買う**方式に切り替えた。上の「対象の選び方」の有料部分（`top_n`・全カタログ・ローテーション）は 2026-11-07 までの記録の読み方として残している。無料の測定は毎日全ホストで続ける。
+
+**選び方**（`npm run curate` → `targets/curated.json`。毎月 1 日に `curate-monthly.yml` で選び直す。`src/curated/curate.ts`）
+
+- 候補：x402 Endpoint（endpoint.x402jp.com）の Most-called 上位 50・自社ドメインの 13 社・その他 16 社に載った運営者。エンドポイント単位の呼び出し数・支払い人数と呼び方の定義は CDP Bazaar（facilitator の discovery）、運営者の payTo と buyer 数は x402scan から。
+- 除外（理由をすべて `excluded` に残す）：buyer が 1／買い手の address が payTo と同じ（Base の USDC 送金ログで 7 日分を確認。Solana は未確認と記録）／名前・説明に test・demo・example／報酬キャンペーン・転売のみ（説明の語、または 1 つの payTo が 10 ホスト以上にまたがり buyer が 5 以下）／除外リスト（くじ・賭博）／テンプレート URL。
+- 1 運営者あたり最大 3 件（x402scan が同じ payTo でまとめるホストは 1 運営者）。Bazaar の 30 日呼び出し数の多い順。全体で 80 件を超えたら呼び出し数の多い順に 80 件。各件に「選んだ理由」（出どころ・tx 数・buyer 数）を残す。
+
+**要求の組み立て**（`src/curated/request.ts`）：① 402 の定義（v2 `extensions.bazaar`、v1 `accepts[].outputSchema.input`）→ ② x402 Endpoint `/api/endpoints/:id` → ③ Bazaar → ④ 売り手の OpenAPI・llms.txt・PAY.md の順に探し、最初に見つかったものを使う。値は定義の例、無ければ型の代表値（AAPL・Tokyo・USDC のコントラクトなど）を使い、何を使ったかを `request.values` に残す。冪等キー・nonce は毎回新しく作る。どこにも無ければ払わない（「使い方が公開されていない」）。
+
+**買う前の確認と購入**（`src/curated/buy.ts`、`npm run probe:curated`、毎週月曜）：同じ要求を支払いなしで送り、402 が返ったときだけ払う（400 などなら払わない）。上限・署名・試行の記録・送金の照合は従来の有料の測定と同じ（`src/probe-paid.ts`）。同じホストへの購入は並行しない。
+
+**判定**（`src/curated/judge.ts`）：納品・説明どおり／納品・説明と違う／Probeの入力が合わなかった／受け付けない要求で先に決済した／正しい要求でも届かなかった／送金なしで届いた／送金されず届かなかった／使い方が公開されていない／価格超過／買わなかった（残高・上限・対応外）。届いた本文は、出力スキーマの必須項目と型・空や誤りや見本そのままでない・入力（銘柄・住所など識別子）の反映・説明にある更新頻度に対する鮮度・説明にあるデータの種類（音声・画像・JSON）を確かめ、外れた確認と本文の先頭 500 文字を記録する。
+
+**公開**（`dist/data/curated.json`、ページの「使い方どおりに買った結果」）：判定の定義表、購入ごとの要求（メソッド・URL・パラメータ。支払いヘッダ・署名は載せない）・ステータス・本文の SHA-256・tx・確認の結果、選び方と除外の件数。2026-11-07 までの「払ったのに届かない」は、ログを書き換えずに読む時に同じ判定へ読み直して載せる。自社の JIN・OSD は別の欄。
+
 ## 測定項目（§3）
 
 無料（`kind: "free"`）：`reachable`（10 秒）、`status_402`、`spec_version`（v1/v2）、`fields_valid`（scheme・network・asset・payTo・金額・resource）、`asset_known`（公式 USDC）、`payto_stable`（同じホスト・チェーンの前回と比較。初回は null）、`latency_402_ms`。
@@ -136,11 +154,11 @@ score = 100 × Σ(重み × 合格率) ÷ Σ(重み)    （観測のない項目
 | 順 | ファイル:行 | 内容 |
 |---|---|---|
 | 定義 | `src/config.ts:37` | `perCall: 10_000n`（USDC 6 桁で $0.01）。env や設定ファイルからは変えられない |
-| 1 | `src/pay.ts:56` | `refuseReason`：402 の金額が `LIMITS.perCall` を超える提示は買わない（`src/probe-paid.ts:113` で呼ぶ） |
-| 2 | `src/budget.ts:30` | `assertWithinBudget`：同じ上限を再検査し、7 日間 $25（`src/budget.ts:31`、定義は `src/config.ts:39`）も見る。署名の前に `src/probe-paid.ts:127` で呼ぶ。並行して買うときは、上限の検査・署名・試行の記録を 1 件ずつ順に行う（`SpendTracker`）ので、同時に上限を越えることはない |
+| 1 | `src/pay.ts:56` | `refuseReason`：402 の金額が `LIMITS.perCall` を超える提示は買わない（`src/probe-paid.ts:118` で呼ぶ） |
+| 2 | `src/budget.ts:30` | `assertWithinBudget`：同じ上限を再検査し、7 日間 $25（`src/budget.ts:31`、定義は `src/config.ts:39`）も見る。署名の前に `src/probe-paid.ts:132` で呼ぶ。並行して買うときは、上限の検査・署名・試行の記録を 1 件ずつ順に行う（`SpendTracker`）ので、同時に上限を越えることはない |
 | 3 | `src/pay.ts:24` | 支払いライブラリ（`@x402/core`）の `spendControls.maxAmountPerPayment: "$0.01"`。上の 2 つを抜けても署名しない二重の柵 |
 
-署名は 1・2 を通った後の `src/probe-paid.ts:139`（`signFor`）でだけ行う。対象選定時のカタログ価格の上限（`src/config.ts:41` の `catalogMaxPriceUsd`）は対象を絞るためのもので、支払いの強制ではない。
+署名は 1・2 を通った後の `src/probe-paid.ts:144`（`signFor`）でだけ行う。対象選定時のカタログ価格の上限（`src/config.ts:41` の `catalogMaxPriceUsd`）は対象を絞るためのもので、支払いの強制ではない。
 
 ## 実行
 
@@ -198,10 +216,11 @@ npm run wallet:new
 | workflow | 時刻（UTC） | 手動起動 | 内容 |
 |---|---|---|---|
 | `free-daily.yml` | 毎日 03:17 | ○ | targets → 無料の測定 → RFQ スナップショット → `log/` `targets/` `data/` を main にコミット |
-| `paid-weekly.yml` | 月曜 04:41 | ○（`dry_run` 入力、既定 true） | 有料の測定 → `log/` を main にコミット |
+| `paid-weekly.yml` | 月曜 04:41 | ○（`dry_run` 入力、既定 true） | 厳選エンドポイントの購入（`npm run probe:curated`）→ `log/` を main にコミット |
+| `curate-monthly.yml` | 毎月 1 日 02:23 | ○ | 選び直し（`npm run curate`、支払いなし）→ `targets/curated.json` を main にコミット |
 | `self-check-weekly.yml` | 月曜 05:53 | ○ | 自社への再送・キャッシュ試験 → `self-check/` を main にコミット |
 
-- 3 つとも `permissions: contents: write`、`concurrency: probe-data`（直列）、checkout は `ref: main`。
+- 4 つとも `permissions: contents: write`、`concurrency: probe-data`（直列）、checkout は `ref: main`。
 - **本番の支払いのスイッチ**：リポジトリ変数 `PROBE_PAID_ENABLED` が `true` のときだけ paid-probe は実際に支払い、self-check も動く。それまでは paid-probe は定期実行でも dry-run になり、self-check は「paid runs not enabled」と記録して終わる。dry-run の結果を確認してから `true` にする。
 - **Secrets が無いとき**：paid-probe と self-check はエラーで落とさず、`kind: "run_skipped"`, `reason: "secrets not configured (未設定)"`, `missing: [...]` を記録して正常終了する（片方のチェーンだけ設定されていれば、そのチェーンだけ測る）。
 
