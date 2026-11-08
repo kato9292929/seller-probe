@@ -214,3 +214,15 @@ test("invalid_target (a paid_resolution for the Probe's own mistake) leaves the 
   assert.equal(s.paid_outcomes.not_delivered, 0);
   assert.equal(s.paid_outcomes.invalid_target, 1);
 });
+
+test("a Base nonce used on chain (authorizationState) is a transfer even without a located tx; reconcile rows lay it over", async () => {
+  const { applyReconciliations } = await import("../src/outcome.js");
+  assert.equal(classifyPaid(paidRow({ http_status: 200, response_bytes: 50, authorization_used: true, onchain_ok: true })), "delivered");
+  assert.equal(classifyPaid(paidRow({ http_status: 503, authorization_used: true, onchain_ok: true })), "not_delivered");
+  const row = { ...paidRow({ http_status: 200, response_bytes: 50, payer_key: { authorization_nonce: "0xn1" } }), ts: "2026-11-08T13:24:47Z" };
+  assert.equal(classifyPaid(row), "delivered_unsettled");
+  const fix = { kind: "paid_reconciled", host: "a", ts: "2026-11-08T15:00:00Z", payer_key_value: "0xn1", tx: null, onchain_ok: true, onchain_detail: "authorization nonce used", authorization_used: true };
+  const [merged] = applyReconciliations([row, fix] as any[]);
+  assert.equal((merged as any).outcome, "delivered");
+  assert.equal((merged as any).tx_source, "authorization_state");
+});

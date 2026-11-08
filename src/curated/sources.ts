@@ -175,8 +175,11 @@ export async function fetchCatalog(): Promise<import("./curate.js").CatalogEndpo
   }));
 }
 
-/** Logs over this many Base blocks per query (publicnode's limit); 7 days is ~302,400 blocks. */
-const LOG_SPAN = 50_000;
+/**
+ * Logs over this many Base blocks per query; 7 days is ~302,400 blocks. publicnode accepts up to
+ * 50,000 but was seen answering wide ranges incompletely (2026-11-08), so the scan uses short ones.
+ */
+const LOG_SPAN = 9_000;
 export const BASE_LOGS_RPC = () => process.env.BASE_LOGS_RPC_URL || "https://base-rpc.publicnode.com";
 const TRANSFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 const topic = (a: string) => "0x" + a.toLowerCase().replace(/^0x/, "").padStart(64, "0");

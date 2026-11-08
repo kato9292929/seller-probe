@@ -1,6 +1,7 @@
 export async function rpc<T = any>(url: string, method: string, params: unknown[], attempts = 4): Promise<T> {
   let last: unknown;
   for (let i = 0; i < attempts; i++) {
+    if (i) await new Promise((res) => setTimeout(res, 500 * 2 ** (i - 1)));
     try {
       const r = await fetch(url, {
         method: "POST",
@@ -13,7 +14,6 @@ export async function rpc<T = any>(url: string, method: string, params: unknown[
       return j.result as T;
     } catch (e) {
       last = e;
-      await new Promise((res) => setTimeout(res, 500 * 2 ** i));
     }
   }
   throw last;
