@@ -6,6 +6,7 @@ import { outcomeOf } from "../outcome.js";
 import type { CuratedFile } from "./curate.js";
 import { REASONS } from "./curate.js";
 import { CATEGORIES, type Category, DEFINITIONS, categorize } from "./judge.js";
+import { type OperatorMeta, operatorCards } from "./operators.js";
 
 type Row = Record<string, unknown> & { ts: string; kind: string; host: string };
 
@@ -27,7 +28,7 @@ function evidence(r: Row) {
   };
 }
 
-export function curatedReport(a: { records: Row[]; selfChecks: Row[]; curated: CuratedFile | null; now: Date }) {
+export function curatedReport(a: { records: Row[]; selfChecks: Row[]; curated: CuratedFile | null; now: Date; operators?: OperatorMeta[] }) {
   const curatedRows = a.records.filter((r) => r.kind === "paid" && r.pick === "curated" && !r.dry_run);
   const latest = new Map<string, Row>();
   for (const r of curatedRows) {
@@ -36,7 +37,7 @@ export function curatedReport(a: { records: Row[]; selfChecks: Row[]; curated: C
     if (!cur || r.ts > cur.ts) latest.set(id, r);
   }
   const items = (a.curated?.items ?? []).map((i) => ({
-    id: i.id, operator: i.operator_name, host: i.host, url: i.url, name: i.name, description: i.description, category: i.category,
+    id: i.id, operator: i.operator_name, operator_key: i.operator, host: i.host, url: i.url, name: i.name, description: i.description, category: i.category,
     price_usd: i.price_usd, reasons: i.reasons,
     last: latest.has(i.id) ? evidence(latest.get(i.id)!) : null,
   }));
@@ -76,9 +77,13 @@ export function curatedReport(a: { records: Row[]; selfChecks: Row[]; curated: C
   });
 
   const cur = a.curated;
+  // Cards for the top of the page (one per operator, by x402 Endpoint tx), with the header's numbers.
+  const cards = operatorCards(items, a.operators ?? []);
   return {
     generated_at: a.now.toISOString(),
     last_run: lastRun,
+    summary: { operators: cards.length, endpoints: items.length, purchased_on: lastRun ? lastRun.slice(0, 10) : null },
+    cards,
     categories: Object.entries(CATEGORIES).map(([k, label]) => ({ key: k, label, definition: DEFINITIONS[k as Category], count: counts[k as Category] })),
     curation: cur
       ? {

@@ -12,12 +12,12 @@ type Evidence = {
   tx: string | null; chain: string | null; amount: string | null; onchain_ok: boolean | null; checks: Check[] | null; body_head: string | null;
   error_body: string | null; skipped: string | null;
 };
-type Item = {
+export type Item = {
   id: string; operator: string; host: string; url: string; description: string | null; price_usd: number | null;
   reasons: { listed_in: string[]; operator_tx: number | null; operator_buyers: number | null; operator_stats_source: string; endpoint_calls_30d: number | null; endpoint_payers_30d: number | null; endpoint_stats_source: string };
   last: Evidence | null;
 };
-type Curated = {
+export type Curated = {
   generated_at: string; last_run: string | null;
   categories: { key: string; label: string; definition: string; count: number }[];
   curation: { generated_at: string; rules: string[]; candidates: { operators: number; endpoints: number }; kept: number; operators_kept: number; excluded_by_reason: { key: string; label: string; count: number }[]; excluded_operators: { host: string; name: string; reason: string; detail: string }[] } | null;
@@ -26,12 +26,12 @@ type Curated = {
   own_sellers: { target: string; host: string; date: string; url: string | null; category: string | null; reason: string | null; http_status: number | null; tx: string | null; chain: string | null; response_sha256: string | null; receipt_ok: boolean | null }[];
 };
 
-const TONE: Record<string, "accent" | "outline" | "default"> = {
+export const TONE: Record<string, "accent" | "outline" | "default"> = {
   as_described: "accent", not_as_described: "default", paid_then_rejected: "default", paid_not_delivered: "default",
   delivered_without_payment: "outline", input_mismatch: "outline", no_usage: "outline", over_price: "outline", not_settled: "outline", not_bought: "outline",
 };
-const txLink = (chain: string | null, tx: string) => (chain === "solana" ? `https://solscan.io/tx/${tx}` : `https://basescan.org/tx/${tx}`);
-const short = (s: string, n = 10) => (s.length > n * 2 ? `${s.slice(0, n)}…${s.slice(-6)}` : s);
+export const txLink = (chain: string | null, tx: string) => (chain === "solana" ? `https://solscan.io/tx/${tx}` : `https://basescan.org/tx/${tx}`);
+export const short = (s: string, n = 10) => (s.length > n * 2 ? `${s.slice(0, n)}…${s.slice(-6)}` : s);
 
 export function CuratedSection() {
   const [d, setD] = useState<Curated | null>(null);
@@ -91,41 +91,7 @@ export function CuratedSection() {
                 tx {i.reasons.endpoint_calls_30d ?? i.reasons.operator_tx ?? "—"} · buyers {i.reasons.endpoint_payers_30d ?? i.reasons.operator_buyers ?? "—"} · ${i.price_usd ?? "—"}
               </span>
             </summary>
-            <div className="mt-3 space-y-2 text-sm">
-              <p className="text-muted-foreground">
-                選んだ理由：{i.reasons.listed_in.join(", ")}（運営者 tx {i.reasons.operator_tx ?? "—"}・buyer {i.reasons.operator_buyers ?? "—"}、{i.reasons.operator_stats_source}）／エンドポイント 30日 {i.reasons.endpoint_calls_30d ?? "—"} 回・{i.reasons.endpoint_payers_30d ?? "—"} 人（{i.reasons.endpoint_stats_source}）
-              </p>
-              {i.last ? (
-                <>
-                  {i.last.reason && <p>判定の根拠：{i.last.reason}</p>}
-                  {i.last.request && (
-                    <div>
-                      <p>要求（出どころ：{i.last.request.source} — {i.last.request.source_detail}）</p>
-                      <pre className="mt-1 overflow-x-auto rounded bg-muted/40 p-2 text-xs">{`${i.last.request.method} ${i.last.request.url}${i.last.request.body !== null ? `\n${JSON.stringify(i.last.request.body, null, 1)}` : ""}`}</pre>
-                      <p className="text-xs text-muted-foreground">値：{i.last.request.values.map((v) => `${v.name}=${JSON.stringify(v.value)}（${v.from}）`).join("、") || "なし"}</p>
-                    </div>
-                  )}
-                  {i.last.request_tried && <p className="text-xs text-muted-foreground">探した順：{i.last.request_tried.join(" ／ ")}</p>}
-                  <p className="tabular-nums">
-                    HTTP {i.last.http_status ?? "—"} · {i.last.response_bytes ?? 0} bytes
-                    {i.last.response_sha256 && <> · SHA-256 <code className="text-xs">{short(i.last.response_sha256, 12)}</code></>}
-                    {i.last.tx && <> · tx <a className="underline" href={txLink(i.last.chain, i.last.tx)} target="_blank" rel="noreferrer">{short(i.last.tx)}</a></>}
-                  </p>
-                  {i.last.checks && (
-                    <ul className="text-xs">
-                      {i.last.checks.map((c) => (
-                        <li key={c.name}>
-                          {c.result === "pass" ? "✓" : c.result === "fail" ? "✗" : "–"} {c.name}：{c.detail}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {(i.last.body_head || i.last.error_body) && <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-muted/40 p-2 text-xs">{i.last.body_head ?? i.last.error_body}</pre>}
-                </>
-              ) : (
-                <p className="text-muted-foreground">まだ購入していません。</p>
-              )}
-            </div>
+            <EndpointDetail i={i} />
           </details>
         ))}
       </div>
@@ -200,5 +166,46 @@ export function CuratedSection() {
         </>
       )}
     </section>
+  );
+}
+
+/** One endpoint's purchase: why it was chosen, the request sent, the response and the checks. */
+export function EndpointDetail({ i }: { i: Item }) {
+  return (
+    <div className="mt-3 space-y-2 text-sm">
+      <p className="text-muted-foreground">
+        選んだ理由：{i.reasons.listed_in.join(", ")}（運営者 tx {i.reasons.operator_tx ?? "—"}・buyer {i.reasons.operator_buyers ?? "—"}、{i.reasons.operator_stats_source}）／エンドポイント 30日 {i.reasons.endpoint_calls_30d ?? "—"} 回・{i.reasons.endpoint_payers_30d ?? "—"} 人（{i.reasons.endpoint_stats_source}）
+      </p>
+      {i.last ? (
+        <>
+          {i.last.reason && <p>判定の根拠：{i.last.reason}</p>}
+          {i.last.request && (
+            <div>
+              <p>要求（出どころ：{i.last.request.source} — {i.last.request.source_detail}）</p>
+              <pre className="mt-1 overflow-x-auto rounded bg-muted/40 p-2 text-xs">{`${i.last.request.method} ${i.last.request.url}${i.last.request.body !== null ? `\n${JSON.stringify(i.last.request.body, null, 1)}` : ""}`}</pre>
+              <p className="text-xs text-muted-foreground">値：{i.last.request.values.map((v) => `${v.name}=${JSON.stringify(v.value)}（${v.from}）`).join("、") || "なし"}</p>
+            </div>
+          )}
+          {i.last.request_tried && <p className="text-xs text-muted-foreground">探した順：{i.last.request_tried.join(" ／ ")}</p>}
+          <p className="tabular-nums">
+            HTTP {i.last.http_status ?? "—"} · {i.last.response_bytes ?? 0} bytes
+            {i.last.response_sha256 && <> · SHA-256 <code className="text-xs">{short(i.last.response_sha256, 12)}</code></>}
+            {i.last.tx && <> · tx <a className="underline" href={txLink(i.last.chain, i.last.tx)} target="_blank" rel="noreferrer">{short(i.last.tx)}</a></>}
+          </p>
+          {i.last.checks && (
+            <ul className="text-xs">
+              {i.last.checks.map((c) => (
+                <li key={c.name}>
+                  {c.result === "pass" ? "✓" : c.result === "fail" ? "✗" : "–"} {c.name}：{c.detail}
+                </li>
+              ))}
+            </ul>
+          )}
+          {(i.last.body_head || i.last.error_body) && <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-muted/40 p-2 text-xs">{i.last.body_head ?? i.last.error_body}</pre>}
+        </>
+      ) : (
+        <p className="text-muted-foreground">まだ購入していません。</p>
+      )}
+    </div>
   );
 }

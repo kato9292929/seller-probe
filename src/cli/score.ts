@@ -127,6 +127,7 @@ writeFileSync(
     records: applyReconciliations(readRecords(LOG_DIR(), 60, now)) as any,
     selfChecks: readRecords(SELF_CHECK_DIR(), 60, now) as any,
     curated: existsSync(curatedFile) ? JSON.parse(readFileSync(curatedFile, "utf8")) : null,
+    operators: existsSync(resolve(ROOT, "targets/operators.json")) ? JSON.parse(readFileSync(resolve(ROOT, "targets/operators.json"), "utf8")).operators : [],
     now,
   })) + "\n",
 );
