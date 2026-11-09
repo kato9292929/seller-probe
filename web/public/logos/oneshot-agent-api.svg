@@ -1,0 +1,17 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 3D Isometric Cube - The OneShot Dot -->
+  <!-- Top face (lightest) -->
+  <path d="M32 8 L52 20 L32 32 L12 20 Z" fill="#34D399"/>
+  <!-- Left face (medium) -->
+  <path d="M12 20 L32 32 L32 56 L12 44 Z" fill="#10B981"/>
+  <!-- Right face (darkest) -->
+  <path d="M32 32 L52 20 L52 44 L32 56 Z" fill="#059669"/>
+  <!-- Subtle highlight on top edge -->
+  <path d="M32 8 L52 20 L32 32 L12 20 Z" fill="url(#topGlow)" opacity="0.3"/>
+  <defs>
+    <linearGradient id="topGlow" x1="32" y1="8" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="white"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+</svg>

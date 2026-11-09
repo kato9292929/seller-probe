@@ -26,11 +26,15 @@ jobs:
       - run: npm test
       - name: Curate
         run: npm run curate
+      # Names, 1P/3P and logos of the curated operators (same source as x402jp.com's x402 Endpoint
+      # section; else the operator's own icon). Committed, so the page never loads a logo from elsewhere.
+      - name: Operator logos
+        run: npm run logos
       - name: Commit
         run: |
           git config user.name "seller-probe[bot]"
           git config user.email "seller-probe@users.noreply.github.com"
-          git add targets/curated.json
+          git add targets/curated.json targets/operators.json web/public/logos
           git diff --cached --quiet && exit 0
           git commit -m "curate $(date -u +%F)"
           for i in 1 2 3; do git pull --rebase origin main && git push origin HEAD:main && exit 0; sleep $((i*5)); done
