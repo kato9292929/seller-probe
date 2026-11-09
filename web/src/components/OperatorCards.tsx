@@ -12,6 +12,7 @@ type Card = {
   logo: string | null; logo_source: string; initials: string;
   badge: "as_described" | "not_as_described" | "not_delivered" | "not_bought"; badge_label: string;
   endpoints: number; bought: number; as_described: number; price_min: number | null; tx: number | null; buyers: number | null;
+  delivered_without_payment: number; not_bought_reason: string | null;
   item_ids: string[];
 };
 type Data = Curated & { summary: { operators: number; endpoints: number; purchased_on: string | null }; cards: Card[] };
@@ -56,7 +57,10 @@ function CardRow({ c, onOpen, dup }: { c: Card; onOpen: () => void; dup: boolean
         <div className="shrink-0 text-right">
           <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-medium ${BADGE_STYLE[c.badge]}`}>{c.badge_label}</span>
           <p className="mt-1 text-[11px] text-white/45">
-            {c.bought ? `${c.bought}件中${c.as_described}件` : `${c.endpoints}件・未購入`} · {price(c.price_min)}
+            {c.bought
+              ? `${c.bought}件中${c.as_described}件${c.delivered_without_payment ? `＋送金なし${c.delivered_without_payment}件` : ""}`
+              : (c.not_bought_reason ?? "未購入")}
+            {c.bought ? ` · ${price(c.price_min)}` : ""}
           </p>
         </div>
       </button>
@@ -165,7 +169,7 @@ export function OperatorCards({ limit, full = false }: { limit?: number; full?: 
         {shown.length > 0 && <CardGrid cards={shown} onOpen={setOpen} />}
         <p className="mt-3 text-[11px] text-white/40">1P は自社ドメインでの提供、3P は決済ゲートウェイ経由の提供です。</p>
         <p className="mt-1 text-[11px] text-white/40">
-          バッジは事業者ごとに、買ったエンドポイントのうち一番悪い結果です（説明どおり・説明と違う・届かなかった）。払わなかったもの（価格が $0.01 超・使い方の公開なし・入力が合わない）だけの事業者は未購入。カードを押すとエンドポイントごとの要求・応答・確認・tx を開きます。
+          バッジは事業者ごとに、買ったエンドポイントのうち一番悪い結果です（説明どおり・説明と違う・届かなかった）。「N件中M件」は買った件数と、そのうち説明どおりに届いた件数。「送金なし」は送金が起きないまま届いたもので、失敗には数えていません。払わなかったもの（$0.01 超・使い方の公開なし・入力が合わない）だけの事業者は未購入とし、理由をカードに出して後ろに並べます。カードを押すとエンドポイントごとの要求・応答・確認・tx を開きます。
         </p>
       </div>
       <OperatorDialog card={open} items={items} onClose={() => setOpen(null)} />

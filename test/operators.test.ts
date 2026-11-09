@@ -26,6 +26,14 @@ test("cards: one per operator, ordered by x402 Endpoint tx; counts and lowest pr
   assert.deepEqual([cards[0].endpoints, cards[0].bought, cards[0].as_described, cards[0].price_min, cards[0].badge_label], [3, 2, 2, 0.001, "説明どおり"]);
   assert.deepEqual([cards[0].party, cards[0].via, cards[0].category], ["3P", "gw.example", "Media"]);
   assert.equal(cards[1].logo_source, "initials");
+  // operators bought from come first; an unbought one says why; delivered-without-payment is counted apart
+  const more = operatorCards(
+    [it("m1", "messari", 5000, "over_price", 0.75), it("a1", "agent", 10, "as_described", 0.002), it("a2", "agent", 10, "delivered_without_payment", 0.002)],
+    [],
+  );
+  assert.deepEqual(more.map((c) => c.operator), ["agent", "messari"]);
+  assert.equal(more[1].not_bought_reason, "$0.01 超（$0.75）");
+  assert.deepEqual([more[0].bought, more[0].as_described, more[0].delivered_without_payment, more[0].badge], [2, 1, 1, "as_described"]);
   assert.equal(initials("OpenAI"), "OP");
   assert.equal(registrable("agent-kiosk.vercel.app"), "agent-kiosk.vercel.app", "a hosting subdomain is its own domain");
   assert.equal(registrable("api.nansen.ai"), "nansen.ai");

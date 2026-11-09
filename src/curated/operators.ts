@@ -73,9 +73,26 @@ export type OperatorCard = {
   logo: string | null; logo_source: OperatorMeta["logo_source"]; initials: string;
   badge: Badge; badge_label: string;
   endpoints: number; bought: number; as_described: number; price_min: number | null;
+  /** Delivered although no transfer happened (counted apart from "as described"). */
+  delivered_without_payment: number;
+  /** Why nothing was bought, when nothing was: "$0.01 超（$0.75）", "使い方の公開なし", "入力が合わない". */
+  not_bought_reason: string | null;
   tx: number | null; buyers: number | null;
   item_ids: string[];
 };
+
+const NOT_BOUGHT_LABEL: Record<string, string> = { no_usage: "使い方の公開なし", input_mismatch: "入力が合わない", not_bought: "残高・上限で見送り" };
+
+function notBoughtReason(its: ItemIn[]): string {
+  const out: string[] = [];
+  const over = its.filter((i) => i.last?.category === "over_price");
+  if (over.length || !its.some((i) => i.last)) {
+    const p = over.map((i) => i.price_usd).filter((x): x is number => typeof x === "number");
+    if (over.length) out.push(`$0.01 超${p.length ? `（$${Math.min(...p)}）` : ""}`);
+  }
+  for (const c of ["no_usage", "input_mismatch", "not_bought"]) if (its.some((i) => i.last?.category === c)) out.push(NOT_BOUGHT_LABEL[c]);
+  return out.join("・") || "まだ購入していない";
+}
 
 const titleCase = (s: string | null) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : null);
 
@@ -98,9 +115,12 @@ export function operatorCards(items: ItemIn[], metas: OperatorMeta[]): OperatorC
       badge: badgeOf(cats), badge_label: BADGES[badgeOf(cats)],
       endpoints: its.length, bought: cats.filter((c) => c && !NOT_BOUGHT.has(c)).length, as_described: cats.filter((c) => c === "as_described").length,
       price_min: prices.length ? Math.min(...prices) : null,
+      delivered_without_payment: cats.filter((c) => c === "delivered_without_payment").length,
+      not_bought_reason: badgeOf(cats) === "not_bought" ? notBoughtReason(its) : null,
       tx: first.reasons.operator_tx, buyers: first.reasons.operator_buyers,
       item_ids: its.map((i) => i.id),
     });
   }
-  return cards.sort((a, b) => (b.tx ?? -1) - (a.tx ?? -1) || a.name.localeCompare(b.name));
+  // Operators the Probe actually bought from come first (by tx), then the ones it could not buy.
+  return cards.sort((a, b) => Number(a.badge === "not_bought") - Number(b.badge === "not_bought") || (b.tx ?? -1) - (a.tx ?? -1) || a.name.localeCompare(b.name));
 }
