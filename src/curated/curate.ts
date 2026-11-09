@@ -1,13 +1,17 @@
 // Choosing the endpoints worth measuring (targets/curated.json). Pure: every input is passed in,
 // so the same data gives the same list, and every endpoint left out keeps the reason it was.
 import { exclusionReason, loadExclusions } from "../exclusions.js";
-import { USDC } from "../config.js";
+import { LIMITS, USDC } from "../config.js";
 import { type BazaarItem, type Operator, type Seller, hostOf } from "./sources.js";
 
 export const PER_OPERATOR = 3;
 export const MAX_ITEMS = 80;
 
-export type CatalogEndpoint = { id: string; url: string; name: string | null; description: string | null; category: string | null; networks: string[]; source: string[]; source_url: string | null };
+export type CatalogEndpoint = {
+  id: string; url: string; name: string | null; description: string | null; category: string | null; networks: string[]; source: string[]; source_url: string | null;
+  /** The catalog's per-call price in USD (x402 Endpoint's full catalog), null when it lists none. */
+  price_usd?: number | null;
+};
 
 export type CuratedItem = {
   id: string; // the x402 Endpoint id when the URL is in its catalog, else a hash of the URL
@@ -61,6 +65,8 @@ export const REASONS = {
   template_url: "URL がテンプレート（{id} や /:param）",
   no_endpoint: "エンドポイントが見つからない",
   over_max: "80件を超えた（tx の少ない順に切った）",
+  over_cap_alternative: "$0.01 超（同じ運営者の $0.01 以下を優先）",
+  free_endpoint: "$0（無料。買うものがない）",
 } as const;
 export type ReasonCode = keyof typeof REASONS;
 
@@ -164,18 +170,32 @@ export function curate(inp: CurateInput): CuratedFile {
     keptOps.push(o);
   }
 
-  // Endpoints per operator: the Bazaar's resources by 30-day calls; the x402 Endpoint catalog when
-  // the operator is not in the Bazaar (no per-endpoint counts then).
+  // Endpoints per operator, from the Bazaar (with 30-day calls) and x402 Endpoint's full catalog.
+  // Those the Probe can buy come first: priced above $0 and at most $0.01, then unknown price (the
+  // 402 decides), most called first. An operator with none of those keeps one endpoint (its most
+  // called), recorded as over the cap, so it stays on the list without taking three places.
   let items: CuratedItem[] = [];
+  const priceOf = (b: BazaarItem | null, c: CatalogEndpoint | null): number | null => {
+    const acc = b ? usdcAccept(b) : null;
+    if (acc) return usd(acc.amount);
+    return typeof c?.price_usd === "number" ? c.price_usd : null;
+  };
+  // 0 buyable price; 1 unknown price; 2 unknown price at the host's root URL; 3 over the cap or $0.
+  const tierOf = (p: number | null, url = "") => (p === null ? (new URL(url || "https://x/").pathname === "/" ? 2 : 1) : p > 0 && p <= LIMITS.catalogMaxPriceUsd ? 0 : 3);
+  // http:// and https:// spellings of one endpoint are one endpoint (https kept).
+  const canon = (u: string) => u.replace(/^http:\/\//i, "https://").replace(/\/$/, "");
   for (const o of keptOps) {
-    const pool: { url: string; b: BazaarItem | null; c: CatalogEndpoint | null }[] = (bazaarBy.get(o.host) ?? [])
-      .slice().sort((x, y) => (y.calls30d ?? -1) - (x.calls30d ?? -1) || x.resource.localeCompare(y.resource))
-      .map((b) => ({ url: b.resource, b, c: catalogByUrl.get(b.resource) ?? null }));
-    if (!pool.length) for (const c of catalogBy.get(o.host) ?? []) pool.push({ url: c.url, b: null, c });
+    const byUrl = new Map<string, { url: string; b: BazaarItem | null; c: CatalogEndpoint | null }>();
+    for (const b of bazaarBy.get(o.host) ?? []) byUrl.set(canon(b.resource), { url: b.resource, b, c: catalogByUrl.get(b.resource) ?? null });
+    for (const c of catalogBy.get(o.host) ?? []) if (!byUrl.has(canon(c.url))) byUrl.set(canon(c.url), { url: canon(c.url), b: null, c });
+    const pool = [...byUrl.values()]
+      .map((x) => ({ ...x, price: priceOf(x.b, x.c) }))
+      .sort((x, y) => tierOf(x.price, x.url) - tierOf(y.price, y.url) || (y.b?.calls30d ?? -1) - (x.b?.calls30d ?? -1) || x.url.localeCompare(y.url));
+    const anyBuyable = pool.some((x) => tierOf(x.price, x.url) < 3 && !TEMPLATE_RE.test(x.url));
     const seen = new Set<string>();
     let n = 0;
     let capped = 0;
-    for (const { url, b, c } of pool) {
+    for (const { url, b, c, price } of pool) {
       if (seen.has(url)) continue;
       seen.add(url);
       const text = `${url} ${b?.description ?? c?.description ?? ""} ${c?.name ?? ""}`;
@@ -185,11 +205,13 @@ export function curate(inp: CurateInput): CuratedFile {
         : b?.payers30d === 1 ? ["single_buyer", "Bazaar l30DaysUniquePayers = 1"]
         : TEST_RE.test(text) ? ["test_demo", `matches "${(text.match(TEST_RE) ?? [""])[0]}"`]
         : REWARD_RE.test(text) ? ["reward_or_resale", `matches "${(text.match(REWARD_RE) ?? [""])[0]}"`]
+        : price === 0 ? ["free_endpoint", "catalog price $0"]
+        : tierOf(price, url) === 3 && (anyBuyable || n >= 1) ? ["over_cap_alternative", `$${price} > $0.01`]
         : n >= PER_OPERATOR ? ["per_operator_cap", `operator already has ${PER_OPERATOR}`]
         : null;
       if (why) {
         // The per-operator cap is not listed one by one (an operator can have thousands).
-        if (why[0] === "per_operator_cap") capped++;
+        if (why[0] === "per_operator_cap" || why[0] === "over_cap_alternative" || why[0] === "free_endpoint") capped++;
         else drop({ scope: "endpoint", host: o.host, url, operator: o.name, reason: why[0], detail: why[1] });
         continue;
       }
@@ -198,7 +220,7 @@ export function curate(inp: CurateInput): CuratedFile {
       items.push({
         id: c?.id ?? `u_${fnv(url)}`, operator: o.key, operator_name: o.name, host: o.host, url,
         name: c?.name ?? b?.serviceName ?? null, description: b?.description ?? c?.description ?? null, category: c?.category ?? o.category,
-        price_usd: acc ? usd(acc.amount) : null, network: acc?.network ?? null, pay_to: acc?.payTo ?? null,
+        price_usd: price, network: acc?.network ?? null, pay_to: acc?.payTo ?? null,
         reasons: {
           listed_in: o.listed, operator_tx: o.tx, operator_buyers: o.buyers, operator_stats_source: o.statsSource,
           endpoint_calls_30d: b?.calls30d ?? null, endpoint_payers_30d: b?.payers30d ?? null,
@@ -209,12 +231,12 @@ export function curate(inp: CurateInput): CuratedFile {
       });
     }
     if (!pool.length) drop({ scope: "operator", host: o.host, operator: o.name, reason: "no_endpoint", detail: "no resource in the Bazaar or the x402 Endpoint catalog" });
-    if (capped > 0) drop({ scope: "endpoint", host: o.host, operator: o.name, reason: "per_operator_cap", detail: `${capped} more endpoint(s) not taken (kept the ${PER_OPERATOR} with the most calls)` });
+    if (capped > 0) drop({ scope: "endpoint", host: o.host, operator: o.name, reason: "per_operator_cap", detail: `${capped} more endpoint(s) not taken (kept up to ${PER_OPERATOR}: within $0.01 first, most called first)` });
   }
 
-  // Above 80: keep the most-called. Endpoint calls when known, else the operator's tx.
-  const weight = (i: CuratedItem) => i.reasons.endpoint_calls_30d ?? i.reasons.operator_tx ?? -1;
-  items.sort((a, b) => weight(b) - weight(a) || (b.reasons.operator_tx ?? -1) - (a.reasons.operator_tx ?? -1) || a.url.localeCompare(b.url));
+  // Above 80: keep the operators with the most x402 Endpoint tx (then the endpoint's calls).
+  const weight = (i: CuratedItem) => i.reasons.operator_tx ?? -1;
+  items.sort((a, b) => weight(b) - weight(a) || (b.reasons.endpoint_calls_30d ?? -1) - (a.reasons.endpoint_calls_30d ?? -1) || a.url.localeCompare(b.url));
   for (const i of items.slice(MAX_ITEMS)) drop({ scope: "endpoint", host: i.host, url: i.url, operator: i.operator_name, reason: "over_max", detail: `weight ${weight(i)}` });
   items = items.slice(0, MAX_ITEMS);
 
@@ -226,8 +248,8 @@ export function curate(inp: CurateInput): CuratedFile {
     rules: [
       "運営者 = x402 Endpoint の Most-called 上位50・自社ドメインの13社・その他16社に載ったホスト。x402scan が同じ payTo でまとめるホストは1運営者。",
       `除外: buyer が 1／買い手 = payTo（Base の USDC 送金で確認）／test・demo・example／報酬キャンペーン・転売のみ（説明の語、または1つの payTo が${RESALE_GROUP_HOSTS}ホスト以上にまたがり buyer が${RESALE_GROUP_BUYERS}以下）／除外リスト。`,
-      `1運営者あたり最大${PER_OPERATOR}件。Bazaar の30日呼び出し数の多い順。Bazaar に無い運営者は x402 Endpoint のカタログから（エンドポイント単位の件数なし）。`,
-      `全体で${MAX_ITEMS}件を超えたら、エンドポイントの呼び出し数（無ければ運営者の tx 数）の多い順に${MAX_ITEMS}件。`,
+      `1運営者あたり最大${PER_OPERATOR}件。候補は Bazaar（30日の呼び出し数あり）と x402 Endpoint の全カタログ（価格あり、エンドポイント単位の件数なし）。`,
+      `1運営者あたりは $0.01 以下（0 より大きい）の価格のエンドポイントを先に、呼び出し数の多い順に選ぶ。$0.01 以下が無い運営者は1件だけ（価格超過として記録）。全体で${MAX_ITEMS}件を超えたら、運営者の tx 数の多い順に${MAX_ITEMS}件。`,
     ],
     candidates: { operators: ops.length, endpoints: candidateEndpoints },
     excluded, excluded_counts, cut_at_max: MAX_ITEMS, items,

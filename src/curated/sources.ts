@@ -164,14 +164,20 @@ export async function fetchSellers(pages = 3): Promise<Map<string, Seller>> {
   return by;
 }
 
-/** The x402 Endpoint catalog (/api/endpoints: its 20,000 browsable endpoints; no input definitions). */
+/**
+ * x402 Endpoint's full catalog with prices (kato9292929/endpoint data/endpoints_full.json.gz, the
+ * data behind endpoint.x402jp.com; /api/endpoints serves only a 20,000-endpoint subset without prices).
+ */
+export const CATALOG_URL = "https://raw.githubusercontent.com/kato9292929/endpoint/main/data/endpoints_full.json.gz";
 export async function fetchCatalog(): Promise<import("./curate.js").CatalogEndpoint[]> {
-  const r = await fetch(`${ENDPOINT_SITE}/api/endpoints`, { headers: { "user-agent": USER_AGENT }, signal: AbortSignal.timeout(120_000) });
-  if (!r.ok) throw new Error(`endpoint.x402jp.com/api/endpoints: HTTP ${r.status}`);
-  const j: any = await r.json();
-  return (j.endpoints ?? []).map((e: any) => ({
+  const r = await fetch(CATALOG_URL, { headers: { "user-agent": USER_AGENT }, signal: AbortSignal.timeout(120_000) });
+  if (!r.ok) throw new Error(`endpoints_full.json.gz: HTTP ${r.status}`);
+  const { gunzipSync } = await import("node:zlib");
+  const j: any = JSON.parse(gunzipSync(Buffer.from(await r.arrayBuffer())).toString("utf8"));
+  return (Array.isArray(j) ? j : (j.endpoints ?? [])).map((e: any) => ({
     id: e.id, url: e.url, name: e.name ?? null, description: e.description ?? null, category: e.category ?? null,
     networks: e.networks ?? [], source: e.source ?? [], source_url: e.source_url ?? null,
+    price_usd: typeof e.price?.amount === "number" && (e.price.currency ?? "USDC") === "USDC" ? e.price.amount : null,
   }));
 }
 

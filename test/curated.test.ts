@@ -190,3 +190,16 @@ test("buy: the documented request is sent unpaid first; a 400 there means nothin
   assert.deepEqual(seen.at(-1), { method: "POST", url: "/search", body: '{"q":"tokyo"}' });
   assert.equal(rec.request!.source, "bazaar");
 });
+
+test("curate: endpoints the Probe can buy come first; an operator with none keeps one, priced over the cap", () => {
+  const pricey = (url: string, amount: string, calls: number) => bz(url, { calls30d: calls, accepts: [{ scheme: "exact", network: "eip155:8453", amount, asset: USDC.base, payTo: "0xaaaa000000000000000000000000000000000001" }] });
+  const out = curateWith([op("mix.io"), op("dear.io", { tx_count: 5 })], [
+    pricey("https://mix.io/a", "750000", 900), pricey("https://mix.io/b", "350000", 800), pricey("https://mix.io/cheap", "5000", 3),
+    pricey("https://dear.io/x", "750000", 50), pricey("https://dear.io/y", "150000", 10),
+  ], {
+    catalog: [{ id: "c1", url: "http://mix.io/fromcatalog", name: null, description: null, category: null, networks: [], source: [], source_url: null, price_usd: 0.002 }],
+  });
+  assert.deepEqual(out.items.filter((i) => i.host === "mix.io").map((i) => [i.url, i.price_usd]), [["https://mix.io/cheap", 0.005], ["https://mix.io/fromcatalog", 0.002]]);
+  assert.deepEqual(out.items.filter((i) => i.host === "dear.io").map((i) => i.url), ["https://dear.io/x"], "one endpoint, the most called");
+  assert.ok(out.excluded.some((e) => e.host === "mix.io" && e.reason === "per_operator_cap"));
+});

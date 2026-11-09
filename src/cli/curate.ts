@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { ROOT } from "../config.js";
 import { curate } from "../curated/curate.js";
-import { BAZAAR_URL, ENDPOINT_SITE, baseSelfTrade, fetchBazaar, fetchCatalog, fetchEndpointTables, fetchSellers } from "../curated/sources.js";
+import { BAZAAR_URL, CATALOG_URL, ENDPOINT_SITE, baseSelfTrade, fetchBazaar, fetchCatalog, fetchEndpointTables, fetchSellers } from "../curated/sources.js";
 
 const cache = process.env.CURATE_CACHE;
 async function cached<T>(name: string, f: () => Promise<T>): Promise<T> {
@@ -63,7 +63,7 @@ const out = curate({
   operators, bazaar, sellers, catalog, selfTrade,
   sources: {
     tables: `${ENDPOINT_SITE}/ (Most-called endpoints, Companies you already know, Other providers on their own domain)`,
-    catalog: `${ENDPOINT_SITE}/api/endpoints`,
+    catalog: CATALOG_URL,
     bazaar: `${BAZAAR_URL}?type=http`,
     sellers: "https://x402scan.com/api/trpc/public.sellers.bazaar.list (7 days)",
     self_trade: "Base USDC Transfer logs from payTo to payTo, last 7 days (Solana not checked)",
