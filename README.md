@@ -7,6 +7,7 @@ x402 の売り手が「正しく動くか」を外から測り、ホストごと
 - **自社だけに当てる試験**（週 1 回）：同じ支払いヘッダの再送とキャッシュ。OSD・JIN にだけ当て、`self-check/` に別記録（スコアには入れない）。
 - 結果は JSON API（`GET /scores`、`GET /scores/:host`）と公開ページで出す。
 - x402 RFQ Market の買い手は、仕様 JSON の `min_probe_score` でスコアを見積もりの選定条件に使える（`kato9292929/RFQ` 側）。
+- エージェントから払うなら [AgentPay402 MCP](https://github.com/kato9292929/x402-wallet-mcp)（npm `agentpay402-mcp`）が、払う前に `GET /scores/:host` を引き、直近の有料測定が「払ったのに届かない」だったホストには払わない。
 
 ## 構成
 

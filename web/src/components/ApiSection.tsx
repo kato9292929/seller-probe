@@ -6,7 +6,11 @@ export function ApiSection() {
       <SectionTitle eyebrow="API" title="Use the scores in your agent">
         <p>
           静的な JSON です（CORS 許可、5 分キャッシュ）。x402 RFQ Market の買い手は、仕様の <code className="text-foreground">min_probe_score</code>{" "}
-          でこのスコアを見積もりの選定条件に使えます。
+          でこのスコアを見積もりの選定条件に使えます。エージェントから払うなら{" "}
+          <a className="text-foreground underline underline-offset-4" href="https://github.com/kato9292929/x402-wallet-mcp">
+            AgentPay402 MCP
+          </a>
+          （npm <code className="text-foreground">agentpay402-mcp</code>）が、払う前にこの API を引いて「払ったのに届かない」ホストには払いません。
         </p>
       </SectionTitle>
       <pre className="overflow-x-auto rounded-xl border bg-card/60 p-5 text-sm leading-relaxed">
