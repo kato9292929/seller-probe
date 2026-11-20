@@ -28,7 +28,7 @@ export type Curated = {
 
 export const TONE: Record<string, "accent" | "outline" | "default"> = {
   as_described: "accent", not_as_described: "default", paid_then_rejected: "default", paid_not_delivered: "default",
-  delivered_without_payment: "outline", input_mismatch: "outline", no_usage: "outline", over_price: "outline", not_settled: "outline", not_bought: "outline",
+  delivered_without_payment: "outline", input_mismatch: "outline", input_rejected_unpaid: "outline", no_usage: "outline", over_price: "outline", not_settled: "outline", not_bought: "outline",
 };
 export const txLink = (chain: string | null, tx: string) => (chain === "solana" ? `https://solscan.io/tx/${tx}` : `https://basescan.org/tx/${tx}`);
 export const short = (s: string, n = 10) => (s.length > n * 2 ? `${s.slice(0, n)}…${s.slice(-6)}` : s);

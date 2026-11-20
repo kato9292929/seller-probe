@@ -51,7 +51,7 @@ export const BADGES: Record<Badge, string> = {
 };
 const NOT_DELIVERED = new Set(["paid_not_delivered", "paid_then_rejected", "not_settled"]);
 /** Not bought: the Probe sent no payment (price over the cap, no usage, input mismatch, balance/caps). */
-export const NOT_BOUGHT = new Set(["over_price", "no_usage", "input_mismatch", "not_bought"]);
+export const NOT_BOUGHT = new Set(["over_price", "no_usage", "input_mismatch", "input_rejected_unpaid", "not_bought"]);
 
 export function badgeOf(categories: (string | null)[]): Badge {
   const cs = categories.filter((c): c is string => !!c);
@@ -81,7 +81,7 @@ export type OperatorCard = {
   item_ids: string[];
 };
 
-const NOT_BOUGHT_LABEL: Record<string, string> = { no_usage: "使い方の公開なし", input_mismatch: "入力が合わない", not_bought: "残高・上限で見送り" };
+const NOT_BOUGHT_LABEL: Record<string, string> = { no_usage: "使い方の公開なし", input_mismatch: "入力が合わない", input_rejected_unpaid: "Probeの入力不足", not_bought: "残高・上限で見送り" };
 
 function notBoughtReason(its: ItemIn[]): string {
   const out: string[] = [];
@@ -90,7 +90,7 @@ function notBoughtReason(its: ItemIn[]): string {
     const p = over.map((i) => i.price_usd).filter((x): x is number => typeof x === "number");
     if (over.length) out.push(`$0.01 超${p.length ? `（$${Math.min(...p)}）` : ""}`);
   }
-  for (const c of ["no_usage", "input_mismatch", "not_bought"]) if (its.some((i) => i.last?.category === c)) out.push(NOT_BOUGHT_LABEL[c]);
+  for (const c of ["no_usage", "input_mismatch", "input_rejected_unpaid", "not_bought"]) if (its.some((i) => i.last?.category === c)) out.push(NOT_BOUGHT_LABEL[c]);
   return out.join("・") || "まだ購入していない";
 }
 
