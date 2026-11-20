@@ -10,6 +10,7 @@ test("badge: the worst result among what was bought; only unbought → 未購入
   assert.equal(badgeOf(["as_described", "not_as_described"]), "not_as_described");
   for (const c of ["paid_not_delivered", "paid_then_rejected", "not_settled"]) assert.equal(badgeOf(["not_as_described", c]), "not_delivered");
   assert.equal(badgeOf(["over_price", "no_usage", "input_mismatch"]), "not_bought");
+  assert.equal(badgeOf(["as_described", "input_rejected_unpaid"]), "as_described", "the Probe's input fault is not the seller's failure");
   assert.equal(badgeOf([null]), "not_bought");
 });
 

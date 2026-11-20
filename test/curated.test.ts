@@ -138,6 +138,8 @@ test("checks: schema, empty/error/placeholder, input reflected, freshness, data 
   assert.match(verbatim.find((c) => c.name === "not_empty")!.detail, /published example/);
   const tts = contentChecks({ body: Buffer.from('{"ok":true}'), contentType: "application/json", description: "Text-to-speech audio (mp3)", output: null, values: [], now });
   assert.equal(tts.find((c) => c.name === "data_kind")!.result, "fail");
+  const b64 = contentChecks({ body: Buffer.from('{"object":"audio","format":"mp3","audio_base64":"SUQzBAAA"}'), contentType: "application/json", description: "Text-to-speech audio (mp3)", output: null, values: [], now });
+  assert.equal(b64.find((c) => c.name === "data_kind")!.result, "pass");
 });
 
 test("categories: old bare-GET not_delivered rows are re-read by status; every category has a definition", () => {
@@ -152,6 +154,11 @@ test("categories: old bare-GET not_delivered rows are re-read by status; every c
   assert.equal(categorize(row({ http_status: 200, tx: null, onchain_ok: false }))!.category, "delivered_without_payment");
   assert.equal(categorize(row({ http_status: 200, checks: [{ name: "input_reflected", result: "fail", detail: "none of network=ethereum appears in the output" }] }))!.category, "as_described", "a chain/network is not expected back");
   assert.equal(categorize(row({ http_status: 402, tx: null, onchain_ok: false }))!.category, "not_settled");
+  // no transfer and the seller refused the request's content: the Probe's input, not the seller's failure
+  for (const s of [400, 404, 422]) assert.equal(categorize(row({ http_status: s, tx: null, onchain_ok: false }))!.category, "input_rejected_unpaid");
+  assert.equal(categorize(row({ http_status: 502, tx: null, onchain_ok: false }))!.category, "not_settled");
+  // audio returned inside JSON (audio_base64) is audio as described; older rows are re-read from their body head
+  assert.equal(categorize(row({ http_status: 200, body_head: '{"object":"audio","audio_base64":"SUQz', checks: [{ name: "data_kind", result: "fail", detail: "audio described; got application/json" }] }))!.category, "as_described");
   assert.equal(categorize(row({ http_status: 200, request: { values: [] }, checks: [{ name: "not_empty", result: "fail", detail: "the body is the published example, verbatim" }] }))!.category, "as_described");
   assert.equal(categorize(row({ http_status: 200, checks: [{ name: "output_schema", result: "fail", detail: "$.type: missing" }] }))!.category, "as_described");
   assert.equal(fromBazaarShape("bazaar", "b", { method: "GET" }, null, { type: "json" }, { type: "object", properties: { type: { type: "string" } }, required: ["type"] })!.output!.schema, null, "wrapper schema is not the body's");

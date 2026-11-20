@@ -12,6 +12,7 @@ export const CATEGORIES = {
   paid_not_delivered: "正しい要求でも届かなかった",
   delivered_without_payment: "送金なしで届いた",
   not_settled: "送金されず届かなかった",
+  input_rejected_unpaid: "Probeの入力不足で断られた（送金なし）",
   no_usage: "使い方が公開されていない",
   over_price: "価格超過",
   not_bought: "買わなかった（残高・上限・対応外の支払い方法）",
@@ -26,7 +27,8 @@ export const DEFINITIONS: Record<Category, string> = {
   paid_then_rejected: "支払いなしでは 402 を返したのに、支払うと 4xx（400・405 など）で断られ、送金だけが済んだ。要求の中身を確かめる前に決済している。",
   paid_not_delivered: "支払いなしでは 402 を返し、支払って送金が確認できたのに、5xx・タイムアウトなどで中身が届かなかった。",
   delivered_without_payment: "送金が見つからない（決済ヘッダもチェーン上にもない）のに 200 で本文が届いた。",
-  not_settled: "支払いを送ったが送金は起きず（決済の失敗）、中身も届かなかった。お金は動いていない。",
+  not_settled: "支払いを送ったが送金は起きず（決済の失敗・5xx・時間切れ・支払い後の 402）、中身も届かなかった。お金は動いていない。",
+  input_rejected_unpaid: "支払いなしでは 402 が返ったので支払いを付けて送ったが、売り手が要求の中身を確かめて 4xx（400・404・422 など）で断り、送金は起きなかった。売り手が支払いの前に中身を確かめていないだけで、原因は Probe の入力不足とみなし、売り手の失敗には数えない。お金は動いていない。",
   no_usage: "402 の定義・x402 Endpoint・Bazaar・売り手の llms.txt / OpenAPI / PAY.md のどこにも呼び方が無い、または必須項目の値が決められない。払っていない。",
   over_price: "402 の提示額が 1コールの上限 $0.01 を超えた。払っていない。",
   not_bought: "残高・7日の上限・USDC 以外や対応外の支払い方法のため、払っていない（その週は測っていない）。",
@@ -111,6 +113,9 @@ function expectedKind(description: string | null | undefined, outputType: string
 // Inputs a correct answer names back. A chain/network is a setting (a block number need not
 // repeat "ethereum"), so it is not expected in the output (from 2026-11-08, also when re-read).
 // A username is not expected either: posts carry an author id, not the handle asked for.
+/** A JSON key that carries media: audio, audio_base64, b64_json, image_url, url, base64 ... */
+const MEDIA_KEY = /"[a-z0-9_]*(audio|image|b64|base64|url)[a-z0-9_]*"\s*:/;
+
 const REFLECT_NAME = /^(symbol|ticker|address|wallet|token_?address|contract|city|location|pair|coin|coin_?id|ids?|domain|url)$/i;
 const SETTING_ONLY = /^none of ((chain|network|username|handle)=[^,]+(, )?)+ appears in the output$/;
 
@@ -190,7 +195,7 @@ export function contentChecks(a: {
   else if (kind === "json") checks.push(json !== undefined ? { name: "data_kind", result: "pass", detail: "JSON as described" } : { name: "data_kind", result: "fail", detail: `JSON described; got ${ct || "non-JSON"}` });
   else {
     const binary = ct.startsWith(`${kind}/`);
-    const linked = json !== undefined && new RegExp(`(https?://\\S+\\.(${kind === "audio" ? "mp3|wav|ogg|m4a" : "png|jpe?g|webp|gif"}))|"data:${kind}/|"(audio|image|url|b64_json|base64)"\\s*:`, "i").test(text);
+    const linked = json !== undefined && new RegExp(`(https?://\\S+\\.(${kind === "audio" ? "mp3|wav|ogg|m4a" : "png|jpe?g|webp|gif"}))|"data:${kind}/|${MEDIA_KEY.source}`, "i").test(text);
     checks.push(binary || linked ? { name: "data_kind", result: "pass", detail: binary ? ct : `${kind} referenced in JSON` } : { name: "data_kind", result: "fail", detail: `${kind} described; got ${ct || "unknown"} without ${kind}` });
   }
   return checks;
@@ -219,7 +224,10 @@ export function categorize(r: Record<string, unknown>): { category: Category; re
     // misread as the output schema, are not failures.
     .filter((c) => !(c.name === "not_empty" && /published example/.test(c.detail) && !((r.request as any)?.values ?? []).length))
     .filter((c) => !(c.name === "output_schema" && c.detail === "$.type: missing"))
-    .filter((c) => !(c.name === "freshness" && /^"current" promised/.test(c.detail)));
+    .filter((c) => !(c.name === "freshness" && /^"current" promised/.test(c.detail)))
+    // data kind: media returned inside JSON under a key like "audio_base64" (rule as of 2026-11-20),
+    // judged from the body head kept with the row.
+    .filter((c) => !(c.name === "data_kind" && typeof r.body_head === "string" && new RegExp(MEDIA_KEY.source, "i").test(r.body_head)));
   switch (o) {
     case "delivered":
       return failed.length ? { category: "not_as_described", reason: failed.map((c) => `${c.name}: ${c.detail}`).join(" / ") } : { category: "as_described", reason: r.checks ? "all checks passed or not applicable" : "delivered (content not checked: bought before the checks existed)" };
@@ -232,6 +240,11 @@ export function categorize(r: Record<string, unknown>): { category: Category; re
     case "delivered_unsettled":
       return { category: "delivered_without_payment", reason: "200 with a body; no transfer found" };
     case "request_rejected":
+      // The seller read the request and refused it (4xx other than 402) before any money moved:
+      // the request was short of what it needs, so it is the Probe's input, not the seller's failure.
+      if (status >= 400 && status < 500 && status !== 402)
+        return { category: "input_rejected_unpaid", reason: `no transfer; HTTP ${status}` };
+      return { category: "not_settled", reason: status ? `no transfer; HTTP ${status}` : `no transfer; ${String(r.error ?? "no response")}` };
     case "failed":
       return { category: "not_settled", reason: status ? `no transfer; HTTP ${status}` : `no transfer; ${String(r.error ?? "no response")}` };
   }
