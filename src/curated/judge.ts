@@ -19,6 +19,34 @@ export const CATEGORIES = {
 } as const;
 export type Category = keyof typeof CATEGORIES;
 
+/** The same labels in English and Chinese (the page switches language). */
+export const CATEGORIES_EN: Record<Category, string> = {
+  as_described: "Delivered as described",
+  not_as_described: "Delivered, not as described",
+  input_mismatch: "The Probe's input did not fit",
+  paid_then_rejected: "Took payment, then refused the request",
+  paid_not_delivered: "Paid, yet not delivered",
+  delivered_without_payment: "Delivered without payment",
+  not_settled: "No transfer, nothing delivered",
+  input_rejected_unpaid: "Refused for the Probe's missing input (no transfer)",
+  no_usage: "No published usage",
+  over_price: "Over the price cap",
+  not_bought: "Not bought (balance, cap or unsupported payment)",
+};
+export const CATEGORIES_ZH: Record<Category, string> = {
+  as_described: "已交付・与说明一致",
+  not_as_described: "已交付・与说明不符",
+  input_mismatch: "Probe 的输入不符合要求",
+  paid_then_rejected: "先收款后拒绝请求",
+  paid_not_delivered: "请求正确却未交付",
+  delivered_without_payment: "未付款即交付",
+  not_settled: "未转账，也未交付",
+  input_rejected_unpaid: "因 Probe 输入不足被拒（未转账）",
+  no_usage: "未公开调用方式",
+  over_price: "超出价格上限",
+  not_bought: "未购买（余额、上限或不支持的付款方式）",
+};
+
 /** Definitions shown on the page, one per category. */
 export const DEFINITIONS: Record<Category, string> = {
   as_described: "送金が確認でき、200 で本文が届き、中身の確認（出力の型・空や誤りでない・入力の反映・鮮度・データの種類）にひとつも外れがない。",
@@ -32,6 +60,33 @@ export const DEFINITIONS: Record<Category, string> = {
   no_usage: "402 の定義・x402 Endpoint・Bazaar・売り手の llms.txt / OpenAPI / PAY.md のどこにも呼び方が無い、または必須項目の値が決められない。払っていない。",
   over_price: "402 の提示額が 1コールの上限 $0.01 を超えた。払っていない。",
   not_bought: "残高・7日の上限・USDC 以外や対応外の支払い方法のため、払っていない（その週は測っていない）。",
+};
+
+export const DEFINITIONS_EN: Record<Category, string> = {
+  as_described: "The transfer is confirmed, a 200 came back with a body, and every content check passed (output shape, not empty or an error, input reflected, freshness, kind of data).",
+  not_as_described: "The transfer is confirmed and a 200 came back with a body, but a content check failed (the failed check and the first 500 characters of the body are kept). Also used when more was transferred than the 402 offered.",
+  input_mismatch: "Before paying, the same request sent unpaid answered something other than 402 (such as 400). The Probe's input does not fit what the seller accepts, so nothing was paid.",
+  paid_then_rejected: "Unpaid, the seller answered 402; paid, it refused with a 4xx (400, 405, …) and only the transfer went through. The seller takes payment before checking the request.",
+  paid_not_delivered: "Unpaid, the seller answered 402; the payment's transfer is confirmed, yet nothing was delivered (5xx, timeout, …).",
+  delivered_without_payment: "No transfer was found (no settlement header and nothing on chain), yet a 200 came back with a body.",
+  not_settled: "A payment was sent but no transfer happened (settlement failure, 5xx, timeout, or a 402 after paying), and nothing was delivered. No money moved.",
+  input_rejected_unpaid: "Unpaid, the seller answered 402, so the request was sent with payment; the seller then checked the request and refused it with a 4xx (400, 404, 422, …), and no transfer happened. The seller simply checks content only after the 402, so the cause is taken to be the Probe's missing input and it is not counted as the seller's failure. No money moved.",
+  no_usage: "No way to call it is published anywhere (the 402, x402 Endpoint, the Bazaar, the seller's llms.txt / OpenAPI / PAY.md), or a required value cannot be determined. Nothing was paid.",
+  over_price: "The 402 asked more than the $0.01 per-call cap. Nothing was paid.",
+  not_bought: "Not paid because of the balance, the 7-day cap, or a payment other than USDC or unsupported (not measured that week).",
+};
+export const DEFINITIONS_ZH: Record<Category, string> = {
+  as_described: "已确认转账，返回 200 和正文，且内容检查（输出格式、非空且非错误、输入是否反映、时效、数据种类）全部通过。",
+  not_as_described: "已确认转账并返回 200 和正文，但某项内容检查未通过（记录未通过的检查和正文前 500 个字符）。转账金额超过 402 报价时也归入此类。",
+  input_mismatch: "付款前先不付款发送同一请求，返回的不是 402（如 400）。Probe 的输入不符合卖家接受的格式，因此未付款。",
+  paid_then_rejected: "不付款时返回 402，付款后却以 4xx（400、405 等）拒绝，只完成了转账。卖家在检查请求内容之前就已收款。",
+  paid_not_delivered: "不付款时返回 402，付款后已确认转账，但因 5xx、超时等未交付内容。",
+  delivered_without_payment: "找不到转账（既无结算头，链上也没有），却返回了 200 和正文。",
+  not_settled: "已发送付款但未发生转账（结算失败、5xx、超时、付款后返回 402），也未交付内容。资金没有移动。",
+  input_rejected_unpaid: "不付款时返回 402，于是附上付款发送请求，但卖家检查请求内容后以 4xx（400、404、422 等）拒绝，未发生转账。卖家只是在 402 之前不检查内容，原因视为 Probe 输入不足，不计为卖家的失败。资金没有移动。",
+  no_usage: "在 402 定义、x402 Endpoint、Bazaar、卖家的 llms.txt / OpenAPI / PAY.md 中都找不到调用方式，或无法确定必填项的值。未付款。",
+  over_price: "402 的报价超过每次调用 $0.01 的上限。未付款。",
+  not_bought: "因余额、7 天上限、非 USDC 或不支持的付款方式而未付款（当周未测量）。",
 };
 
 export type Check = { name: "output_schema" | "not_empty" | "input_reflected" | "freshness" | "data_kind"; result: "pass" | "fail" | "not_checked"; detail: string };

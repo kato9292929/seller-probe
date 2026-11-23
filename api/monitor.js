@@ -30,24 +30,26 @@ function isPrivateAddress(ip) {
   if (v.startsWith("::ffff:")) return isPrivateAddress(v.slice(7));
   return v === "::" || v === "::1" || v.startsWith("fc") || v.startsWith("fd") || v.startsWith("fe80") || v.startsWith("ff");
 }
-async function validateTarget(raw, resolve2 = lookup) {
+async function validateTarget(raw, resolve2 = lookup, lang = "ja") {
+  const err = (m) => ({ error: m[lang] });
   let u;
   try {
     u = new URL(raw);
   } catch {
-    return { error: "URL \u3068\u3057\u3066\u8AAD\u3081\u307E\u305B\u3093" };
+    return err({ ja: "URL \u3068\u3057\u3066\u8AAD\u3081\u307E\u305B\u3093", en: "Not a readable URL", zh: "\u65E0\u6CD5\u8BC6\u522B\u4E3A URL" });
   }
-  if (u.protocol !== "https:") return { error: "https \u306E URL \u3060\u3051\u3092\u691C\u67FB\u3057\u307E\u3059" };
-  if (u.username || u.password) return { error: "\u8A8D\u8A3C\u60C5\u5831\u3092\u542B\u3080 URL \u306F\u691C\u67FB\u3057\u307E\u305B\u3093" };
-  if (u.port && u.port !== "443") return { error: "443 \u4EE5\u5916\u306E\u30DD\u30FC\u30C8\u306F\u691C\u67FB\u3057\u307E\u305B\u3093" };
+  if (u.protocol !== "https:") return err({ ja: "https \u306E URL \u3060\u3051\u3092\u691C\u67FB\u3057\u307E\u3059", en: "Only https URLs are checked", zh: "\u53EA\u68C0\u67E5 https \u7684 URL" });
+  if (u.username || u.password) return err({ ja: "\u8A8D\u8A3C\u60C5\u5831\u3092\u542B\u3080 URL \u306F\u691C\u67FB\u3057\u307E\u305B\u3093", en: "URLs with credentials are not checked", zh: "\u4E0D\u68C0\u67E5\u542B\u8BA4\u8BC1\u4FE1\u606F\u7684 URL" });
+  if (u.port && u.port !== "443") return err({ ja: "443 \u4EE5\u5916\u306E\u30DD\u30FC\u30C8\u306F\u691C\u67FB\u3057\u307E\u305B\u3093", en: "Only port 443 is checked", zh: "\u4E0D\u68C0\u67E5 443 \u4EE5\u5916\u7684\u7AEF\u53E3" });
   const host = u.hostname.replace(/^\[|\]$/g, "");
   if (isIP(host) || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".internal") || !host.includes("."))
-    return { error: "\u516C\u958B\u3055\u308C\u305F\u30DB\u30B9\u30C8\u540D\u306E URL \u3060\u3051\u3092\u691C\u67FB\u3057\u307E\u3059" };
+    return err({ ja: "\u516C\u958B\u3055\u308C\u305F\u30DB\u30B9\u30C8\u540D\u306E URL \u3060\u3051\u3092\u691C\u67FB\u3057\u307E\u3059", en: "Only URLs with a public host name are checked", zh: "\u53EA\u68C0\u67E5\u4F7F\u7528\u516C\u5F00\u4E3B\u673A\u540D\u7684 URL" });
   try {
     const addrs = await resolve2(host, { all: true });
-    if (!addrs.length || addrs.some((a) => isPrivateAddress(a.address))) return { error: "\u516C\u958B\u3055\u308C\u3066\u3044\u306A\u3044\u30A2\u30C9\u30EC\u30B9\u306E\u30DB\u30B9\u30C8\u306F\u691C\u67FB\u3057\u307E\u305B\u3093" };
+    if (!addrs.length || addrs.some((a) => isPrivateAddress(a.address)))
+      return err({ ja: "\u516C\u958B\u3055\u308C\u3066\u3044\u306A\u3044\u30A2\u30C9\u30EC\u30B9\u306E\u30DB\u30B9\u30C8\u306F\u691C\u67FB\u3057\u307E\u305B\u3093", en: "Hosts on non-public addresses are not checked", zh: "\u4E0D\u68C0\u67E5\u975E\u516C\u5F00\u5730\u5740\u7684\u4E3B\u673A" });
   } catch {
-    return { error: "\u30DB\u30B9\u30C8\u540D\u3092\u5F15\u3051\u307E\u305B\u3093" };
+    return err({ ja: "\u30DB\u30B9\u30C8\u540D\u3092\u5F15\u3051\u307E\u305B\u3093", en: "The host name does not resolve", zh: "\u65E0\u6CD5\u89E3\u6790\u4E3B\u673A\u540D" });
   }
   return { url: u };
 }

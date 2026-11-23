@@ -20,6 +20,6 @@
     "cache_header": 0
   },
   "history": [
-    { "version": 1, "date": "2026-10-13", "change": "初版。cache_header は記録のみ（重み 0）。" }
+    { "version": 1, "date": "2026-10-13", "change": "初版。cache_header は記録のみ（重み 0）。", "change_en": "First version. cache_header is recorded only (weight 0).", "change_zh": "初版。cache_header 仅记录（权重 0）。" }
   ]
 }

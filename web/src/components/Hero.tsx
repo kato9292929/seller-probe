@@ -1,9 +1,11 @@
+import { useLang } from "@/lib/i18n";
 import { Nav } from "./Nav";
 
 const VIDEO =
   "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4";
 
 export function Hero() {
+  const { t } = useLang();
   return (
     <header id="top" className="relative flex min-h-screen flex-col overflow-hidden">
       <video className="absolute inset-0 z-0 h-full w-full object-cover" src={VIDEO} autoPlay loop muted playsInline aria-hidden="true" />
@@ -17,14 +19,17 @@ export function Hero() {
           <em className="not-italic text-muted-foreground">pay.</em>
         </h1>
         <p className="animate-fade-rise-delay mt-8 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-          x402 の売り手が本当に動くかを、私たちのエージェントが毎日外から測っています。
-          402 の形式から決済、納品まで。結果はホストごとのスコアとして、算出式ごと公開します。
+          {t({
+            ja: "x402 の売り手が本当に動くかを、私たちのエージェントが毎日外から測っています。402 の形式から決済、納品まで。結果はホストごとのスコアとして、算出式ごと公開します。",
+            en: "Our agent checks every day, from the outside, whether x402 sellers actually work: from the shape of the 402 to payment and delivery. The results are published as a score per host, together with the formula.",
+            zh: "我们的代理每天从外部检测 x402 卖家是否真的可用：从 402 的格式到付款与交付。结果按主机发布为评分，并公开计算公式。",
+          })}
         </p>
         <a
           href="#scores"
           className="animate-fade-rise-delay-2 liquid-glass mt-12 cursor-pointer rounded-full px-14 py-5 text-base text-foreground transition-transform hover:scale-[1.03]"
         >
-          View Scores
+          {t({ ja: "View Scores", en: "View Scores", zh: "查看评分" })}
         </a>
       </section>
     </header>

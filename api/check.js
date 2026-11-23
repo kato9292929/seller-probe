@@ -161,6 +161,7 @@ function inputRequirement(p) {
 
 // src/check.ts
 var RECEIPT_GUIDE = "https://github.com/kato9292929/delivery-receipt#\u7D44\u307F\u8FBC\u307F\u624B\u9806";
+var checkLangOf = (v) => v === "en" || v === "zh" ? v : "ja";
 var CHECK_INTERVAL_MS = 6e4;
 var TIMEOUT_MS2 = 1e4;
 var MAX_BODY = 256 * 1024;
@@ -173,24 +174,26 @@ function isPrivateAddress(ip) {
   if (v.startsWith("::ffff:")) return isPrivateAddress(v.slice(7));
   return v === "::" || v === "::1" || v.startsWith("fc") || v.startsWith("fd") || v.startsWith("fe80") || v.startsWith("ff");
 }
-async function validateTarget(raw, resolve2 = lookup) {
+async function validateTarget(raw, resolve2 = lookup, lang = "ja") {
+  const err = (m) => ({ error: m[lang] });
   let u;
   try {
     u = new URL(raw);
   } catch {
-    return { error: "URL \u3068\u3057\u3066\u8AAD\u3081\u307E\u305B\u3093" };
+    return err({ ja: "URL \u3068\u3057\u3066\u8AAD\u3081\u307E\u305B\u3093", en: "Not a readable URL", zh: "\u65E0\u6CD5\u8BC6\u522B\u4E3A URL" });
   }
-  if (u.protocol !== "https:") return { error: "https \u306E URL \u3060\u3051\u3092\u691C\u67FB\u3057\u307E\u3059" };
-  if (u.username || u.password) return { error: "\u8A8D\u8A3C\u60C5\u5831\u3092\u542B\u3080 URL \u306F\u691C\u67FB\u3057\u307E\u305B\u3093" };
-  if (u.port && u.port !== "443") return { error: "443 \u4EE5\u5916\u306E\u30DD\u30FC\u30C8\u306F\u691C\u67FB\u3057\u307E\u305B\u3093" };
+  if (u.protocol !== "https:") return err({ ja: "https \u306E URL \u3060\u3051\u3092\u691C\u67FB\u3057\u307E\u3059", en: "Only https URLs are checked", zh: "\u53EA\u68C0\u67E5 https \u7684 URL" });
+  if (u.username || u.password) return err({ ja: "\u8A8D\u8A3C\u60C5\u5831\u3092\u542B\u3080 URL \u306F\u691C\u67FB\u3057\u307E\u305B\u3093", en: "URLs with credentials are not checked", zh: "\u4E0D\u68C0\u67E5\u542B\u8BA4\u8BC1\u4FE1\u606F\u7684 URL" });
+  if (u.port && u.port !== "443") return err({ ja: "443 \u4EE5\u5916\u306E\u30DD\u30FC\u30C8\u306F\u691C\u67FB\u3057\u307E\u305B\u3093", en: "Only port 443 is checked", zh: "\u4E0D\u68C0\u67E5 443 \u4EE5\u5916\u7684\u7AEF\u53E3" });
   const host = u.hostname.replace(/^\[|\]$/g, "");
   if (isIP(host) || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".internal") || !host.includes("."))
-    return { error: "\u516C\u958B\u3055\u308C\u305F\u30DB\u30B9\u30C8\u540D\u306E URL \u3060\u3051\u3092\u691C\u67FB\u3057\u307E\u3059" };
+    return err({ ja: "\u516C\u958B\u3055\u308C\u305F\u30DB\u30B9\u30C8\u540D\u306E URL \u3060\u3051\u3092\u691C\u67FB\u3057\u307E\u3059", en: "Only URLs with a public host name are checked", zh: "\u53EA\u68C0\u67E5\u4F7F\u7528\u516C\u5F00\u4E3B\u673A\u540D\u7684 URL" });
   try {
     const addrs = await resolve2(host, { all: true });
-    if (!addrs.length || addrs.some((a) => isPrivateAddress(a.address))) return { error: "\u516C\u958B\u3055\u308C\u3066\u3044\u306A\u3044\u30A2\u30C9\u30EC\u30B9\u306E\u30DB\u30B9\u30C8\u306F\u691C\u67FB\u3057\u307E\u305B\u3093" };
+    if (!addrs.length || addrs.some((a) => isPrivateAddress(a.address)))
+      return err({ ja: "\u516C\u958B\u3055\u308C\u3066\u3044\u306A\u3044\u30A2\u30C9\u30EC\u30B9\u306E\u30DB\u30B9\u30C8\u306F\u691C\u67FB\u3057\u307E\u305B\u3093", en: "Hosts on non-public addresses are not checked", zh: "\u4E0D\u68C0\u67E5\u975E\u516C\u5F00\u5730\u5740\u7684\u4E3B\u673A" });
   } catch {
-    return { error: "\u30DB\u30B9\u30C8\u540D\u3092\u5F15\u3051\u307E\u305B\u3093" };
+    return err({ ja: "\u30DB\u30B9\u30C8\u540D\u3092\u5F15\u3051\u307E\u305B\u3093", en: "The host name does not resolve", zh: "\u65E0\u6CD5\u89E3\u6790\u4E3B\u673A\u540D" });
   }
   return { url: u };
 }
@@ -225,96 +228,156 @@ var bareGet = async (url) => {
   return { status: res.status, header: (h) => res.headers.get(h), body: Buffer.concat(chunks).toString("utf8") };
 };
 var item = (id, label, status, detail, fix = null) => ({ id, label, status, detail, fix });
-function v2Layout(p) {
+function v2Layout(p, lang = "ja") {
   if (p.spec_version !== "v2") return null;
   const doc = p.raw;
   const problems = [];
-  if (!doc?.resource || typeof doc.resource !== "object" || typeof doc.resource.url !== "string") problems.push("resource \u30AA\u30D6\u30B8\u30A7\u30AF\u30C8\u304C\u306A\u3044");
+  if (!doc?.resource || typeof doc.resource !== "object" || typeof doc.resource.url !== "string") problems.push({ ja: "resource \u30AA\u30D6\u30B8\u30A7\u30AF\u30C8\u304C\u306A\u3044", en: "no resource object", zh: "\u6CA1\u6709 resource \u5BF9\u8C61" }[lang]);
   const accepts = Array.isArray(doc?.accepts) ? doc.accepts : [];
-  if (accepts.some((x) => x?.maxAmountRequired !== void 0 && x?.amount === void 0)) problems.push("amount \u3067\u306F\u306A\u304F v1 \u306E maxAmountRequired");
-  if (accepts.some((x) => typeof x?.network === "string" && !x.network.includes(":"))) problems.push("network \u304C CAIP-2 \u3067\u306A\u3044");
+  if (accepts.some((x) => x?.maxAmountRequired !== void 0 && x?.amount === void 0)) problems.push({ ja: "amount \u3067\u306F\u306A\u304F v1 \u306E maxAmountRequired", en: "v1 maxAmountRequired instead of amount", zh: "\u4F7F\u7528\u4E86 v1 \u7684 maxAmountRequired \u800C\u4E0D\u662F amount" }[lang]);
+  if (accepts.some((x) => typeof x?.network === "string" && !x.network.includes(":"))) problems.push({ ja: "network \u304C CAIP-2 \u3067\u306A\u3044", en: "network is not CAIP-2", zh: "network \u4E0D\u662F CAIP-2 \u683C\u5F0F" }[lang]);
   return { ok: problems.length === 0, problems };
 }
 async function checkSeller(url, deps = {}) {
   const get = deps.get ?? bareGet;
+  const lang = deps.lang ?? "ja";
+  const T = (m) => m[lang];
   const host = url.hostname.toLowerCase().replace(/^www\./, "");
   const items = [];
   let parsed = null;
+  const L = {
+    status_402: T({ ja: "402 \u3092\u8FD4\u3059\u304B", en: "Returns 402", zh: "\u662F\u5426\u8FD4\u56DE 402" }),
+    fields: T({ ja: "402 \u306E\u5FC5\u9808\u9805\u76EE", en: "Required fields of the 402", zh: "402 \u7684\u5FC5\u586B\u5B57\u6BB5" }),
+    usdc: T({ ja: "asset \u304C\u516C\u5F0F USDC \u304B", en: "Asset is official USDC", zh: "asset \u662F\u5426\u4E3A\u5B98\u65B9 USDC" }),
+    eip712: T({ ja: "EIP-712 \u306E name\u30FBversion", en: "EIP-712 name and version", zh: "EIP-712 \u7684 name\u30FBversion" }),
+    input: T({ ja: "\u5165\u529B\u30B9\u30AD\u30FC\u30DE", en: "Input schema", zh: "\u8F93\u5165\u6A21\u5F0F" }),
+    payment_identifier: T({ ja: "\u652F\u6255\u3044\u8B58\u5225\u5B50", en: "Payment identifier", zh: "\u4ED8\u6B3E\u6807\u8BC6" }),
+    v2_layout: T({ ja: "x402 v2 \u306E\u5F62\u5F0F", en: "x402 v2 layout", zh: "x402 v2 \u7684\u683C\u5F0F" }),
+    receipt: "Delivery Receipt",
+    probe: T({ ja: "Probe \u306E\u8A18\u9332", en: "Probe record", zh: "Probe \u7684\u8BB0\u5F55" })
+  };
   try {
     const r = await get(url.toString());
     if (r.status === 402) {
       parsed = parse402(r.header, r.body);
-      items.push(item("status_402", "402 \u3092\u8FD4\u3059\u304B", "pass", `\u652F\u6255\u3044\u306A\u3057\u306E GET \u306B 402\uFF08${parsed.spec_version ?? "\u5F62\u5F0F\u4E0D\u660E"}\uFF09`));
+      const v = parsed.spec_version ?? T({ ja: "\u5F62\u5F0F\u4E0D\u660E", en: "unknown version", zh: "\u683C\u5F0F\u4E0D\u660E" });
+      items.push(item("status_402", L.status_402, "pass", T({ ja: `\u652F\u6255\u3044\u306A\u3057\u306E GET \u306B 402\uFF08${v}\uFF09`, en: `402 to an unpaid GET (${v})`, zh: `\u4E0D\u4ED8\u6B3E\u7684 GET \u8FD4\u56DE 402\uFF08${v}\uFF09` })));
     } else {
       items.push(item(
         "status_402",
-        "402 \u3092\u8FD4\u3059\u304B",
+        L.status_402,
         "fail",
-        `\u652F\u6255\u3044\u306A\u3057\u306E GET \u306B HTTP ${r.status}`,
-        r.status >= 300 && r.status < 400 ? "\u30EA\u30C0\u30A4\u30EC\u30AF\u30C8\u305B\u305A\u3001\u3053\u306E URL \u81EA\u4F53\u3067 402 \u3092\u8FD4\u3059" : "\u652F\u6255\u3044\u306E\u306A\u3044 GET \u306B 402 \u3068\u652F\u6255\u3044\u6761\u4EF6\uFF08v2 \u306F PAYMENT-REQUIRED \u30D8\u30C3\u30C0\uFF09\u3092\u8FD4\u3059"
+        T({ ja: `\u652F\u6255\u3044\u306A\u3057\u306E GET \u306B HTTP ${r.status}`, en: `HTTP ${r.status} to an unpaid GET`, zh: `\u4E0D\u4ED8\u6B3E\u7684 GET \u8FD4\u56DE HTTP ${r.status}` }),
+        r.status >= 300 && r.status < 400 ? T({ ja: "\u30EA\u30C0\u30A4\u30EC\u30AF\u30C8\u305B\u305A\u3001\u3053\u306E URL \u81EA\u4F53\u3067 402 \u3092\u8FD4\u3059", en: "Return the 402 from this URL itself, without redirecting", zh: "\u4E0D\u8981\u91CD\u5B9A\u5411\uFF0C\u7531\u8BE5 URL \u672C\u8EAB\u8FD4\u56DE 402" }) : T({ ja: "\u652F\u6255\u3044\u306E\u306A\u3044 GET \u306B 402 \u3068\u652F\u6255\u3044\u6761\u4EF6\uFF08v2 \u306F PAYMENT-REQUIRED \u30D8\u30C3\u30C0\uFF09\u3092\u8FD4\u3059", en: "Answer an unpaid GET with 402 and the payment requirements (in v2, the PAYMENT-REQUIRED header)", zh: "\u5BF9\u4E0D\u4ED8\u6B3E\u7684 GET \u8FD4\u56DE 402 \u548C\u4ED8\u6B3E\u6761\u4EF6\uFF08v2 \u4E3A PAYMENT-REQUIRED \u5934\uFF09" })
       ));
     }
   } catch (e) {
-    items.push(item("status_402", "402 \u3092\u8FD4\u3059\u304B", "fail", `\u63A5\u7D9A\u3067\u304D\u306A\u3044\uFF08${errMsg(e)}\uFF09`, "\u516C\u958B\u306E https \u3067\u5FDC\u7B54\u3067\u304D\u308B\u3088\u3046\u306B\u3059\u308B"));
+    items.push(item(
+      "status_402",
+      L.status_402,
+      "fail",
+      T({ ja: `\u63A5\u7D9A\u3067\u304D\u306A\u3044\uFF08${errMsg(e)}\uFF09`, en: `Cannot connect (${errMsg(e)})`, zh: `\u65E0\u6CD5\u8FDE\u63A5\uFF08${errMsg(e)}\uFF09` }),
+      T({ ja: "\u516C\u958B\u306E https \u3067\u5FDC\u7B54\u3067\u304D\u308B\u3088\u3046\u306B\u3059\u308B", en: "Make it answer over public https", zh: "\u4F7F\u5176\u80FD\u901A\u8FC7\u516C\u5F00\u7684 https \u54CD\u5E94" })
+    ));
   }
   const a = parsed ? primaryAccept(parsed) : void 0;
+  const noTerms = T({ ja: "\u652F\u6255\u3044\u6761\u4EF6\u304C\u306A\u3044", en: "No payment terms", zh: "\u6CA1\u6709\u4ED8\u6B3E\u6761\u4EF6" });
   if (!parsed) {
-    for (const [id, label] of [["fields", "402 \u306E\u5FC5\u9808\u9805\u76EE"], ["usdc", "asset \u304C\u516C\u5F0F USDC \u304B"], ["eip712", "EIP-712 \u306E name\u30FBversion"], ["input", "\u5165\u529B\u30B9\u30AD\u30FC\u30DE"], ["payment_identifier", "\u652F\u6255\u3044\u8B58\u5225\u5B50"]])
-      items.push(item(id, label, "na", "402 \u304C\u8FD4\u3089\u306A\u3044\u305F\u3081\u691C\u67FB\u3067\u304D\u306A\u3044"));
+    for (const id of ["fields", "usdc", "eip712", "input", "payment_identifier"])
+      items.push(item(id, L[id], "na", T({ ja: "402 \u304C\u8FD4\u3089\u306A\u3044\u305F\u3081\u691C\u67FB\u3067\u304D\u306A\u3044", en: "Cannot be checked: no 402", zh: "\u672A\u8FD4\u56DE 402\uFF0C\u65E0\u6CD5\u68C0\u67E5" })));
   } else if (!a) {
     items.push(item(
       "fields",
-      "402 \u306E\u5FC5\u9808\u9805\u76EE",
+      L.fields,
       "fail",
-      parsed.error ?? "Solana / Base mainnet \u306E\u652F\u6255\u3044\u6761\u4EF6\uFF08accepts\uFF09\u304C\u306A\u3044",
-      "accepts \u306B scheme\u30FBnetwork\uFF08solana:5eykt4\u2026 \u307E\u305F\u306F eip155:8453\uFF09\u30FBasset\u30FBpayTo\u30FBamount\u30FBresource \u3092\u5165\u308C\u308B"
+      parsed.error ?? T({ ja: "Solana / Base mainnet \u306E\u652F\u6255\u3044\u6761\u4EF6\uFF08accepts\uFF09\u304C\u306A\u3044", en: "No payment terms (accepts) for Solana / Base mainnet", zh: "\u6CA1\u6709 Solana / Base \u4E3B\u7F51\u7684\u4ED8\u6B3E\u6761\u4EF6\uFF08accepts\uFF09" }),
+      T({ ja: "accepts \u306B scheme\u30FBnetwork\uFF08solana:5eykt4\u2026 \u307E\u305F\u306F eip155:8453\uFF09\u30FBasset\u30FBpayTo\u30FBamount\u30FBresource \u3092\u5165\u308C\u308B", en: "Put scheme, network (solana:5eykt4\u2026 or eip155:8453), asset, payTo, amount and resource in accepts", zh: "\u5728 accepts \u4E2D\u5199\u5165 scheme\u3001network\uFF08solana:5eykt4\u2026 \u6216 eip155:8453\uFF09\u3001asset\u3001payTo\u3001amount\u3001resource" })
     ));
-    items.push(item("usdc", "asset \u304C\u516C\u5F0F USDC \u304B", "na", "\u652F\u6255\u3044\u6761\u4EF6\u304C\u306A\u3044"));
-    items.push(item("eip712", "EIP-712 \u306E name\u30FBversion", "na", "\u652F\u6255\u3044\u6761\u4EF6\u304C\u306A\u3044"));
+    items.push(item("usdc", L.usdc, "na", noTerms));
+    items.push(item("eip712", L.eip712, "na", noTerms));
   } else {
     const probs = fieldProblems(a);
-    items.push(probs.length ? item("fields", "402 \u306E\u5FC5\u9808\u9805\u76EE", "fail", probs.join("; "), "scheme\u30FBnetwork\u30FBasset\u30FBpayTo\u30FB\u91D1\u984D\uFF08v2 \u306F amount\u3001v1 \u306F maxAmountRequired\uFF09\u30FBresource \u3092\u3059\u3079\u3066\u5165\u308C\u308B") : item("fields", "402 \u306E\u5FC5\u9808\u9805\u76EE", "pass", `scheme ${a.scheme}\u30FB${a.network}\u30FBamount ${a.amount}\u30FBpayTo ${a.payTo}`));
-    items.push(isOfficialUsdc(a) ? item("usdc", "asset \u304C\u516C\u5F0F USDC \u304B", "pass", `${a.chain === "base" ? "Base" : "Solana"} \u306E\u516C\u5F0F USDC\uFF08${a.asset}\uFF09`) : item(
-      "usdc",
-      "asset \u304C\u516C\u5F0F USDC \u304B",
+    items.push(probs.length ? item(
+      "fields",
+      L.fields,
       "fail",
-      `asset ${a.asset ?? "\u306A\u3057"} \u306F\u516C\u5F0F USDC \u3067\u306F\u306A\u3044`,
-      a.chain === "base" ? "asset \u3092 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 \u306B\u3059\u308B" : "asset \u3092 EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v \u306B\u3059\u308B"
+      probs.join("; "),
+      T({ ja: "scheme\u30FBnetwork\u30FBasset\u30FBpayTo\u30FB\u91D1\u984D\uFF08v2 \u306F amount\u3001v1 \u306F maxAmountRequired\uFF09\u30FBresource \u3092\u3059\u3079\u3066\u5165\u308C\u308B", en: "Include all of scheme, network, asset, payTo, the amount (amount in v2, maxAmountRequired in v1) and resource", zh: "\u5199\u5168 scheme\u3001network\u3001asset\u3001payTo\u3001\u91D1\u989D\uFF08v2 \u4E3A amount\uFF0Cv1 \u4E3A maxAmountRequired\uFF09\u3001resource" })
+    ) : item("fields", L.fields, "pass", `scheme ${a.scheme}\u30FB${a.network}\u30FBamount ${a.amount}\u30FBpayTo ${a.payTo}`));
+    const chain = a.chain === "base" ? "Base" : "Solana";
+    items.push(isOfficialUsdc(a) ? item("usdc", L.usdc, "pass", T({ ja: `${chain} \u306E\u516C\u5F0F USDC\uFF08${a.asset}\uFF09`, en: `Official USDC on ${chain} (${a.asset})`, zh: `${chain} \u7684\u5B98\u65B9 USDC\uFF08${a.asset}\uFF09` })) : item(
+      "usdc",
+      L.usdc,
+      "fail",
+      T({ ja: `asset ${a.asset ?? "\u306A\u3057"} \u306F\u516C\u5F0F USDC \u3067\u306F\u306A\u3044`, en: `Asset ${a.asset ?? "(none)"} is not official USDC`, zh: `asset ${a.asset ?? "\uFF08\u65E0\uFF09"} \u4E0D\u662F\u5B98\u65B9 USDC` }),
+      a.chain === "base" ? T({ ja: "asset \u3092 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 \u306B\u3059\u308B", en: "Set asset to 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", zh: "\u5C06 asset \u8BBE\u4E3A 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" }) : T({ ja: "asset \u3092 EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v \u306B\u3059\u308B", en: "Set asset to EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", zh: "\u5C06 asset \u8BBE\u4E3A EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" })
     ));
     if (a.chain === "base") {
       const extra = a.raw?.extra ?? {};
-      items.push(extra.name && extra.version ? item("eip712", "EIP-712 \u306E name\u30FBversion", "pass", `extra.name "${extra.name}"\u30FBextra.version "${extra.version}"`) : item("eip712", "EIP-712 \u306E name\u30FBversion", "fail", "extra \u306B name\u30FBversion \u304C\u306A\u3044\uFF08\u8CB7\u3044\u624B\u304C EIP-3009 \u306E\u7F72\u540D\u3092\u4F5C\u308C\u306A\u3044\uFF09", 'extra \u306B name: "USD Coin", version: "2" \u3092\u5165\u308C\u308B'));
-    } else items.push(item("eip712", "EIP-712 \u306E name\u30FBversion", "na", "Base \u306E\u652F\u6255\u3044\u6761\u4EF6\u3067\u306F\u306A\u3044"));
+      items.push(extra.name && extra.version ? item("eip712", L.eip712, "pass", `extra.name "${extra.name}"\u30FBextra.version "${extra.version}"`) : item(
+        "eip712",
+        L.eip712,
+        "fail",
+        T({ ja: "extra \u306B name\u30FBversion \u304C\u306A\u3044\uFF08\u8CB7\u3044\u624B\u304C EIP-3009 \u306E\u7F72\u540D\u3092\u4F5C\u308C\u306A\u3044\uFF09", en: "extra has no name and version (buyers cannot build the EIP-3009 signature)", zh: "extra \u4E2D\u6CA1\u6709 name\u30FBversion\uFF08\u4E70\u5BB6\u65E0\u6CD5\u751F\u6210 EIP-3009 \u7B7E\u540D\uFF09" }),
+        T({ ja: 'extra \u306B name: "USD Coin", version: "2" \u3092\u5165\u308C\u308B', en: 'Put name: "USD Coin", version: "2" in extra', zh: '\u5728 extra \u4E2D\u5199\u5165 name: "USD Coin", version: "2"' })
+      ));
+    } else items.push(item("eip712", L.eip712, "na", T({ ja: "Base \u306E\u652F\u6255\u3044\u6761\u4EF6\u3067\u306F\u306A\u3044", en: "Not a Base payment", zh: "\u4E0D\u662F Base \u7684\u4ED8\u6B3E\u6761\u4EF6" })));
   }
   if (parsed) {
-    const v2Doc = v2Layout(parsed);
-    if (v2Doc) items.push(v2Doc.ok ? item("v2_layout", "x402 v2 \u306E\u5F62\u5F0F", "pass", "v2 \u306E 402\uFF1Aresource \u3068 accepts[].amount \u304C\u305D\u308D\u3063\u3066\u3044\u308B") : item(
+    const v2Doc = v2Layout(parsed, lang);
+    if (v2Doc) items.push(v2Doc.ok ? item("v2_layout", L.v2_layout, "pass", T({ ja: "v2 \u306E 402\uFF1Aresource \u3068 accepts[].amount \u304C\u305D\u308D\u3063\u3066\u3044\u308B", en: "A v2 402: resource and accepts[].amount are both present", zh: "v2 \u7684 402\uFF1Aresource \u548C accepts[].amount \u90FD\u9F50\u5168" })) : item(
       "v2_layout",
-      "x402 v2 \u306E\u5F62\u5F0F",
+      L.v2_layout,
       "warn",
-      `v2 \u3092\u540D\u4E57\u3063\u3066\u3044\u308B\u304C v2 \u306E\u5F62\u306B\u306A\u3063\u3066\u3044\u306A\u3044\uFF08${v2Doc.problems.join("\u30FB")}\uFF09\u3002v1 \u306E\u30D8\u30C3\u30C0\uFF08X-PAYMENT\uFF09\u3057\u304B\u8AAD\u307E\u306A\u3044\u5B9F\u88C5\u306E\u53EF\u80FD\u6027\u304C\u3042\u308B`,
-      "v2 \u306E\u8CB7\u3044\u624B\u306F PAYMENT-SIGNATURE \u30D8\u30C3\u30C0\u3067\u6255\u3046\u3002\u30B5\u30FC\u30D0\u304C PAYMENT-SIGNATURE \u3092\u8AAD\u3080\u3088\u3046\u306B\u3057\u3001402 \u306F x402 v2 \u306E\u5F62\uFF08resource \u30AA\u30D6\u30B8\u30A7\u30AF\u30C8\u3001accepts[].amount\u3001extra.name\u30FBversion\uFF09\u3067\u8FD4\u3059"
+      T({
+        ja: `v2 \u3092\u540D\u4E57\u3063\u3066\u3044\u308B\u304C v2 \u306E\u5F62\u306B\u306A\u3063\u3066\u3044\u306A\u3044\uFF08${v2Doc.problems.join("\u30FB")}\uFF09\u3002v1 \u306E\u30D8\u30C3\u30C0\uFF08X-PAYMENT\uFF09\u3057\u304B\u8AAD\u307E\u306A\u3044\u5B9F\u88C5\u306E\u53EF\u80FD\u6027\u304C\u3042\u308B`,
+        en: `Says v2 but is not laid out as v2 (${v2Doc.problems.join("; ")}). The server may read only the v1 header (X-PAYMENT)`,
+        zh: `\u58F0\u79F0\u662F v2 \u4F46\u4E0D\u662F v2 \u7684\u683C\u5F0F\uFF08${v2Doc.problems.join("\u30FB")}\uFF09\u3002\u670D\u52A1\u5668\u53EF\u80FD\u53EA\u8BFB\u53D6 v1 \u7684\u5934\uFF08X-PAYMENT\uFF09`
+      }),
+      T({
+        ja: "v2 \u306E\u8CB7\u3044\u624B\u306F PAYMENT-SIGNATURE \u30D8\u30C3\u30C0\u3067\u6255\u3046\u3002\u30B5\u30FC\u30D0\u304C PAYMENT-SIGNATURE \u3092\u8AAD\u3080\u3088\u3046\u306B\u3057\u3001402 \u306F x402 v2 \u306E\u5F62\uFF08resource \u30AA\u30D6\u30B8\u30A7\u30AF\u30C8\u3001accepts[].amount\u3001extra.name\u30FBversion\uFF09\u3067\u8FD4\u3059",
+        en: "v2 buyers pay with the PAYMENT-SIGNATURE header. Have the server read PAYMENT-SIGNATURE, and return the 402 in the x402 v2 layout (resource object, accepts[].amount, extra.name and version)",
+        zh: "v2 \u4E70\u5BB6\u7528 PAYMENT-SIGNATURE \u5934\u4ED8\u6B3E\u3002\u8BF7\u8BA9\u670D\u52A1\u5668\u8BFB\u53D6 PAYMENT-SIGNATURE\uFF0C\u5E76\u4EE5 x402 v2 \u7684\u683C\u5F0F\u8FD4\u56DE 402\uFF08resource \u5BF9\u8C61\u3001accepts[].amount\u3001extra.name\u30FBversion\uFF09"
+      })
     ));
     const need = inputRequirement(parsed);
     const doc = parsed.raw;
     const declared = !!doc?.extensions?.bazaar || parsed.accepts.some((x) => x.raw?.outputSchema?.input);
-    items.push(need.requires ? item("input", "\u5165\u529B\u30B9\u30AD\u30FC\u30DE", "info", `\u5FC5\u9808\u306E\u5165\u529B\u3042\u308A\uFF08${need.reason}\u3001${need.source}\uFF09\u3002\u5165\u529B\u306A\u3057\u306E GET \u3067\u306F\u8CB7\u3048\u306A\u3044\u306E\u3067\u3001Probe \u306E\u6709\u6599\u6E2C\u5B9A\u306E\u5BFE\u8C61\u5916`, null) : declared ? item("input", "\u5165\u529B\u30B9\u30AD\u30FC\u30DE", "pass", "\u5165\u529B\u30B9\u30AD\u30FC\u30DE\u3042\u308A\u30FB\u5FC5\u9808\u306E\u5165\u529B\u306A\u3057\uFF08\u5165\u529B\u306A\u3057\u306E GET \u3067\u8CB7\u3048\u308B\uFF09") : item(
+    items.push(need.requires ? item("input", L.input, "info", T({
+      ja: `\u5FC5\u9808\u306E\u5165\u529B\u3042\u308A\uFF08${need.reason}\u3001${need.source}\uFF09\u3002\u5165\u529B\u306A\u3057\u306E GET \u3067\u306F\u8CB7\u3048\u306A\u3044\u306E\u3067\u3001Probe \u306E\u6709\u6599\u6E2C\u5B9A\u306E\u5BFE\u8C61\u5916`,
+      en: `Requires input (${need.reason}, ${need.source}). It cannot be bought with a bare GET, so the Probe's bare-GET paid measurement skips it`,
+      zh: `\u6709\u5FC5\u586B\u8F93\u5165\uFF08${need.reason}\uFF0C${need.source}\uFF09\u3002\u65E0\u6CD5\u7528\u65E0\u8F93\u5165\u7684 GET \u8D2D\u4E70\uFF0C\u56E0\u6B64\u4E0D\u5728 Probe \u7684\u65E0\u8F93\u5165\u4ED8\u8D39\u6D4B\u91CF\u8303\u56F4\u5185`
+    }), null) : declared ? item("input", L.input, "pass", T({ ja: "\u5165\u529B\u30B9\u30AD\u30FC\u30DE\u3042\u308A\u30FB\u5FC5\u9808\u306E\u5165\u529B\u306A\u3057\uFF08\u5165\u529B\u306A\u3057\u306E GET \u3067\u8CB7\u3048\u308B\uFF09", en: "Input schema present, nothing required (buyable with a bare GET)", zh: "\u6709\u8F93\u5165\u6A21\u5F0F\u4E14\u65E0\u5FC5\u586B\u8F93\u5165\uFF08\u53EF\u7528\u65E0\u8F93\u5165\u7684 GET \u8D2D\u4E70\uFF09" })) : item(
       "input",
-      "\u5165\u529B\u30B9\u30AD\u30FC\u30DE",
+      L.input,
       "warn",
-      "\u5165\u529B\u30B9\u30AD\u30FC\u30DE\u304C\u306A\u3044\uFF08\u5165\u529B\u304C\u4E0D\u8981\u306A\u3089\u554F\u984C\u306A\u3044\u304C\u3001\u5FC5\u8981\u306A\u3089\u8CB7\u3044\u624B\u306B\u306F\u5206\u304B\u3089\u306A\u3044\uFF09",
-      "\u5FC5\u9808\u306E\u5165\u529B\u304C\u3042\u308B\u306A\u3089 extensions.bazaar\uFF08v2\uFF09\u304B accepts[].outputSchema.input\uFF08v1\uFF09\u306B\u66F8\u304F"
+      T({ ja: "\u5165\u529B\u30B9\u30AD\u30FC\u30DE\u304C\u306A\u3044\uFF08\u5165\u529B\u304C\u4E0D\u8981\u306A\u3089\u554F\u984C\u306A\u3044\u304C\u3001\u5FC5\u8981\u306A\u3089\u8CB7\u3044\u624B\u306B\u306F\u5206\u304B\u3089\u306A\u3044\uFF09", en: "No input schema (fine if no input is needed; if it is, buyers cannot tell)", zh: "\u6CA1\u6709\u8F93\u5165\u6A21\u5F0F\uFF08\u82E5\u4E0D\u9700\u8981\u8F93\u5165\u5219\u65E0\u59A8\uFF1B\u82E5\u9700\u8981\uFF0C\u4E70\u5BB6\u65E0\u4ECE\u5F97\u77E5\uFF09" }),
+      T({ ja: "\u5FC5\u9808\u306E\u5165\u529B\u304C\u3042\u308B\u306A\u3089 extensions.bazaar\uFF08v2\uFF09\u304B accepts[].outputSchema.input\uFF08v1\uFF09\u306B\u66F8\u304F", en: "If input is required, describe it in extensions.bazaar (v2) or accepts[].outputSchema.input (v1)", zh: "\u5982\u6709\u5FC5\u586B\u8F93\u5165\uFF0C\u8BF7\u5199\u5728 extensions.bazaar\uFF08v2\uFF09\u6216 accepts[].outputSchema.input\uFF08v1\uFF09\u4E2D" })
     ));
     const pid = doc?.extensions?.["payment-identifier"];
-    items.push(pid?.info?.required === true ? item("payment_identifier", "\u652F\u6255\u3044\u8B58\u5225\u5B50", "info", "payment-identifier \u3092\u5FC5\u9808\u306B\u3057\u3066\u3044\u308B\uFF08\u5BFE\u5FDC\u3057\u3066\u3044\u306A\u3044\u8CB7\u3044\u624B\u306F\u8CB7\u3048\u306A\u3044\uFF09", "\u5FC5\u9808\u306B\u3059\u308B\u306A\u3089\u3001\u8B58\u5225\u5B50\u304C\u306A\u3044\u652F\u6255\u3044\u306B\u306F error \u3092\u4ED8\u3051\u305F 402 \u3067\u7406\u7531\u3092\u8FD4\u3059") : pid ? item("payment_identifier", "\u652F\u6255\u3044\u8B58\u5225\u5B50", "pass", "payment-identifier \u3092\u4EFB\u610F\u3067\u53D7\u3051\u4ED8\u3051\u308B") : item("payment_identifier", "\u652F\u6255\u3044\u8B58\u5225\u5B50", "info", "payment-identifier \u306E\u5BA3\u8A00\u306A\u3057\uFF08\u5FC5\u9808\u306B\u3057\u3066\u3044\u306A\u3044\uFF09"));
+    items.push(pid?.info?.required === true ? item(
+      "payment_identifier",
+      L.payment_identifier,
+      "info",
+      T({ ja: "payment-identifier \u3092\u5FC5\u9808\u306B\u3057\u3066\u3044\u308B\uFF08\u5BFE\u5FDC\u3057\u3066\u3044\u306A\u3044\u8CB7\u3044\u624B\u306F\u8CB7\u3048\u306A\u3044\uFF09", en: "payment-identifier is required (buyers without support cannot buy)", zh: "\u8981\u6C42\u5FC5\u987B\u63D0\u4F9B payment-identifier\uFF08\u4E0D\u652F\u6301\u7684\u4E70\u5BB6\u65E0\u6CD5\u8D2D\u4E70\uFF09" }),
+      T({ ja: "\u5FC5\u9808\u306B\u3059\u308B\u306A\u3089\u3001\u8B58\u5225\u5B50\u304C\u306A\u3044\u652F\u6255\u3044\u306B\u306F error \u3092\u4ED8\u3051\u305F 402 \u3067\u7406\u7531\u3092\u8FD4\u3059", en: "If it is required, answer a payment without one with a 402 that carries an error explaining why", zh: "\u5982\u679C\u8BBE\u4E3A\u5FC5\u987B\uFF0C\u5BF9\u6CA1\u6709\u6807\u8BC6\u7684\u4ED8\u6B3E\u8BF7\u8FD4\u56DE\u5E26 error \u7684 402 \u8BF4\u660E\u539F\u56E0" })
+    ) : pid ? item("payment_identifier", L.payment_identifier, "pass", T({ ja: "payment-identifier \u3092\u4EFB\u610F\u3067\u53D7\u3051\u4ED8\u3051\u308B", en: "payment-identifier accepted, optional", zh: "\u53EF\u9009\u5730\u63A5\u53D7 payment-identifier" })) : item("payment_identifier", L.payment_identifier, "info", T({ ja: "payment-identifier \u306E\u5BA3\u8A00\u306A\u3057\uFF08\u5FC5\u9808\u306B\u3057\u3066\u3044\u306A\u3044\uFF09", en: "No payment-identifier declared (not required)", zh: "\u672A\u58F0\u660E payment-identifier\uFF08\u5E76\u975E\u5FC5\u987B\uFF09" })));
   }
   const wk = await (deps.wellKnown ?? ((u) => wellKnownOf(u, 5e3, "manual")))(url.toString());
-  items.push(wk.advertised === true ? item("receipt", "Delivery Receipt", "pass", `/.well-known/x402-receipt.json \u3042\u308A\uFF08\u9375 ${wk.wellKnown.keys.length} \u672C\u30FB\u518D\u53D6\u5F97 ${Math.round(wk.wellKnown.refetch_window_s / 3600)} \u6642\u9593\uFF09`) : item(
+  items.push(wk.advertised === true ? item("receipt", L.receipt, "pass", T({
+    ja: `/.well-known/x402-receipt.json \u3042\u308A\uFF08\u9375 ${wk.wellKnown.keys.length} \u672C\u30FB\u518D\u53D6\u5F97 ${Math.round(wk.wellKnown.refetch_window_s / 3600)} \u6642\u9593\uFF09`,
+    en: `/.well-known/x402-receipt.json present (${wk.wellKnown.keys.length} key(s), refetch every ${Math.round(wk.wellKnown.refetch_window_s / 3600)} h)`,
+    zh: `\u6709 /.well-known/x402-receipt.json\uFF08\u5BC6\u94A5 ${wk.wellKnown.keys.length} \u4E2A\uFF0C\u91CD\u65B0\u83B7\u53D6\u95F4\u9694 ${Math.round(wk.wellKnown.refetch_window_s / 3600)} \u5C0F\u65F6\uFF09`
+  })) : item(
     "receipt",
-    "Delivery Receipt",
+    L.receipt,
     "warn",
-    wk.advertised === false ? `/.well-known/x402-receipt.json \u306A\u3057\uFF08${wk.error ?? "\u9375\u304C\u306A\u3044"}\uFF09` : `\u78BA\u8A8D\u3067\u304D\u306A\u3044\uFF08${wk.error}\uFF09`,
-    "npm \u306E @x402jp/delivery-receipt-seller \u3092 x402 \u30DF\u30C9\u30EB\u30A6\u30A7\u30A2\u306E\u5F8C\u6BB5\u306B\u5165\u308C\u3001/.well-known/x402-receipt.json \u3092\u51FA\u3059\uFF08\u4EFB\u610F\u3002Probe \u306F\u6E1B\u70B9\u3057\u306A\u3044\uFF09"
+    wk.advertised === false ? T({ ja: `/.well-known/x402-receipt.json \u306A\u3057\uFF08${wk.error ?? "\u9375\u304C\u306A\u3044"}\uFF09`, en: `No /.well-known/x402-receipt.json (${wk.error ?? "no keys"})`, zh: `\u6CA1\u6709 /.well-known/x402-receipt.json\uFF08${wk.error ?? "\u6CA1\u6709\u5BC6\u94A5"}\uFF09` }) : T({ ja: `\u78BA\u8A8D\u3067\u304D\u306A\u3044\uFF08${wk.error}\uFF09`, en: `Could not check (${wk.error})`, zh: `\u65E0\u6CD5\u786E\u8BA4\uFF08${wk.error}\uFF09` }),
+    T({
+      ja: "npm \u306E @x402jp/delivery-receipt-seller \u3092 x402 \u30DF\u30C9\u30EB\u30A6\u30A7\u30A2\u306E\u5F8C\u6BB5\u306B\u5165\u308C\u3001/.well-known/x402-receipt.json \u3092\u51FA\u3059\uFF08\u4EFB\u610F\u3002Probe \u306F\u6E1B\u70B9\u3057\u306A\u3044\uFF09",
+      en: "Add npm @x402jp/delivery-receipt-seller after your x402 middleware and serve /.well-known/x402-receipt.json (optional; the Probe takes no points off without it)",
+      zh: "\u5728 x402 \u4E2D\u95F4\u4EF6\u4E4B\u540E\u52A0\u5165 npm \u7684 @x402jp/delivery-receipt-seller\uFF0C\u5E76\u63D0\u4F9B /.well-known/x402-receipt.json\uFF08\u53EF\u9009\uFF0CProbe \u4E0D\u4F1A\u56E0\u6B64\u6263\u5206\uFF09"
+    })
   ));
   if (wk.advertised !== true) items[items.length - 1].link = RECEIPT_GUIDE;
   let rec = null;
@@ -325,18 +388,36 @@ async function checkSeller(url, deps = {}) {
   }
   const lp = rec?.last_paid;
   if (!lp) {
-    items.push(item("probe", "Probe \u306E\u8A18\u9332", "info", `\u6709\u6599\u6E2C\u5B9A\u306E\u8A18\u9332\u306A\u3057${rec?.requires_input_reason ? `\uFF08\u5BFE\u8C61\u5916\uFF1A${rec.requires_input_reason.reason}\uFF09` : ""}\u3002\u6C7A\u6E08\u30D8\u30C3\u30C0\uFF08PAYMENT-RESPONSE\uFF09\u3092\u8FD4\u3059\u304B\u306F\u652F\u6255\u308F\u306A\u3044\u3068\u5206\u304B\u3089\u306A\u3044\u305F\u3081\u3001\u3053\u3053\u3067\u306F\u691C\u67FB\u3057\u306A\u3044`));
+    const skip = rec?.requires_input_reason ? T({ ja: `\uFF08\u5BFE\u8C61\u5916\uFF1A${rec.requires_input_reason.reason}\uFF09`, en: ` (skipped: ${rec.requires_input_reason.reason})`, zh: `\uFF08\u4E0D\u5728\u8303\u56F4\u5185\uFF1A${rec.requires_input_reason.reason}\uFF09` }) : "";
+    items.push(item("probe", L.probe, "info", T({
+      ja: `\u6709\u6599\u6E2C\u5B9A\u306E\u8A18\u9332\u306A\u3057${skip}\u3002\u6C7A\u6E08\u30D8\u30C3\u30C0\uFF08PAYMENT-RESPONSE\uFF09\u3092\u8FD4\u3059\u304B\u306F\u652F\u6255\u308F\u306A\u3044\u3068\u5206\u304B\u3089\u306A\u3044\u305F\u3081\u3001\u3053\u3053\u3067\u306F\u691C\u67FB\u3057\u306A\u3044`,
+      en: `No paid measurement on record${skip}. Whether the settlement header (PAYMENT-RESPONSE) comes back can only be known by paying, so it is not checked here`,
+      zh: `\u6CA1\u6709\u4ED8\u8D39\u6D4B\u91CF\u7684\u8BB0\u5F55${skip}\u3002\u662F\u5426\u8FD4\u56DE\u7ED3\u7B97\u5934\uFF08PAYMENT-RESPONSE\uFF09\u53EA\u6709\u4ED8\u6B3E\u540E\u624D\u80FD\u77E5\u9053\uFF0C\u56E0\u6B64\u8FD9\u91CC\u4E0D\u68C0\u67E5`
+    })));
   } else {
-    const label = { delivered: "\u7D0D\u54C1", not_delivered: "\u6255\u3063\u305F\u306E\u306B\u5C4A\u304B\u306A\u3044", request_rejected: "\u8CFC\u5165\u4E0D\u6210\u7ACB", delivered_unsettled: "\u9001\u91D1\u306A\u3057\u3067\u7D0D\u54C1", failed: "\u5931\u6557" };
-    const st = lp.outcome === "delivered" ? "pass" : lp.outcome === "request_rejected" || lp.outcome === "delivered_unsettled" ? "warn" : "fail";
-    const why = lp.outcome === "request_rejected" && rec?.last_rejection?.error ? `\uFF1A${rec.last_rejection.error.slice(0, 160)}` : "";
-    const fix = {
-      not_delivered: "settle \u304C\u6210\u529F\u3057\u305F\u3089\u5FC5\u305A 200 \u3068\u672C\u6587\u3092\u8FD4\u3059\uFF08settle \u5F8C\u306B\u843D\u3061\u306A\u3044\uFF09",
-      request_rejected: "\u5165\u529B\u306A\u3057\u306E GET \u3067\u8CB7\u3048\u308B\u3088\u3046\u306B\u3059\u308B\u304B\u3001\u5FC5\u9808\u306E\u5165\u529B\u3092 402 \u306E\u5165\u529B\u30B9\u30AD\u30FC\u30DE\u306B\u66F8\u304F",
-      delivered_unsettled: "\u652F\u6255\u3044\u3092 settle \u3057\u3066\u304B\u3089\u672C\u6587\u3092\u8FD4\u3057\u3001PAYMENT-RESPONSE \u30D8\u30C3\u30C0\u3092\u4ED8\u3051\u308B",
-      failed: "\u652F\u6255\u3044\u4ED8\u304D\u306E GET \u306B 200 \u3068\u672C\u6587\u3001PAYMENT-RESPONSE \u30D8\u30C3\u30C0\u3092\u8FD4\u3059"
+    const label = {
+      delivered: { ja: "\u7D0D\u54C1", en: "delivered", zh: "\u5DF2\u4EA4\u4ED8" },
+      not_delivered: { ja: "\u6255\u3063\u305F\u306E\u306B\u5C4A\u304B\u306A\u3044", en: "paid but not delivered", zh: "\u4ED8\u4E86\u6B3E\u5374\u672A\u9001\u8FBE" },
+      request_rejected: { ja: "\u8CFC\u5165\u4E0D\u6210\u7ACB", en: "purchase not completed", zh: "\u8D2D\u4E70\u672A\u6210\u7ACB" },
+      delivered_unsettled: { ja: "\u9001\u91D1\u306A\u3057\u3067\u7D0D\u54C1", en: "delivered without payment", zh: "\u672A\u4ED8\u6B3E\u5373\u4EA4\u4ED8" },
+      failed: { ja: "\u5931\u6557", en: "failed", zh: "\u5931\u8D25" }
     };
-    items.push(item("probe", "Probe \u306E\u8A18\u9332", st, `${lp.date} \u306E\u6709\u6599\u6E2C\u5B9A\uFF1A${label[lp.outcome ?? ""] ?? lp.outcome}${why}`, lp.outcome ? fix[lp.outcome] ?? null : null));
+    const st = lp.outcome === "delivered" ? "pass" : lp.outcome === "request_rejected" || lp.outcome === "delivered_unsettled" ? "warn" : "fail";
+    const why = lp.outcome === "request_rejected" && rec?.last_rejection?.error ? `${lang === "en" ? ": " : "\uFF1A"}${rec.last_rejection.error.slice(0, 160)}` : "";
+    const fix = {
+      not_delivered: { ja: "settle \u304C\u6210\u529F\u3057\u305F\u3089\u5FC5\u305A 200 \u3068\u672C\u6587\u3092\u8FD4\u3059\uFF08settle \u5F8C\u306B\u843D\u3061\u306A\u3044\uFF09", en: "Once settle succeeds, always return 200 with the body (do not fail after settling)", zh: "settle \u6210\u529F\u540E\u52A1\u5FC5\u8FD4\u56DE 200 \u548C\u6B63\u6587\uFF08settle \u4E4B\u540E\u4E0D\u8981\u51FA\u9519\uFF09" },
+      request_rejected: { ja: "\u5165\u529B\u306A\u3057\u306E GET \u3067\u8CB7\u3048\u308B\u3088\u3046\u306B\u3059\u308B\u304B\u3001\u5FC5\u9808\u306E\u5165\u529B\u3092 402 \u306E\u5165\u529B\u30B9\u30AD\u30FC\u30DE\u306B\u66F8\u304F", en: "Make it buyable with a bare GET, or describe the required input in the 402's input schema", zh: "\u4F7F\u5176\u53EF\u7528\u65E0\u8F93\u5165\u7684 GET \u8D2D\u4E70\uFF0C\u6216\u5728 402 \u7684\u8F93\u5165\u6A21\u5F0F\u4E2D\u5199\u660E\u5FC5\u586B\u8F93\u5165" },
+      delivered_unsettled: { ja: "\u652F\u6255\u3044\u3092 settle \u3057\u3066\u304B\u3089\u672C\u6587\u3092\u8FD4\u3057\u3001PAYMENT-RESPONSE \u30D8\u30C3\u30C0\u3092\u4ED8\u3051\u308B", en: "Settle the payment before returning the body, and add the PAYMENT-RESPONSE header", zh: "\u5148 settle \u4ED8\u6B3E\u518D\u8FD4\u56DE\u6B63\u6587\uFF0C\u5E76\u9644\u4E0A PAYMENT-RESPONSE \u5934" },
+      failed: { ja: "\u652F\u6255\u3044\u4ED8\u304D\u306E GET \u306B 200 \u3068\u672C\u6587\u3001PAYMENT-RESPONSE \u30D8\u30C3\u30C0\u3092\u8FD4\u3059", en: "Answer a paid GET with 200, the body and the PAYMENT-RESPONSE header", zh: "\u5BF9\u5E26\u4ED8\u6B3E\u7684 GET \u8FD4\u56DE 200\u3001\u6B63\u6587\u548C PAYMENT-RESPONSE \u5934" }
+    };
+    const outcome = label[lp.outcome ?? ""] ? T(label[lp.outcome ?? ""]) : lp.outcome;
+    items.push(item(
+      "probe",
+      L.probe,
+      st,
+      T({ ja: `${lp.date} \u306E\u6709\u6599\u6E2C\u5B9A\uFF1A${outcome}${why}`, en: `Paid measurement on ${lp.date}: ${outcome}${why}`, zh: `${lp.date} \u7684\u4ED8\u8D39\u6D4B\u91CF\uFF1A${outcome}${why}` }),
+      lp.outcome && fix[lp.outcome] ? T(fix[lp.outcome]) : null
+    ));
   }
   return { url: url.toString(), host, checked_at: (/* @__PURE__ */ new Date()).toISOString(), items };
 }
@@ -345,17 +426,20 @@ async function handleCheck(req, deps = {}) {
   const json = (status, body, extra = {}) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json; charset=utf-8", "access-control-allow-origin": "*", "cache-control": "no-store", ...extra } });
   const self = new URL(req.url);
   const raw = self.searchParams.get("url");
-  if (!raw) return json(400, { error: "url \u3092\u6307\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\uFF08GET /check?url=https://\u2026\uFF09" });
-  const v = await validateTarget(raw, deps.resolve);
+  const lang = checkLangOf(self.searchParams.get("lang"));
+  const T = (m) => m[lang];
+  if (!raw) return json(400, { error: T({ ja: "url \u3092\u6307\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\uFF08GET /check?url=https://\u2026\uFF09", en: "Give a url (GET /check?url=https://\u2026)", zh: "\u8BF7\u6307\u5B9A url\uFF08GET /check?url=https://\u2026\uFF09" }) });
+  const v = await validateTarget(raw, deps.resolve, lang);
   if ("error" in v) return json(400, { error: v.error });
   const host = v.url.hostname.toLowerCase().replace(/^www\./, "");
   const wait = rateLimit(seen, host);
-  if (wait) return json(429, { error: `\u540C\u3058\u30DB\u30B9\u30C8\u306E\u691C\u67FB\u306F 1 \u5206\u306B 1 \u56DE\u307E\u3067\u3067\u3059\uFF08\u3042\u3068 ${wait} \u79D2\uFF09` }, { "retry-after": String(wait) });
+  if (wait)
+    return json(429, { error: T({ ja: `\u540C\u3058\u30DB\u30B9\u30C8\u306E\u691C\u67FB\u306F 1 \u5206\u306B 1 \u56DE\u307E\u3067\u3067\u3059\uFF08\u3042\u3068 ${wait} \u79D2\uFF09`, en: `One check per host per minute (wait ${wait} s)`, zh: `\u540C\u4E00\u4E3B\u673A\u6BCF\u5206\u949F\u53EA\u80FD\u68C0\u67E5 1 \u6B21\uFF08\u8FD8\u9700\u7B49\u5F85 ${wait} \u79D2\uFF09` }) }, { "retry-after": String(wait) });
   const probeRecord = deps.probeRecord ?? (async (h) => {
     const r = await fetch(`${self.origin}/data/hosts/${encodeURIComponent(h)}.json`, { signal: AbortSignal.timeout(5e3) });
     return r.ok ? await r.json() : null;
   });
-  return json(200, await checkSeller(v.url, { ...deps, probeRecord }));
+  return json(200, await checkSeller(v.url, { ...deps, probeRecord, lang }));
 }
 
 // src/api-check.ts

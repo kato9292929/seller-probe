@@ -69,6 +69,58 @@ export const REASONS = {
   free_endpoint: "$0（無料。買うものがない）",
 } as const;
 export type ReasonCode = keyof typeof REASONS;
+export const REASONS_EN: Record<ReasonCode, string> = {
+  single_buyer: "Only 1 buyer",
+  self_trade: "Buyer address is the payTo (self-trade)",
+  test_demo: "test / demo / example in the name or description",
+  reward_or_resale: "Reward campaign or resale only",
+  excluded_list: "Exclusion list (lotteries, gambling, …)",
+  same_pay_to: "Another host with the same payTo (counted as one seller)",
+  per_operator_cap: "More than 3 for one seller",
+  template_url: "Template URL ({id} or /:param)",
+  no_endpoint: "No endpoint found",
+  over_max: "Beyond 80 (cut, lowest tx first)",
+  over_cap_alternative: "Above $0.01 (the seller's endpoints at $0.01 or less come first)",
+  free_endpoint: "$0 (free; nothing to buy)",
+};
+export const REASONS_ZH: Record<ReasonCode, string> = {
+  single_buyer: "买家只有 1 个",
+  self_trade: "买家地址与 payTo 相同（自我交易）",
+  test_demo: "名称或说明中含 test / demo / example",
+  reward_or_resale: "仅为奖励活动或转售",
+  excluded_list: "排除列表（彩票、赌博等）",
+  same_pay_to: "同一 payTo 的其他主机（算作同一卖家）",
+  per_operator_cap: "超过每个卖家 3 个",
+  template_url: "URL 是模板（{id} 或 /:param）",
+  no_endpoint: "找不到端点",
+  over_max: "超过 80 个（按 tx 由少到多截去）",
+  over_cap_alternative: "高于 $0.01（优先同一卖家 $0.01 以内的端点）",
+  free_endpoint: "$0（免费，没有可购买的）",
+};
+
+/** The selection rules as published, in each language (numbers from the constants above). */
+export function rulesFor(lang: "ja" | "en" | "zh"): string[] {
+  if (lang === "en")
+    return [
+      "Sellers are the hosts named in x402 Endpoint's Most-called top 50, the 13 known companies and the 16 other providers on their own domain. Hosts that x402scan groups under one payTo count as one seller.",
+      `Excluded: only 1 buyer / buyer address equals the payTo (checked on Base USDC transfers) / test, demo, example / reward campaign or resale only (by wording, or one payTo across ${RESALE_GROUP_HOSTS}+ hosts with ${RESALE_GROUP_BUYERS} or fewer buyers) / the exclusion list.`,
+      `At most ${PER_OPERATOR} per seller. Candidates come from the Bazaar (with 30-day calls) and x402 Endpoint's full catalog (with prices, no per-endpoint counts).`,
+      `Within a seller, endpoints priced above $0 and at most $0.01 come first, most called first. A seller with none keeps a single endpoint (recorded as over the cap). Above ${MAX_ITEMS} in all, the ${MAX_ITEMS} from sellers with the most tx are kept.`,
+    ];
+  if (lang === "zh")
+    return [
+      "卖家为 x402 Endpoint 的 Most-called 前 50、自有域名的 13 家知名公司及其他 16 家提供商中列出的主机。x402scan 归入同一 payTo 的主机算作一个卖家。",
+      `排除：买家只有 1 个／买家地址等于 payTo（通过 Base 的 USDC 转账确认）／test、demo、example／仅为奖励活动或转售（依据说明用语，或一个 payTo 跨 ${RESALE_GROUP_HOSTS} 个以上主机且买家不超过 ${RESALE_GROUP_BUYERS} 个）／排除列表。`,
+      `每个卖家最多 ${PER_OPERATOR} 个。候选来自 Bazaar（有 30 天调用次数）和 x402 Endpoint 的完整目录（有价格，无端点级次数）。`,
+      `同一卖家内，优先价格高于 $0 且不超过 $0.01 的端点，按调用次数由多到少。没有这类端点的卖家只保留 1 个（记为超出价格上限）。总数超过 ${MAX_ITEMS} 个时，保留 tx 最多的卖家的 ${MAX_ITEMS} 个。`,
+    ];
+  return [
+    "運営者 = x402 Endpoint の Most-called 上位50・自社ドメインの13社・その他16社に載ったホスト。x402scan が同じ payTo でまとめるホストは1運営者。",
+    `除外: buyer が 1／買い手 = payTo（Base の USDC 送金で確認）／test・demo・example／報酬キャンペーン・転売のみ（説明の語、または1つの payTo が${RESALE_GROUP_HOSTS}ホスト以上にまたがり buyer が${RESALE_GROUP_BUYERS}以下）／除外リスト。`,
+    `1運営者あたり最大${PER_OPERATOR}件。候補は Bazaar（30日の呼び出し数あり）と x402 Endpoint の全カタログ（価格あり、エンドポイント単位の件数なし）。`,
+    `1運営者あたりは $0.01 以下（0 より大きい）の価格のエンドポイントを先に、呼び出し数の多い順に選ぶ。$0.01 以下が無い運営者は1件だけ（価格超過として記録）。全体で${MAX_ITEMS}件を超えたら、運営者の tx 数の多い順に${MAX_ITEMS}件。`,
+  ];
+}
 
 const TEST_RE = /\b(test(net|ing)?|demo|example|sample|sandbox|playground|hello[- ]?world|dummy|mock)\b/i;
 const REWARD_RE = /\b(quests?|earn(ing)?|rewards?|airdrops?|points?|campaigns?|faucet|referral|giveaway|contests?)\b/i;
@@ -245,12 +297,7 @@ export function curate(inp: CurateInput): CuratedFile {
   return {
     generated_at: (inp.now ?? new Date()).toISOString(),
     sources: inp.sources ?? {},
-    rules: [
-      "運営者 = x402 Endpoint の Most-called 上位50・自社ドメインの13社・その他16社に載ったホスト。x402scan が同じ payTo でまとめるホストは1運営者。",
-      `除外: buyer が 1／買い手 = payTo（Base の USDC 送金で確認）／test・demo・example／報酬キャンペーン・転売のみ（説明の語、または1つの payTo が${RESALE_GROUP_HOSTS}ホスト以上にまたがり buyer が${RESALE_GROUP_BUYERS}以下）／除外リスト。`,
-      `1運営者あたり最大${PER_OPERATOR}件。候補は Bazaar（30日の呼び出し数あり）と x402 Endpoint の全カタログ（価格あり、エンドポイント単位の件数なし）。`,
-      `1運営者あたりは $0.01 以下（0 より大きい）の価格のエンドポイントを先に、呼び出し数の多い順に選ぶ。$0.01 以下が無い運営者は1件だけ（価格超過として記録）。全体で${MAX_ITEMS}件を超えたら、運営者の tx 数の多い順に${MAX_ITEMS}件。`,
-    ],
+    rules: rulesFor("ja"),
     candidates: { operators: ops.length, endpoints: candidateEndpoints },
     excluded, excluded_counts, cut_at_max: MAX_ITEMS, items,
   };
