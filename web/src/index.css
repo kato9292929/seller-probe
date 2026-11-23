@@ -42,6 +42,10 @@
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-body);
   }
+  /* Chinese page: Simplified Chinese glyphs instead of the Japanese forms of the same characters */
+  html:lang(zh-Hans) {
+    --font-body: 'Inter', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  }
 }
 
 @layer components {

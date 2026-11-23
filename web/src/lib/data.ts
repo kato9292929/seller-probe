@@ -1,3 +1,4 @@
+import type { L } from "./i18n";
 // Shapes of the static JSON the build writes from log/ (src/cli/score.ts).
 export type Latest = {
   url: string | null;
@@ -61,22 +62,22 @@ export type Weights = {
   latency_ms: { full_marks_at_or_below: number; zero_at_or_above: number };
   free: Record<string, number>;
   paid: Record<string, number>;
-  history: { version: number; date: string; change: string }[];
+  history: { version: number; date: string; change: string; change_en?: string; change_zh?: string }[];
 };
 
-export const ITEM_LABELS: Record<string, string> = {
-  reachable: "HTTP 応答が返るか（10 秒）",
-  status_402: "支払いなしで 402 を返すか",
-  fields_valid: "402 の必須項目が揃っているか",
-  asset_known: "asset が公式 USDC か",
-  payto_stable: "payTo が前回から変わっていないか",
-  latency_402: "402 が返るまでの時間",
-  settle_ok: "/settle が成功を返したか",
-  onchain_ok: "チェーン上の送金が 402 の提示と一致するか",
-  delivered: "支払い後に 200 と空でない本文",
-  not_delivered: "送金成立後に 200 が返らなかった（1 − 発生率）",
-  latency_paid: "支払い付きリクエストから 200 まで",
-  cache_header: "Cache-Control: no-store（記録のみ）",
+export const ITEM_LABELS: Record<string, L> = {
+  reachable: { ja: "HTTP 応答が返るか（10 秒）", en: "Responds over HTTP (10 s)", zh: "是否有 HTTP 响应（10 秒）" },
+  status_402: { ja: "支払いなしで 402 を返すか", en: "Returns 402 without payment", zh: "未付款时是否返回 402" },
+  fields_valid: { ja: "402 の必須項目が揃っているか", en: "402 has every required field", zh: "402 的必填字段是否齐全" },
+  asset_known: { ja: "asset が公式 USDC か", en: "Asset is official USDC", zh: "asset 是否为官方 USDC" },
+  payto_stable: { ja: "payTo が前回から変わっていないか", en: "payTo unchanged since last time", zh: "payTo 与上次相比是否未变" },
+  latency_402: { ja: "402 が返るまでの時間", en: "Time to the 402", zh: "返回 402 所需时间" },
+  settle_ok: { ja: "/settle が成功を返したか", en: "/settle reported success", zh: "/settle 是否返回成功" },
+  onchain_ok: { ja: "チェーン上の送金が 402 の提示と一致するか", en: "On-chain transfer matches the 402", zh: "链上转账是否与 402 的报价一致" },
+  delivered: { ja: "支払い後に 200 と空でない本文", en: "200 with a non-empty body after paying", zh: "付款后返回 200 且正文非空" },
+  not_delivered: { ja: "送金成立後に 200 が返らなかった（1 − 発生率）", en: "No 200 after the transfer landed (1 − rate)", zh: "转账成功后未返回 200（1 − 发生率）" },
+  latency_paid: { ja: "支払い付きリクエストから 200 まで", en: "Paid request to 200", zh: "从付款请求到 200" },
+  cache_header: { ja: "Cache-Control: no-store（記録のみ）", en: "Cache-Control: no-store (recorded only)", zh: "Cache-Control: no-store（仅记录）" },
 };
 
 export function networkName(n: string | null): string {

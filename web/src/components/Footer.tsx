@@ -1,4 +1,7 @@
+import { useLang } from "@/lib/i18n";
+
 export function Footer() {
+  const { t } = useLang();
   return (
     <footer className="border-t">
       <div className="mx-auto flex max-w-7xl flex-col gap-2 px-6 py-10 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-8">
@@ -6,7 +9,7 @@ export function Footer() {
           Seller Probe<sup className="ml-0.5 text-xs">x402</sup>
         </span>
         <span>
-          運営：
+          {t({ ja: "運営：", en: "Operated by ", zh: "运营：" })}
           <a className="underline underline-offset-4 hover:text-foreground" href="https://x402jp.com">
             x402jp.com
           </a>{" "}

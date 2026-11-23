@@ -4,8 +4,8 @@
 // categories (read time only; log/ is not rewritten), and the self-checks of JIN and OSD apart.
 import { outcomeOf } from "../outcome.js";
 import type { CuratedFile } from "./curate.js";
-import { REASONS } from "./curate.js";
-import { CATEGORIES, type Category, DEFINITIONS, categorize } from "./judge.js";
+import { REASONS, REASONS_EN, REASONS_ZH, rulesFor } from "./curate.js";
+import { CATEGORIES, CATEGORIES_EN, CATEGORIES_ZH, type Category, DEFINITIONS, DEFINITIONS_EN, DEFINITIONS_ZH, categorize } from "./judge.js";
 import { type OperatorMeta, operatorCards } from "./operators.js";
 
 type Row = Record<string, unknown> & { ts: string; kind: string; host: string };
@@ -46,7 +46,7 @@ export function curatedReport(a: { records: Row[]; selfChecks: Row[]; curated: C
   const lastRun = [...latest.values()].map((r) => r.ts).sort().at(-1) ?? null;
 
   // Older purchases (bare GET, before 2026-11-08) whose outcome was "paid, not delivered", re-read.
-  const legacy: Record<string, { not_delivered: number; by_category: Partial<Record<Category, number>>; rows: { host: string; url: string; http_status: unknown; category: string; reason: string }[] }> = {};
+  const legacy: Record<string, { not_delivered: number; by_category: Partial<Record<Category, number>>; rows: { host: string; url: string; http_status: unknown; category: string; category_key: Category; reason: string }[] }> = {};
   for (const r of a.records) {
     if (r.kind !== "paid" || r.pick === "curated" || r.skipped || r.dry_run) continue;
     if (outcomeOf(r) !== "not_delivered") continue;
@@ -55,7 +55,7 @@ export function curatedReport(a: { records: Row[]; selfChecks: Row[]; curated: C
     const g = (legacy[d] ??= { not_delivered: 0, by_category: {}, rows: [] });
     g.not_delivered++;
     g.by_category[c.category] = (g.by_category[c.category] ?? 0) + 1;
-    g.rows.push({ host: r.host, url: String(r.url), http_status: r.http_status ?? null, category: CATEGORIES[c.category], reason: c.reason });
+    g.rows.push({ host: r.host, url: String(r.url), http_status: r.http_status ?? null, category: CATEGORIES[c.category], category_key: c.category, reason: c.reason });
   }
 
   // JIN and OSD: the operator's own sellers, measured by the self-check (not in the curated list).
@@ -70,7 +70,7 @@ export function curatedReport(a: { records: Row[]; selfChecks: Row[]; curated: C
     const c = categorize(p);
     return {
       target: (r.target ?? r.host) as string, host: r.host, date: r.ts.slice(0, 10), url: (p.url ?? null) as string | null,
-      category: c ? CATEGORIES[c.category] : null, reason: c?.reason ?? null,
+      category: c ? CATEGORIES[c.category] : null, category_key: c?.category ?? null, reason: c?.reason ?? null,
       http_status: (p.http_status ?? null) as number | null, tx: (p.tx ?? null) as string | null, chain: (p.chain ?? null) as string | null,
       response_sha256: (p.response_sha256 ?? null) as string | null, receipt_ok: (p.receipt_ok ?? null) as boolean | null,
     };
@@ -84,13 +84,19 @@ export function curatedReport(a: { records: Row[]; selfChecks: Row[]; curated: C
     last_run: lastRun,
     summary: { operators: cards.length, endpoints: items.length, purchased_on: lastRun ? lastRun.slice(0, 10) : null },
     cards,
-    categories: Object.entries(CATEGORIES).map(([k, label]) => ({ key: k, label, definition: DEFINITIONS[k as Category], count: counts[k as Category] })),
+    categories: Object.entries(CATEGORIES).map(([k, label]) => ({
+      key: k, label, label_en: CATEGORIES_EN[k as Category], label_zh: CATEGORIES_ZH[k as Category],
+      definition: DEFINITIONS[k as Category], definition_en: DEFINITIONS_EN[k as Category], definition_zh: DEFINITIONS_ZH[k as Category],
+      count: counts[k as Category],
+    })),
     curation: cur
       ? {
-          generated_at: cur.generated_at, rules: cur.rules, sources: cur.sources, candidates: cur.candidates, kept: cur.items.length,
+          generated_at: cur.generated_at, rules: cur.rules, rules_i18n: { ja: rulesFor("ja"), en: rulesFor("en"), zh: rulesFor("zh") }, sources: cur.sources, candidates: cur.candidates, kept: cur.items.length,
           operators_kept: new Set(cur.items.map((i) => i.operator)).size,
-          excluded_by_reason: Object.entries(cur.excluded_counts).map(([k, n]) => ({ key: k, label: (REASONS as Record<string, string>)[k] ?? k, count: n })),
-          excluded_operators: cur.excluded.filter((e) => e.scope === "operator").map((e) => ({ host: e.host, name: e.operator, reason: (REASONS as Record<string, string>)[e.reason] ?? e.reason, detail: e.detail })),
+          excluded_by_reason: Object.entries(cur.excluded_counts).map(([k, n]) => ({
+            key: k, label: (REASONS as Record<string, string>)[k] ?? k, label_en: (REASONS_EN as Record<string, string>)[k] ?? k, label_zh: (REASONS_ZH as Record<string, string>)[k] ?? k, count: n,
+          })),
+          excluded_operators: cur.excluded.filter((e) => e.scope === "operator").map((e) => ({ host: e.host, name: e.operator, reason: (REASONS as Record<string, string>)[e.reason] ?? e.reason, reason_key: e.reason, detail: e.detail })),
         }
       : null,
     items,

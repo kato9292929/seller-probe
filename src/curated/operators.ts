@@ -77,11 +77,22 @@ export type OperatorCard = {
   delivered_without_payment: number;
   /** Why nothing was bought, when nothing was: "$0.01 超（$0.75）", "使い方の公開なし", "入力が合わない". */
   not_bought_reason: string | null;
+  /** The same, structured, for other languages: codes (over_price with its lowest price). */
+  not_bought_codes: { code: string; price?: number }[];
   tx: number | null; buyers: number | null;
   item_ids: string[];
 };
 
 const NOT_BOUGHT_LABEL: Record<string, string> = { no_usage: "使い方の公開なし", input_mismatch: "入力が合わない", input_rejected_unpaid: "Probeの入力不足", not_bought: "残高・上限で見送り" };
+
+function notBoughtCodes(its: ItemIn[]): { code: string; price?: number }[] {
+  const out: { code: string; price?: number }[] = [];
+  const over = its.filter((i) => i.last?.category === "over_price").map((i) => i.price_usd).filter((x): x is number => typeof x === "number");
+  if (its.some((i) => i.last?.category === "over_price")) out.push(over.length ? { code: "over_price", price: Math.min(...over) } : { code: "over_price" });
+  for (const c of ["no_usage", "input_mismatch", "input_rejected_unpaid", "not_bought"]) if (its.some((i) => i.last?.category === c)) out.push({ code: c });
+  if (!out.length) out.push({ code: "not_yet" });
+  return out;
+}
 
 function notBoughtReason(its: ItemIn[]): string {
   const out: string[] = [];
@@ -117,6 +128,7 @@ export function operatorCards(items: ItemIn[], metas: OperatorMeta[]): OperatorC
       price_min: prices.length ? Math.min(...prices) : null,
       delivered_without_payment: cats.filter((c) => c === "delivered_without_payment").length,
       not_bought_reason: badgeOf(cats) === "not_bought" ? notBoughtReason(its) : null,
+      not_bought_codes: badgeOf(cats) === "not_bought" ? notBoughtCodes(its) : [],
       tx: first.reasons.operator_tx, buyers: first.reasons.operator_buyers,
       item_ids: its.map((i) => i.id),
     });

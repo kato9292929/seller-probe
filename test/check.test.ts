@@ -93,3 +93,15 @@ test("v2 layout: a 402 that says v2 without a resource object is flagged (seen a
   const r = await checkSeller(new URL("https://s.example/x"), { get: async () => v2(baseAccept()), wellKnown: noReceipt, probeRecord: async () => null });
   assert.equal(r.items.find((i) => i.id === "v2_layout")?.status, "pass");
 });
+
+test("messages follow the language asked for (lang=en / zh); Japanese by default", async () => {
+  const run = (lang?: "en" | "zh") => checkSeller(new URL("https://s.example/x"), { get: async () => v2(baseAccept()), wellKnown: noReceipt, probeRecord: async () => null, lang });
+  const ja = await run();
+  const en = await run("en");
+  const zh = await run("zh");
+  const label = (r: Awaited<ReturnType<typeof run>>, id: string) => r.items.find((i) => i.id === id)!.label;
+  assert.deepEqual([label(ja, "status_402"), label(en, "status_402"), label(zh, "status_402")], ["402 を返すか", "Returns 402", "是否返回 402"]);
+  assert.ok(en.items.every((i) => !/[ぁ-んァ-ヶ]/.test(`${i.label} ${i.detail} ${i.fix ?? ""}`)), "no Japanese left in the English report");
+  const bad = await validateTarget("http://x.example/", (async () => []) as any, "en");
+  assert.deepEqual(bad, { error: "Only https URLs are checked" });
+});

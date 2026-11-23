@@ -53,3 +53,13 @@ test("the header's numbers come from the data: operators, endpoints and the purc
   // every logo the cards name is a committed file (no logo is loaded from another site)
   for (const c of r.cards) if (c.logo) assert.ok(existsSync(new URL(`../web/public${c.logo}`, import.meta.url)), c.logo);
 });
+
+test("every label the page shows from the data has English and Chinese", async () => {
+  const { CATEGORIES, CATEGORIES_EN, CATEGORIES_ZH, DEFINITIONS_EN, DEFINITIONS_ZH } = await import("../src/curated/judge.js");
+  const { REASONS, REASONS_EN, REASONS_ZH, rulesFor } = await import("../src/curated/curate.js");
+  for (const k of Object.keys(CATEGORIES)) for (const m of [CATEGORIES_EN, CATEGORIES_ZH, DEFINITIONS_EN, DEFINITIONS_ZH] as Record<string, string>[]) assert.ok(m[k], k);
+  for (const k of Object.keys(REASONS)) for (const m of [REASONS_EN, REASONS_ZH] as Record<string, string>[]) assert.ok(m[k], k);
+  assert.equal(rulesFor("en").length, rulesFor("ja").length);
+  assert.equal(rulesFor("zh").length, rulesFor("ja").length);
+  assert.ok(rulesFor("en").every((r) => !/[ぁ-んァ-ヶ]/.test(r)));
+});
