@@ -1,4 +1,30 @@
 {
-  "_note": "402 の extra から使われたファシリテーターを判定するための対応表。extra.facilitator / extra.facilitatorUrl があればそれを優先し、無ければ Solana の extra.feePayer をここで引く。出典を確認できたアドレスだけ追加する（推測で埋めない）。",
-  "fee_payers": {}
+  "_note": "402 の extra から使われたファシリテーターを判定するための対応表。extra.facilitator / extra.facilitatorUrl があればそれを優先し、無ければ Solana の extra.feePayer をここで引く。出典を確認できたアドレスだけ追加する（推測で埋めない）。出典は sources に残す。対応表に無い feePayer は短縮表記（先頭5文字…）で出す。",
+  "fee_payers": {
+    "2wKupLR9q6wXYppw8Gr2NvWxKBUqm4PPJKkQfoxHDBg4": "PayAI",
+    "CjNFTjvBhbJJd2B5ePPMHRLx1ELZpa8dwQgGL727eKww": "PayAI",
+    "8B5UKhwfAyFW67h58cBkQj1Ur6QXRgwWJJcQp8ZBsDPa": "PayAI",
+    "DeXterR2kQm8AvRHnNPatWkE46TfAcMeBDjb6FySoAb8": "Dexter",
+    "DuQ4jFMmVABWGxabYHFkGzdyeJgS1hp4wrRuCtsJgT9a": "Daydreams",
+    "5xvht4fYDs99yprfm4UeuHSLxMBRpotfBtUCQqM3oDNG": "OpenX402",
+    "L54zkaPQFeTn1UsEqieEXBqWrPShiaZEPD7mS5WXfQg": "Coinbase",
+    "BENrLoUbndxoNMUS5JXApGMtNykLjFXXixMtpDwDR9SP": "Coinbase",
+    "BFK9TLC3edb13K6v4YyH3DwPb5DSUpkWvb7XnqCL9b4F": "Coinbase",
+    "D6ZhtNQ5nT9ZnTHUbqXZsTx5MH2rPFiBBggX4hY1WePM": "Coinbase",
+    "GVJJ7rdGiXr5xaYbRwRbjfaJL7fmwRygFi1H6aGqDveb": "Coinbase",
+    "Hc3sdEAsCGQcpgfivywog9uwtk8gUBUZgsxdME1EJy88": "Coinbase",
+    "92QcYJZpkwYyacR3G69QNR2JfjadQxd16cp5d7x5GEzU": "Coinbase",
+    "F742C4VfFLQ9zRQyithoj5229ZgtX2WqKCSFKgH2EThq": "Ultravioleta DAO",
+    "Hbe1vdFs4EQVVAzcV12muHhr6DEKwrT9roMXGPLxLBLP": "OpenFacilitator"
+  },
+  "sources": {
+    "PayAI": "https://facilitator.payai.network/supported (2wKup…, CjNFT…); 8B5UK… from x402scan's facilitator list (2026-11-26)",
+    "Dexter": "https://x402.dexter.cash/supported",
+    "Daydreams": "https://facilitator.daydreams.systems/supported",
+    "OpenX402": "https://facilitator.openx402.ai/supported",
+    "Coinbase": "x402scan's facilitator list (https://www.x402scan.com/facilitators, 2026-11-26); Coinbase's own /supported needs an API key",
+    "Ultravioleta DAO": "x402scan's facilitator list (2026-11-26)",
+    "OpenFacilitator": "x402scan's facilitator list (2026-11-26)",
+    "_unmatched": "FAC42xNoVBZctsRJqwNcRZnXCwmGZvfHcZLD7hQPXuwu and 2hjRxUkyYRGGjKTVZc5hxss7ZmdXZfZKHgvKYneyVQaU are on no facilitator's /supported and not in x402scan's list (2026-11-26): shown as FAC42… / 2hjRx…. x402-doctor: no facilitator /supported URL found (402 Doctor in the catalog is an audit API)."
+  }
 }

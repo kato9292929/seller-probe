@@ -33,6 +33,12 @@ jobs:
       # Without the wallet secrets this records "secrets not configured (未設定)" and exits 0.
       # Real payments only when the repository variable PROBE_PAID_ENABLED is "true"; a manual
       # run with dry_run ticked is always a dry run.
+      # Wallet check of every curated endpoint before buying (no payment: one unpaid 402 each and
+      # RPC reads), and the wallet payment records' tx checked on chain.
+      - name: Wallet precheck and records
+        run: npm run wallet
+        env:
+          SOLANA_RPC_URL: ${{ secrets.SOLANA_RPC_URL }}
       - name: Curated purchase (caps $0.01/call, $25/7 days, enforced in code)
         run: npm run probe:curated
         env:

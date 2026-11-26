@@ -7,6 +7,14 @@ import type { CuratedFile } from "./curate.js";
 import { REASONS, REASONS_EN, REASONS_ZH, rulesFor } from "./curate.js";
 import { CATEGORIES, CATEGORIES_EN, CATEGORIES_ZH, type Category, DEFINITIONS, DEFINITIONS_EN, DEFINITIONS_ZH, categorize } from "./judge.js";
 import { type OperatorMeta, operatorCards } from "./operators.js";
+import { type FacilitatorTally, type Outlook, outlookFor } from "./wallet.js";
+
+/** The pre-payment wallet check of one endpoint, as published (targets/wallet-precheck.json + outlook). */
+export type WalletPrecheck = {
+  checked_at: string; status: number | null; error: string | null;
+  solana: { fee_payer: string | null; facilitator: string | null; facilitator_by: string; pay_to: string; ata: string; ata_exists: boolean | null } | null;
+  base: { pay_to: string } | null;
+};
 
 type Row = Record<string, unknown> & { ts: string; kind: string; host: string };
 
@@ -28,7 +36,11 @@ function evidence(r: Row) {
   };
 }
 
-export function curatedReport(a: { records: Row[]; selfChecks: Row[]; curated: CuratedFile | null; now: Date; operators?: OperatorMeta[] }) {
+export function curatedReport(a: {
+  records: Row[]; selfChecks: Row[]; curated: CuratedFile | null; now: Date; operators?: OperatorMeta[];
+  /** targets/wallet-precheck.json items and the facilitator tallies of the wallet records (optional). */
+  walletPrecheck?: Record<string, WalletPrecheck>; walletTallies?: FacilitatorTally[];
+}) {
   const curatedRows = a.records.filter((r) => r.kind === "paid" && r.pick === "curated" && !r.dry_run);
   const latest = new Map<string, Row>();
   for (const r of curatedRows) {
@@ -40,6 +52,19 @@ export function curatedReport(a: { records: Row[]; selfChecks: Row[]; curated: C
     id: i.id, operator: i.operator_name, operator_key: i.operator, host: i.host, url: i.url, name: i.name, description: i.description, category: i.category,
     price_usd: i.price_usd, reasons: i.reasons,
     last: latest.has(i.id) ? evidence(latest.get(i.id)!) : null,
+    // Paying with Phantom: what is known before paying (an outlook, not a record). Base stays unverified
+    // until a payment from a non-delegated EOA is on record.
+    wallet_precheck: a.walletPrecheck?.[i.id]
+      ? (() => {
+          const p = a.walletPrecheck![i.id];
+          return {
+            checked_at: p.checked_at, status: p.status,
+            solana: p.solana ? { facilitator: p.solana.facilitator, fee_payer: p.solana.fee_payer, ata_exists: p.solana.ata_exists } : null,
+            base: p.base ? { outlook: "unverified" as const } : null,
+            phantom_outlook: outlookFor(p, a.walletTallies ?? []) as Outlook,
+          };
+        })()
+      : null,
   }));
   const counts = Object.fromEntries(Object.keys(CATEGORIES).map((k) => [k, 0])) as Record<Category, number>;
   for (const it of items) if (it.last?.category) counts[it.last.category as Category]++;
@@ -78,7 +103,17 @@ export function curatedReport(a: { records: Row[]; selfChecks: Row[]; curated: C
 
   const cur = a.curated;
   // Cards for the top of the page (one per operator, by x402 Endpoint tx), with the header's numbers.
-  const cards = operatorCards(items, a.operators ?? []);
+  const cards = operatorCards(items, a.operators ?? []).map((c) => {
+    // One line per card: the Phantom outlook of its endpoints (distinct outlook + facilitator pairs).
+    const seen = new Map<string, { outlook: Outlook; facilitator: string | null }>();
+    for (const id of c.item_ids) {
+      const w = items.find((i) => i.id === id)?.wallet_precheck;
+      if (!w) continue;
+      const k = `${w.phantom_outlook}|${w.solana?.facilitator ?? ""}`;
+      if (!seen.has(k)) seen.set(k, { outlook: w.phantom_outlook, facilitator: w.solana?.facilitator ?? null });
+    }
+    return { ...c, phantom: [...seen.values()] };
+  });
   return {
     generated_at: a.now.toISOString(),
     last_run: lastRun,
