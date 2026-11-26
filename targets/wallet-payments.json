@@ -1,0 +1,357 @@
+{
+ "generated_at": "2026-11-26T05:36:42.400Z",
+ "note": "Payments the owner signed in a wallet through AgentPay402. No payer address is kept.",
+ "records": [
+  {
+   "seller": "Nansen",
+   "host": "api.nansen.ai",
+   "endpoint": null,
+   "network": "solana",
+   "wallet": "Phantom",
+   "fee_payer": "CjNFTjvBhbJJd2B5ePPMHRLx1ELZpa8dwQgGL727eKww",
+   "amount_usd": 0.05,
+   "outcome": "delivered",
+   "reason": null,
+   "tx": "5J7VaDxG25LesWaDo5WbKCdwVB8pdi5FasSvvMa5TjXBz696sVgMDCUgbwaob3ZYVxbxVPq7fHXydtvguXYvRmkg",
+   "attempted_at": "2026-11-24T18:46:59.000Z",
+   "source": "owner_verification",
+   "facilitator": "PayAI",
+   "verified_onchain": {
+    "status": "finalized",
+    "checked_at": "2026-11-26T05:36:42.400Z",
+    "detail": null
+   }
+  },
+  {
+   "seller": "Tanod",
+   "host": "docs.tanod.dev",
+   "endpoint": null,
+   "network": "solana",
+   "wallet": "Phantom",
+   "fee_payer": "CjNFTjvBhbJJd2B5ePPMHRLx1ELZpa8dwQgGL727eKww",
+   "amount_usd": 0.005,
+   "outcome": "delivered",
+   "reason": null,
+   "tx": "2Jbn6jBqwAGjywmoQYMfR9Z7HfaSmS6rPSbQcR7RngNtPxkKhZhzqB78qLEHfYRvkK1JubdFut2VFaUUZYbDWtMF",
+   "attempted_at": "2026-11-26T03:38:01.000Z",
+   "source": "owner_verification",
+   "facilitator": "PayAI",
+   "verified_onchain": {
+    "status": "finalized",
+    "checked_at": "2026-11-26T05:36:42.400Z",
+    "detail": null
+   }
+  },
+  {
+   "seller": "citable.run",
+   "host": "citable.run",
+   "endpoint": null,
+   "network": "solana",
+   "wallet": "Phantom",
+   "fee_payer": "CjNFTjvBhbJJd2B5ePPMHRLx1ELZpa8dwQgGL727eKww",
+   "amount_usd": 0.008,
+   "outcome": "delivered",
+   "reason": null,
+   "tx": "3auH8ZzywTQFpgNNq3B4VCadKAC9yYHSAh3KHPNfMVsnZogzCMzLR4VAA67NqL6KM2eShSp6HLVJLCERmqS6ntgF",
+   "attempted_at": "2026-11-26T04:05:53.000Z",
+   "source": "owner_verification",
+   "facilitator": "PayAI",
+   "verified_onchain": {
+    "status": "finalized",
+    "checked_at": "2026-11-26T05:36:42.400Z",
+    "detail": null
+   }
+  },
+  {
+   "seller": "solpulsedata",
+   "host": null,
+   "endpoint": null,
+   "network": "solana",
+   "wallet": "Phantom",
+   "fee_payer": "CjNFTjvBhbJJd2B5ePPMHRLx1ELZpa8dwQgGL727eKww",
+   "amount_usd": 0.005,
+   "outcome": "delivered",
+   "reason": null,
+   "tx": "4LdXkP2H4gaMnTME1F7RD8Xs8GttMb6Gw3ZTJ6c8Hy5fYaPHE3uGQjaZ47XY3UnZ3dZ7V6SHunzpfG9gQazfdHo2",
+   "attempted_at": "2026-11-26T04:06:14.000Z",
+   "source": "owner_verification",
+   "facilitator": "PayAI",
+   "verified_onchain": {
+    "status": "finalized",
+    "checked_at": "2026-11-26T05:36:42.400Z",
+    "detail": null
+   }
+  },
+  {
+   "seller": "Losbeto",
+   "host": "losbeto-production-dd7c.up.railway.app",
+   "endpoint": null,
+   "network": "solana",
+   "wallet": "Phantom",
+   "fee_payer": "CjNFTjvBhbJJd2B5ePPMHRLx1ELZpa8dwQgGL727eKww",
+   "amount_usd": 0.05,
+   "outcome": "delivered",
+   "reason": null,
+   "tx": "3GAKNzJcLKQNbzxu79jfC32euYJnmABTkay9fkRLcfCBcVKzTY8Bkgx3nyCagMFsk26Qet83xi8rRhiCFrDxm2kQ",
+   "attempted_at": "2026-11-26T04:16:22.000Z",
+   "source": "owner_verification",
+   "facilitator": "PayAI",
+   "verified_onchain": {
+    "status": "finalized",
+    "checked_at": "2026-11-26T05:36:42.400Z",
+    "detail": null
+   }
+  },
+  {
+   "seller": "Xynaptic",
+   "host": "api.xynaptic.io",
+   "endpoint": null,
+   "network": "solana",
+   "wallet": "Phantom",
+   "fee_payer": "2hjRxUkyYRGGjKTVZc5hxss7ZmdXZfZKHgvKYneyVQaU",
+   "amount_usd": 0.01,
+   "outcome": "delivered",
+   "reason": null,
+   "tx": "4PAEhUrao79BjC5n6Y7riKkqoXudxVRjX1jF16bnpdX2erAv1SJuXZYWMh2b8d53nCZz51nuqx3bAzNDVvUMUyaJ",
+   "attempted_at": "2026-11-26T04:16:49.000Z",
+   "source": "owner_verification",
+   "facilitator": "2hjRx…",
+   "verified_onchain": {
+    "status": "finalized",
+    "checked_at": "2026-11-26T05:36:42.400Z",
+    "detail": null
+   }
+  },
+  {
+   "seller": "ApiToll",
+   "host": "crypto.apitoll.cloud",
+   "endpoint": null,
+   "network": "solana",
+   "wallet": "Phantom",
+   "fee_payer": "BENrLoUbndxoNMUS5JXApGMtNykLjFXXixMtpDwDR9SP",
+   "amount_usd": null,
+   "outcome": "facilitator_rejected",
+   "reason": "fee_payer_transferring_funds",
+   "tx": null,
+   "attempted_at": null,
+   "source": "owner_verification",
+   "facilitator": "Coinbase",
+   "verified_onchain": {
+    "status": "not_applicable",
+    "checked_at": "2026-11-26T05:36:42.400Z",
+    "detail": null
+   }
+  },
+  {
+   "seller": "x402engine",
+   "host": "x402engine.app",
+   "endpoint": null,
+   "network": "solana",
+   "wallet": "Phantom",
+   "fee_payer": "Hc3sdEAsCGQcpgfivywog9uwtk8gUBUZgsxdME1EJy88",
+   "amount_usd": null,
+   "outcome": "facilitator_rejected",
+   "reason": "fee_payer_transferring_funds",
+   "tx": null,
+   "attempted_at": null,
+   "source": "owner_verification",
+   "facilitator": "Coinbase",
+   "verified_onchain": {
+    "status": "not_applicable",
+    "checked_at": "2026-11-26T05:36:42.400Z",
+    "detail": null
+   }
+  },
+  {
+   "seller": "Agent402",
+   "host": "agent402.tools",
+   "endpoint": null,
+   "network": "solana",
+   "wallet": "Phantom",
+   "fee_payer": "FAC42xNoVBZctsRJqwNcRZnXCwmGZvfHcZLD7hQPXuwu",
+   "amount_usd": null,
+   "outcome": "facilitator_rejected",
+   "reason": null,
+   "tx": null,
+   "attempted_at": null,
+   "source": "owner_verification",
+   "facilitator": "FAC42…",
+   "verified_onchain": {
+    "status": "not_applicable",
+    "checked_at": "2026-11-26T05:36:42.400Z",
+    "detail": null
+   }
+  },
+  {
+   "seller": "BlockLabs",
+   "host": null,
+   "endpoint": null,
+   "network": "solana",
+   "wallet": "Phantom",
+   "fee_payer": "CjNFTjvBhbJJd2B5ePPMHRLx1ELZpa8dwQgGL727eKww",
+   "amount_usd": null,
+   "outcome": "wallet_simulation_stopped",
+   "reason": null,
+   "tx": null,
+   "attempted_at": null,
+   "source": "owner_verification",
+   "facilitator": "PayAI",
+   "verified_onchain": {
+    "status": "not_applicable",
+    "checked_at": "2026-11-26T05:36:42.400Z",
+    "detail": null
+   }
+  },
+  {
+   "seller": "gentechlabs",
+   "host": "api.gentechlabs.net",
+   "endpoint": null,
+   "network": "solana",
+   "wallet": "Phantom",
+   "fee_payer": "CjNFTjvBhbJJd2B5ePPMHRLx1ELZpa8dwQgGL727eKww",
+   "amount_usd": null,
+   "outcome": "wallet_simulation_stopped",
+   "reason": null,
+   "tx": null,
+   "attempted_at": null,
+   "source": "owner_verification",
+   "facilitator": "PayAI",
+   "verified_onchain": {
+    "status": "not_applicable",
+    "checked_at": "2026-11-26T05:36:42.400Z",
+    "detail": null
+   }
+  },
+  {
+   "seller": "gadgethumans",
+   "host": "api.gadgethumans.com",
+   "endpoint": null,
+   "network": "solana",
+   "wallet": "Phantom",
+   "fee_payer": "CjNFTjvBhbJJd2B5ePPMHRLx1ELZpa8dwQgGL727eKww",
+   "amount_usd": null,
+   "outcome": "wallet_simulation_stopped",
+   "reason": null,
+   "tx": null,
+   "attempted_at": null,
+   "source": "owner_verification",
+   "facilitator": "PayAI",
+   "verified_onchain": {
+    "status": "not_applicable",
+    "checked_at": "2026-11-26T05:36:42.400Z",
+    "detail": null
+   }
+  },
+  {
+   "seller": "ST0x Pulse",
+   "host": null,
+   "endpoint": null,
+   "network": "solana",
+   "wallet": "Phantom",
+   "fee_payer": "CjNFTjvBhbJJd2B5ePPMHRLx1ELZpa8dwQgGL727eKww",
+   "amount_usd": null,
+   "outcome": "seller_error",
+   "reason": "503 upstream_unavailable",
+   "tx": null,
+   "attempted_at": null,
+   "source": "owner_verification",
+   "no_transfer_checked": {
+    "at": "2026-11-26T05:40:00Z",
+    "how": "the paying wallet's USDC account has no outgoing transfer other than the six delivered payments (2026-11-24 to 2026-11-26)"
+   },
+   "facilitator": "PayAI",
+   "verified_onchain": {
+    "status": "no_transfer",
+    "checked_at": "2026-11-26T05:40:00Z",
+    "detail": "the paying wallet's USDC account has no outgoing transfer other than the six delivered payments (2026-11-24 to 2026-11-26)"
+   }
+  },
+  {
+   "seller": "StableEnrich",
+   "host": "stableenrich.dev",
+   "endpoint": null,
+   "network": "solana",
+   "wallet": "Phantom",
+   "fee_payer": "CjNFTjvBhbJJd2B5ePPMHRLx1ELZpa8dwQgGL727eKww",
+   "amount_usd": null,
+   "outcome": "facilitator_rejected",
+   "reason": "BlockhashNotFound",
+   "tx": null,
+   "attempted_at": null,
+   "source": "owner_verification",
+   "facilitator": "PayAI",
+   "verified_onchain": {
+    "status": "not_applicable",
+    "checked_at": "2026-11-26T05:36:42.400Z",
+    "detail": null
+   }
+  },
+  {
+   "seller": "horizonpulse",
+   "host": "horizonpulse.dev",
+   "endpoint": null,
+   "network": "solana",
+   "wallet": "Phantom",
+   "fee_payer": "CjNFTjvBhbJJd2B5ePPMHRLx1ELZpa8dwQgGL727eKww",
+   "amount_usd": null,
+   "outcome": "agentpay_mismatch",
+   "reason": null,
+   "tx": null,
+   "attempted_at": null,
+   "source": "owner_verification",
+   "facilitator": "PayAI",
+   "verified_onchain": {
+    "status": "not_applicable",
+    "checked_at": "2026-11-26T05:36:42.400Z",
+    "detail": null
+   }
+  },
+  {
+   "seller": null,
+   "host": null,
+   "endpoint": null,
+   "network": "base",
+   "wallet": "Rabby",
+   "wallet_account": "eip7702",
+   "fee_payer": null,
+   "amount_usd": null,
+   "outcome": "signature_check_failed",
+   "reason": "signature did not pass the on-chain check (EIP-7702 delegated account)",
+   "tx": null,
+   "attempted_at": null,
+   "source": "owner_verification",
+   "facilitator": null,
+   "verified_onchain": {
+    "status": "not_applicable",
+    "checked_at": "2026-11-26T05:36:42.400Z",
+    "detail": null
+   }
+  }
+ ],
+ "by_facilitator": [
+  {
+   "facilitator": "PayAI",
+   "phantom_attempts": 11,
+   "delivered": 5,
+   "rejected": 1
+  },
+  {
+   "facilitator": "Coinbase",
+   "phantom_attempts": 2,
+   "delivered": 0,
+   "rejected": 2
+  },
+  {
+   "facilitator": "2hjRx…",
+   "phantom_attempts": 1,
+   "delivered": 1,
+   "rejected": 0
+  },
+  {
+   "facilitator": "FAC42…",
+   "phantom_attempts": 1,
+   "delivered": 0,
+   "rejected": 1
+  }
+ ]
+}

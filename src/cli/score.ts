@@ -121,6 +121,8 @@ writeFileSync(
 );
 // Curated purchases (§3 categories with evidence), old "paid, not delivered" re-read, JIN/OSD apart.
 const curatedFile = resolve(ROOT, "targets/curated.json");
+const walletPaymentsFile = resolve(ROOT, "targets/wallet-payments.json");
+const walletPayments = existsSync(walletPaymentsFile) ? JSON.parse(readFileSync(walletPaymentsFile, "utf8")) : null;
 writeFileSync(
   resolve(OUT, "curated.json"),
   JSON.stringify(curatedReport({
@@ -128,8 +130,12 @@ writeFileSync(
     selfChecks: readRecords(SELF_CHECK_DIR(), 60, now) as any,
     curated: existsSync(curatedFile) ? JSON.parse(readFileSync(curatedFile, "utf8")) : null,
     operators: existsSync(resolve(ROOT, "targets/operators.json")) ? JSON.parse(readFileSync(resolve(ROOT, "targets/operators.json"), "utf8")).operators : [],
+    walletPrecheck: existsSync(resolve(ROOT, "targets/wallet-precheck.json")) ? JSON.parse(readFileSync(resolve(ROOT, "targets/wallet-precheck.json"), "utf8")).items : undefined,
+    walletTallies: walletPayments?.by_facilitator,
     now,
   })) + "\n",
 );
+// Wallet payments (npm run wallet): published as is; it holds no payer address.
+if (walletPayments) writeFileSync(resolve(OUT, "wallet-payments.json"), JSON.stringify(walletPayments) + "\n");
 writeFileSync(resolve(OUT, "weights.json"), JSON.stringify(weights, null, 1) + "\n");
 console.log(`scored ${list.length} hosts (${list.filter((s) => s.coverage === "full").length} full, rest free_only) from ${records.length} records → ${OUT}`);

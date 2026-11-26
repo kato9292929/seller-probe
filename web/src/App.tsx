@@ -8,6 +8,7 @@ import { Hero } from "@/components/Hero";
 import { MethodSection } from "@/components/MethodSection";
 import { Nav } from "@/components/Nav";
 import { OperatorCards } from "@/components/OperatorCards";
+import { WalletSection } from "@/components/WalletSection";
 import { ScoresSection } from "@/components/ScoresSection";
 import { type Scores, type Weights, getJson } from "@/lib/data";
 
@@ -34,6 +35,7 @@ function Home() {
       <main>
         {/* Top: the curated purchases as operator cards (12; the rest on /purchases) */}
         <OperatorCards limit={12} />
+        <WalletSection />
         <CuratedSection />
         <ScoresSection data={scores} error={error} />
         <FormulaSection w={weights} />
@@ -54,6 +56,7 @@ function Purchases() {
       </div>
       <main>
         <OperatorCards full />
+        <WalletSection />
         <CuratedSection />
       </main>
       <Footer />

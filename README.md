@@ -81,6 +81,13 @@ web/                 公開ページ（React + Vite + Tailwind + shadcn/ui）。
 
 **公開**（`dist/data/curated.json`、ページの「使い方どおりに買った結果」）：判定の定義表、購入ごとの要求（メソッド・URL・パラメータ。支払いヘッダ・署名は載せない）・ステータス・本文の SHA-256・tx・確認の結果、選び方と除外の件数。2026-11-07 までの「払ったのに届かない」は、ログを書き換えずに読む時に同じ判定へ読み直して載せる。自社の JIN・OSD は別の欄。
 
+## ウォレットで払う場合（2026-11-26 から）
+
+厳選購入の記録は Probe 自身の鍵による支払いで、人が操作するウォレット（Phantom・Rabby・MetaMask）で払えるかは seller の facilitator によって変わる。そこで次の 2 つを持ち、トップのカードの下に出す（`src/curated/wallet.ts`、`npm run wallet`）。
+
+- **記録**（`config/wallet-payments.json` → `/data/wallet-payments.json`）：運営者が AgentPay402 の承認ページでウォレットから署名した支払いだけ。Probe の鍵で代わりに払ったものは載せない。AgentPay402 は結果を Upstash KV に 30 分（送信の記録は 24 時間）しか残さないため、記録はこのファイルに残す。成立した tx は `npm run wallet` がチェーン上の確定を確かめ直す。出すのは tx の署名と facilitator の理由の文字列まで。払った側のアドレス・署名済みの取引本体・支払いヘッダ・承認リンク・request id は書かない。
+- **見込み**（`targets/wallet-precheck.json` → `/data/curated.json` の各エンドポイントの `wallet_precheck`）：払わずに、402 を 1 回取って Solana の `extra.feePayer` から facilitator を引き（`config/facilitators.json`、出典付き）、payTo の USDC 受取口座（ATA）が存在するかを RPC で確かめる。見込みは「受け付けた記録のある facilitator／拒否の記録のある facilitator／受取口座がない／未検証／Solana の支払い先なし」。Base は委任のない EOA から払った記録が入るまで「未検証」。毎週月曜の購入の前に取り直す（`paid-weekly.yml`）。
+
 ## 測定項目（§3）
 
 無料（`kind: "free"`）：`reachable`（10 秒）、`status_402`、`spec_version`（v1/v2）、`fields_valid`（scheme・network・asset・payTo・金額・resource）、`asset_known`（公式 USDC）、`payto_stable`（同じホスト・チェーンの前回と比較。初回は null）、`latency_402_ms`。

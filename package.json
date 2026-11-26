@@ -25,7 +25,8 @@
     "notify": "tsx src/cli/notify.ts",
     "curate": "tsx src/cli/curate.ts",
     "probe:curated": "tsx src/cli/probe-curated.ts",
-    "logos": "tsx src/cli/logos.ts"
+    "logos": "tsx src/cli/logos.ts",
+    "wallet": "tsx src/cli/wallet.ts"
   },
   "dependencies": {
     "@payai/facilitator": "^2.4.6",
