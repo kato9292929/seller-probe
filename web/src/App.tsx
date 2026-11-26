@@ -51,9 +51,7 @@ function Home() {
 function Purchases() {
   return (
     <>
-      <div className="bg-[rgb(12_12_12)]">
-        <Nav />
-      </div>
+      <Nav />
       <main>
         <OperatorCards full />
         <WalletSection />
