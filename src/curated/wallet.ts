@@ -1,82 +1,53 @@
-// Paying with a person's wallet (Phantom / Rabby / MetaMask) rather than the Probe's own key.
-// Two things, kept apart on the page:
-//  - records: payments the owner actually signed in a wallet through AgentPay402
-//    (config/wallet-payments.json), each tx checked on chain;
-//  - outlook: what can be known before paying, for every curated endpoint, from one unpaid 402
-//    (the facilitator behind the Solana fee payer) and an RPC read (does the seller's USDC account exist).
+// Payments made with a person's wallet (Phantom / Rabby) rather than the Probe's own key.
+// Only successful payments are published: the tx is final on chain and the seller returned the data.
+// Failed attempts stay in config/wallet-payments.json as records but are not shown, because their
+// causes are many (facilitator, receiving account, seller, delegation) and are not one seller's fault.
 // Nothing here pays or signs. The paying wallet's address is never stored or shown.
-import { address, getAddressEncoder, getProgramDerivedAddress } from "@solana/kit";
-import { USDC } from "../config.js";
 
 export const OUTCOMES = ["delivered", "facilitator_rejected", "wallet_simulation_stopped", "seller_error", "agentpay_mismatch", "signature_check_failed"] as const;
 export type WalletOutcome = (typeof OUTCOMES)[number];
 
 export type WalletRecord = {
   seller: string | null; host: string | null; endpoint: string | null; network: "solana" | "base"; wallet: string; wallet_account?: "eoa" | "eip7702";
-  fee_payer: string | null; amount_usd: number | null; outcome: WalletOutcome; reason: string | null; tx: string | null; attempted_at: string | null;
-  source: string; no_transfer_checked?: { at: string; how: string };
+  fee_payer: string | null; settle_sender?: string | null; amount_usd: number | null; outcome: WalletOutcome; reason: string | null; tx: string | null;
+  attempted_at: string | null; block?: number; source: string;
+  account_check?: { method: string; result: string; note?: string };
+  no_transfer_checked?: { at: string; how: string };
 };
 
-/** A fee payer's facilitator name, or its short form when no published source names it. */
-export function facilitatorName(feePayer: string | null | undefined, map: Record<string, string>): string | null {
-  if (!feePayer) return null;
-  return map[feePayer] ?? `${feePayer.slice(0, 5)}…`;
-}
-
-/** Per facilitator: Phantom payments tried, delivered, refused by the facilitator. */
-export type FacilitatorTally = { facilitator: string; phantom_attempts: number; delivered: number; rejected: number };
-export function tallyByFacilitator(records: WalletRecord[], map: Record<string, string>): FacilitatorTally[] {
-  const by = new Map<string, FacilitatorTally>();
-  for (const r of records) {
-    if (r.wallet !== "Phantom") continue;
-    const f = facilitatorName(r.fee_payer, map) ?? "unknown";
-    const t = by.get(f) ?? { facilitator: f, phantom_attempts: 0, delivered: 0, rejected: 0 };
-    t.phantom_attempts++;
-    if (r.outcome === "delivered") t.delivered++;
-    if (r.outcome === "facilitator_rejected") t.rejected++;
-    by.set(f, t);
-  }
-  return [...by.values()].sort((a, b) => b.phantom_attempts - a.phantom_attempts || a.facilitator.localeCompare(b.facilitator));
-}
+const short = (a: string) => `${a.slice(0, 6)}…`;
 
 /**
- * Outlook for paying with Phantom, from the records and the unpaid checks (an outlook, not a record):
- *  accepted_facilitator  the facilitator has accepted a Phantom transaction in the records
- *  rejected_facilitator  it has refused one and accepted none
- *  no_ata                the seller's USDC account does not exist (the transfer fails whatever the facilitator)
- *  unverified            none of the above
- *  no_solana             the 402 offers no Solana USDC payment (Phantom pays on Solana)
+ * Who settled, as published. Solana: the fee payer's facilitator, named only when the name is
+ * confirmed by that facilitator's own /supported (`named`); otherwise the fee payer, shortened.
+ * Base: the 402 names no facilitator, so the settle transaction's sender, shortened, with no name.
  */
-export type Outlook = "accepted_facilitator" | "rejected_facilitator" | "no_ata" | "unverified" | "no_solana";
-export function outlookFor(pre: { solana: { facilitator: string | null; ata_exists: boolean | null } | null }, tallies: FacilitatorTally[]): Outlook {
-  if (!pre.solana) return "no_solana";
-  if (pre.solana.ata_exists === false) return "no_ata";
-  const t = tallies.find((x) => x.facilitator === pre.solana!.facilitator);
-  if (t?.delivered) return "accepted_facilitator";
-  if (t?.rejected) return "rejected_facilitator";
-  return "unverified";
+export function settledBy(r: Pick<WalletRecord, "network" | "fee_payer" | "settle_sender">, map: Record<string, string>, named: string[]): string | null {
+  if (r.network === "base") return r.settle_sender ? short(r.settle_sender) : null;
+  if (!r.fee_payer) return null;
+  const name = map[r.fee_payer];
+  return name && named.includes(name) ? name : `${r.fee_payer.slice(0, 5)}…`;
 }
 
-const TOKEN_PROGRAM = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
-const TOKEN_2022 = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb";
-const ATA_PROGRAM = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
-
-/** The associated token account of `owner` for `mint` (classic token program unless told otherwise). */
-export async function associatedTokenAccount(owner: string, mint: string = USDC.solana, tokenProgram = TOKEN_PROGRAM): Promise<string> {
-  const enc = getAddressEncoder();
-  const [pda] = await getProgramDerivedAddress({
-    programAddress: address(ATA_PROGRAM),
-    seeds: [enc.encode(address(owner)), enc.encode(address(tokenProgram)), enc.encode(address(mint))],
-  });
-  return pda;
+/** Successful payments per facilitator (or Base settle sender). */
+export function tallyDelivered(records: PublicWalletRecord[]): { facilitator: string; network: string; delivered: number }[] {
+  const by = new Map<string, { facilitator: string; network: string; delivered: number }>();
+  for (const r of records) {
+    const k = `${r.network}|${r.facilitator ?? "unknown"}`;
+    const t = by.get(k) ?? { facilitator: r.facilitator ?? "unknown", network: r.network, delivered: 0 };
+    t.delivered++;
+    by.set(k, t);
+  }
+  return [...by.values()].sort((a, b) => b.delivered - a.delivered || a.facilitator.localeCompare(b.facilitator));
 }
-export const TOKEN_PROGRAMS = { classic: TOKEN_PROGRAM, token2022: TOKEN_2022 };
 
 export const SOLANA_PUBLIC_RPC = "https://api.mainnet-beta.solana.com";
-export async function solanaRpc<T = any>(method: string, params: unknown[], url = process.env.SOLANA_RPC_URL || SOLANA_PUBLIC_RPC): Promise<T> {
+const BASE_RPCS = () => [...new Set([process.env.BASE_RPC_URL, "https://mainnet.base.org", "https://base-rpc.publicnode.com"].filter(Boolean) as string[])];
+
+async function rpc<T>(urls: string[], method: string, params: unknown[]): Promise<T> {
   let last: unknown;
-  for (const u of [...new Set([url, SOLANA_PUBLIC_RPC])])
-    for (let i = 0; i < 4; i++) {
+  for (const u of urls)
+    for (let i = 0; i < 3; i++) {
       try {
         const r = await fetch(u, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }), signal: AbortSignal.timeout(20_000) });
         const j: any = await r.json();
@@ -90,35 +61,56 @@ export async function solanaRpc<T = any>(method: string, params: unknown[], url 
   throw last;
 }
 
-/** Does this account exist on chain? null when it could not be read. */
-export async function accountExists(addr: string): Promise<boolean | null> {
-  try {
-    const r = await solanaRpc<{ value: unknown | null }>("getAccountInfo", [addr, { encoding: "base64", commitment: "confirmed" }]);
-    return r.value !== null;
-  } catch {
-    return null;
-  }
-}
+export type TxCheck = { finalized: boolean; error: string | null; block_time: string | null };
 
-/** A Solana payment tx: finalized without error, and when it landed. Only the signature is used. */
-export async function verifySolanaTx(sig: string): Promise<{ finalized: boolean; error: string | null; block_time: string | null }> {
+/** Solana: finalized without error. Only the signature is used. */
+export async function verifySolanaTx(sig: string): Promise<TxCheck> {
+  const urls = [...new Set([process.env.SOLANA_RPC_URL || SOLANA_PUBLIC_RPC, SOLANA_PUBLIC_RPC])];
   try {
-    const st = await solanaRpc<{ value: ({ confirmationStatus: string; err: unknown } | null)[] }>("getSignatureStatuses", [[sig], { searchTransactionHistory: true }]);
+    const st = await rpc<{ value: ({ confirmationStatus: string; err: unknown } | null)[] }>(urls, "getSignatureStatuses", [[sig], { searchTransactionHistory: true }]);
     const s = st.value[0];
     if (!s) return { finalized: false, error: "not found", block_time: null };
-    const tx = await solanaRpc<{ blockTime: number | null } | null>("getTransaction", [sig, { encoding: "json", maxSupportedTransactionVersion: 0, commitment: "finalized" }]).catch(() => null);
-    return {
-      finalized: s.confirmationStatus === "finalized" && !s.err,
-      error: s.err ? JSON.stringify(s.err).slice(0, 120) : null,
-      block_time: tx?.blockTime ? new Date(tx.blockTime * 1000).toISOString() : null,
-    };
+    const tx = await rpc<{ blockTime: number | null } | null>(urls, "getTransaction", [sig, { encoding: "json", maxSupportedTransactionVersion: 0, commitment: "finalized" }]).catch(() => null);
+    return { finalized: s.confirmationStatus === "finalized" && !s.err, error: s.err ? JSON.stringify(s.err).slice(0, 120) : null, block_time: tx?.blockTime ? new Date(tx.blockTime * 1000).toISOString() : null };
   } catch (e) {
     return { finalized: false, error: `unreadable: ${(e as Error).message.slice(0, 80)}`, block_time: null };
   }
 }
 
-/** The public form of a record: facilitator named, tx checked; never the payer's address. */
-export type PublicWalletRecord = Omit<WalletRecord, "source"> & {
-  facilitator: string | null; source: string;
-  verified_onchain: { status: "finalized" | "not_finalized" | "no_transfer" | "not_applicable"; checked_at: string; detail: string | null };
+/** Base: the receipt succeeded and its block is at or below the chain's finalized block. */
+export async function verifyBaseTx(hash: string): Promise<TxCheck> {
+  try {
+    const rc = await rpc<{ status: string; blockNumber: string } | null>(BASE_RPCS(), "eth_getTransactionReceipt", [hash]);
+    if (!rc) return { finalized: false, error: "not found", block_time: null };
+    const fin = await rpc<{ number: string }>(BASE_RPCS(), "eth_getBlockByNumber", ["finalized", false]);
+    const blk = await rpc<{ timestamp: string }>(BASE_RPCS(), "eth_getBlockByNumber", [rc.blockNumber, false]);
+    const ok = rc.status === "0x1" && parseInt(rc.blockNumber, 16) <= parseInt(fin.number, 16);
+    return { finalized: ok, error: rc.status === "0x1" ? null : "reverted", block_time: new Date(parseInt(blk.timestamp, 16) * 1000).toISOString() };
+  } catch (e) {
+    return { finalized: false, error: `unreadable: ${(e as Error).message.slice(0, 80)}`, block_time: null };
+  }
+}
+
+/** The public form of a successful payment: who settled, the tx and its check; never the payer's address. */
+export type PublicWalletRecord = {
+  seller: string | null; network: "solana" | "base"; wallet: string; wallet_account: "eoa" | null; facilitator: string | null;
+  amount_usd: number | null; tx: string; attempted_at: string | null; verified_onchain: { finalized: true; checked_at: string };
 };
+
+/** Pure: the published records — delivered, with a tx confirmed final on chain; nothing else. */
+export function publicRecords(
+  records: WalletRecord[], checks: Map<string, TxCheck>, map: Record<string, string>, named: string[], checkedAt: string,
+): PublicWalletRecord[] {
+  const out: PublicWalletRecord[] = [];
+  for (const r of records) {
+    if (r.outcome !== "delivered" || !r.tx) continue;
+    const c = checks.get(r.tx);
+    if (!c?.finalized) continue;
+    out.push({
+      seller: r.seller, network: r.network, wallet: r.wallet, wallet_account: r.network === "base" ? (r.wallet_account === "eoa" ? "eoa" : null) : null,
+      facilitator: settledBy(r, map, named), amount_usd: r.amount_usd, tx: r.tx, attempted_at: r.attempted_at ?? c.block_time,
+      verified_onchain: { finalized: true, checked_at: checkedAt },
+    });
+  }
+  return out;
+}
