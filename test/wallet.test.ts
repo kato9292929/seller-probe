@@ -2,53 +2,53 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { curatedReport } from "../src/curated/publish.js";
-import { type WalletRecord, associatedTokenAccount, facilitatorName, outlookFor, tallyByFacilitator } from "../src/curated/wallet.js";
+import { type TxCheck, type WalletRecord, publicRecords, settledBy, tallyDelivered } from "../src/curated/wallet.js";
 
 const map = { PAYAI_FP: "PayAI", CB_FP: "Coinbase" };
 const rec = (over: Partial<WalletRecord>): WalletRecord => ({
   seller: "s", host: "h", endpoint: null, network: "solana", wallet: "Phantom", fee_payer: "PAYAI_FP", amount_usd: 0.01,
-  outcome: "delivered", reason: null, tx: "sig", attempted_at: null, source: "owner_verification", ...over,
+  outcome: "delivered", reason: null, tx: "sig1", attempted_at: null, source: "owner_verification", ...over,
+});
+const final: TxCheck = { finalized: true, error: null, block_time: "2026-11-26T04:00:00.000Z" };
+
+test("who settled: PayAI named (its /supported), others shortened; Base shows the settle sender, unnamed", () => {
+  assert.equal(settledBy({ network: "solana", fee_payer: "PAYAI_FP" }, map, ["PayAI"]), "PayAI");
+  assert.equal(settledBy({ network: "solana", fee_payer: "CB_FP_LONGADDRESS" }, { CB_FP_LONGADDRESS: "Coinbase" }, ["PayAI"]), "CB_FP…", "named only from /supported");
+  assert.equal(settledBy({ network: "solana", fee_payer: "2hjRxUkyYRGGjKTVZc5hxss7ZmdXZfZKHgvKYneyVQaU" }, map, ["PayAI"]), "2hjRx…");
+  assert.equal(settledBy({ network: "base", fee_payer: null, settle_sender: "0xB87E1A2cc2B4643F2892768e80e41167F17C5860" }, map, ["PayAI"]), "0xB87E…");
 });
 
-test("facilitator names come from the map; an unknown fee payer is shown short", () => {
-  assert.equal(facilitatorName("PAYAI_FP", map), "PayAI");
-  assert.equal(facilitatorName("FAC42xNoVBZctsRJqwNcRZnXCwmGZvfHcZLD7hQPXuwu", map), "FAC42…");
-  assert.equal(facilitatorName(null, map), null);
+test("only delivered payments with a tx final on chain are published; failures and unconfirmed are left out", () => {
+  const records = [
+    rec({}),
+    rec({ tx: "sig2" }),
+    rec({ outcome: "facilitator_rejected", reason: "fee_payer_transferring_funds", tx: null, fee_payer: "CB_FP" }),
+    rec({ outcome: "seller_error", reason: "503", tx: null }),
+    rec({ network: "base", wallet: "Rabby", wallet_account: "eoa", fee_payer: null, settle_sender: "0xa32cCda98ba7529705a059Bd2d213Da8de10d101", tx: "0xbase" }),
+  ];
+  const checks = new Map<string, TxCheck>([["sig1", final], ["sig2", { finalized: false, error: "not found", block_time: null }], ["0xbase", final]]);
+  const out = publicRecords(records, checks, map, ["PayAI"], "2026-11-26T06:00:00Z");
+  assert.deepEqual(out.map((r) => r.tx), ["sig1", "0xbase"]);
+  assert.equal(out[0].attempted_at, "2026-11-26T04:00:00.000Z", "time from the chain when the record has none");
+  assert.deepEqual([out[1].wallet_account, out[1].facilitator], ["eoa", "0xa32c…"]);
+  assert.deepEqual(tallyDelivered(out).map((t) => [t.facilitator, t.delivered]), [["0xa32c…", 1], ["PayAI", 1]]);
+  for (const r of out) for (const k of Object.keys(r)) assert.ok(!/reason|outcome|payer|authority|^from$|request_id|approve|header|precheck|outlook/i.test(k), k);
 });
 
-test("outlook: accepted / refused on record, missing receiving account, unverified, no Solana option", () => {
-  const tallies = tallyByFacilitator([
-    rec({}), rec({ outcome: "wallet_simulation_stopped", tx: null }),
-    rec({ fee_payer: "CB_FP", outcome: "facilitator_rejected", reason: "fee_payer_transferring_funds", tx: null }),
-  ], map);
-  assert.deepEqual(tallies.find((t) => t.facilitator === "PayAI"), { facilitator: "PayAI", phantom_attempts: 2, delivered: 1, rejected: 0 });
-  const pre = (facilitator: string | null, ata_exists: boolean | null = true) => ({ solana: { facilitator, ata_exists } });
-  assert.equal(outlookFor(pre("PayAI"), tallies), "accepted_facilitator");
-  assert.equal(outlookFor(pre("Coinbase"), tallies), "rejected_facilitator");
-  assert.equal(outlookFor(pre("PayAI", false), tallies), "no_ata", "a missing account fails whatever the facilitator");
-  assert.equal(outlookFor(pre("Dexter"), tallies), "unverified");
-  assert.equal(outlookFor({ solana: null }, tallies), "no_solana");
-});
-
-test("receiving account: the USDC ATA of an owner (known pair)", async () => {
-  // Owner: the Probe's own public Solana wallet; its USDC ATA is fixed by the derivation.
-  const ata = await associatedTokenAccount("xgtJ5j3VfuYG4cxAxsQjTKWsnVdFTLPYK8NxQnpFZW5");
-  assert.match(ata, /^[1-9A-HJ-NP-Za-km-z]{32,44}$/);
-  assert.equal(ata, await associatedTokenAccount("xgtJ5j3VfuYG4cxAxsQjTKWsnVdFTLPYK8NxQnpFZW5"));
-});
-
-test("published data: wallet_precheck on each endpoint, one Phantom line per card, and no payer address anywhere", () => {
-  const curated = JSON.parse(readFileSync(new URL("../targets/curated.json", import.meta.url), "utf8"));
-  const id = curated.items[0].id;
-  const r = curatedReport({
-    records: [], selfChecks: [], curated, now: new Date("2026-11-26T00:00:00Z"),
-    walletPrecheck: { [id]: { checked_at: "2026-11-26T00:00:00Z", status: 402, error: null, solana: { fee_payer: "PAYAI_FP", facilitator: "PayAI", facilitator_by: "extra.feePayer", pay_to: "x", ata: "y", ata_exists: true }, base: null } },
-    walletTallies: [{ facilitator: "PayAI", phantom_attempts: 1, delivered: 1, rejected: 0 }],
-  });
-  const it = r.items.find((i) => i.id === id)!;
-  assert.equal(it.wallet_precheck!.phantom_outlook, "accepted_facilitator");
-  assert.deepEqual(r.cards.find((c) => c.item_ids.includes(id))!.phantom, [{ outlook: "accepted_facilitator", facilitator: "PayAI" }]);
-  // the records file names no payer, authority or sender; only tx signatures and facilitator fee payers
+test("the published file holds the 8 successful payments and nothing else", () => {
+  const d = JSON.parse(readFileSync(new URL("../targets/wallet-payments.json", import.meta.url), "utf8"));
+  assert.equal(d.records.length, 8);
+  assert.deepEqual(d.records.map((r: any) => r.seller), ["Nansen", "Tanod", "citable.run", "solpulsedata", "Losbeto", "Xynaptic", "Agent Data", "NZ Data"]);
+  assert.ok(d.records.every((r: any) => r.verified_onchain.finalized === true));
+  assert.ok(!JSON.stringify(d).match(/fee_payer_transferring_funds|BlockhashNotFound|upstream_unavailable|wallet_precheck|outlook/));
+  // the failed attempts stay in the config as records
   const src = JSON.parse(readFileSync(new URL("../config/wallet-payments.json", import.meta.url), "utf8"));
-  for (const x of src.records) for (const k of Object.keys(x)) assert.ok(!/payer$|^payer|authority|^from$|request_id|approve|header/i.test(k) || k === "fee_payer", k);
+  assert.ok(src.records.some((r: WalletRecord) => r.outcome !== "delivered"));
+});
+
+test("curated.json carries no wallet_precheck and the cards no Phantom outlook", () => {
+  const curated = JSON.parse(readFileSync(new URL("../targets/curated.json", import.meta.url), "utf8"));
+  const r = curatedReport({ records: [], selfChecks: [], curated, now: new Date("2026-11-26T00:00:00Z") });
+  const s = JSON.stringify(r);
+  assert.ok(!s.includes("wallet_precheck") && !s.includes("phantom"));
 });

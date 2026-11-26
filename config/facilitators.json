@@ -17,6 +17,8 @@
     "F742C4VfFLQ9zRQyithoj5229ZgtX2WqKCSFKgH2EThq": "Ultravioleta DAO",
     "Hbe1vdFs4EQVVAzcV12muHhr6DEKwrT9roMXGPLxLBLP": "OpenFacilitator"
   },
+  "public_names": ["PayAI"],
+  "_public_names": "ウォレットの支払いの表で facilitator の名前を出してよいもの（その facilitator 自身の /supported で feePayer を確かめたもの）。それ以外は feePayer の短縮表記。",
   "sources": {
     "PayAI": "https://facilitator.payai.network/supported (2wKup…, CjNFT…); 8B5UK… from x402scan's facilitator list (2026-11-26)",
     "Dexter": "https://x402.dexter.cash/supported",

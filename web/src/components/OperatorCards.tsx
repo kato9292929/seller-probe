@@ -3,14 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { getJson } from "@/lib/data";
 import { type L, type Lang, fmtDate, useLang } from "@/lib/i18n";
 import { type Category, type Curated, EndpointDetail, type Item, TONE, categoryLabel } from "./CuratedSection";
-import { OUTLOOK } from "./WalletSection";
 
-/** "Phantom の見込み：…" — worded as an outlook so it is not read as a record. */
-function phantomLine(c: Card, lang: Lang): string | null {
-  if (!c.phantom?.length) return null;
-  const head = { ja: "Phantom の見込み：", en: "Phantom outlook: ", zh: "Phantom 预估：" }[lang];
-  return head + c.phantom.map((p) => `${OUTLOOK[p.outlook]?.[lang] ?? p.outlook}${p.facilitator && p.outlook !== "no_solana" ? `（${p.facilitator}）` : ""}`).join(lang === "en" ? "; " : "／");
-}
 
 // The cards follow x402jp.com's "x402 Endpoint" section: logo, name and 1P/3P badge, host ·
 // category, price and endpoint count, two columns in one glass panel. Numbers and dates come from
@@ -23,8 +16,6 @@ type Card = {
   endpoints: number; bought: number; as_described: number; price_min: number | null; tx: number | null; buyers: number | null;
   delivered_without_payment: number; not_bought_reason: string | null; not_bought_codes?: { code: string; price?: number }[];
   item_ids: string[];
-  /** Phantom outlook of the card's endpoints (before paying; not a record). */
-  phantom?: { outlook: string; facilitator: string | null }[];
 };
 type Data = Curated & { summary: { operators: number; endpoints: number; purchased_on: string | null }; cards: Card[] };
 
@@ -95,7 +86,6 @@ function CardRow({ c, onOpen, dup }: { c: Card; onOpen: () => void; dup: boolean
             {sub}
             {c.category ? ` · ${c.category}` : ""}
           </p>
-          {phantomLine(c, lang) && <p className="truncate text-[11px] text-white/35">{phantomLine(c, lang)}</p>}
         </div>
         <div className="shrink-0 text-right">
           <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-medium ${BADGE_STYLE[c.badge]}`}>{t(BADGE_LABEL[c.badge])}</span>
