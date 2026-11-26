@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getJson } from "@/lib/data";
 import { type L, type Lang, useLang } from "@/lib/i18n";
+import { SectionTitle } from "./SectionTitle";
 
 // Successful payments made with a person's wallet (Phantom / Rabby) through AgentPay402:
 // the tx is final on chain and the seller returned the data. No payer address is shown, only tx links.
@@ -45,26 +46,24 @@ export function WalletSection() {
   }, []);
 
   return (
-    <section id="wallet" className="relative overflow-hidden py-14 md:py-20" style={{ backgroundColor: "rgb(12 12 12)", fontFamily: "var(--font-body)" }}>
-      <div className="relative mx-auto max-w-5xl px-6">
-        <p className="text-xs uppercase tracking-widest text-white">Wallet</p>
-        <h2 className="mt-2 text-xl font-semibold tracking-tight text-white md:text-2xl">
-          {t({ ja: "ウォレットで払う場合", en: "Paying with a wallet", zh: "用钱包付款时" })}
-        </h2>
-        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/60">
-          {t({
-            ja: "上の購入記録は、Probe 自身の鍵による支払いです。ここには、運営者が AgentPay402 から人の操作するウォレット（Phantom・Rabby）で署名して払い、tx がチェーン上で確定し、seller がデータを返した支払いを載せています。",
-            en: "The purchases above were paid with the Probe's own key. Listed here are payments the operator signed in a person's wallet (Phantom, Rabby) through AgentPay402, where the tx is final on chain and the seller returned the data.",
-            zh: "上面的购买记录是用 Probe 自己的密钥付款的。这里列出的是运营者通过 AgentPay402 在人操作的钱包（Phantom、Rabby）中签名付款、tx 已在链上确认且卖家返回了数据的付款。",
-          })}
-        </p>
-        {err && <p className="mt-3 text-sm text-white/50">{t({ ja: "読み込めませんでした", en: "Could not load", zh: "无法加载" })}（{err}）</p>}
+    <section id="wallet" className="mx-auto max-w-7xl scroll-mt-8 px-6 py-24 sm:px-8">
+      <div>
+        <SectionTitle eyebrow="Wallet" title={t({ ja: "ウォレットで払う場合", en: "Paying with a wallet", zh: "用钱包付款时" })}>
+          <p>
+            {t({
+              ja: "上の購入記録は、Probe 自身の鍵による支払いです。ここには、運営者が AgentPay402 から人の操作するウォレット（Phantom・Rabby）で署名して払い、tx がチェーン上で確定し、seller がデータを返した支払いを載せています。",
+              en: "The purchases above were paid with the Probe's own key. Listed here are payments the operator signed in a person's wallet (Phantom, Rabby) through AgentPay402, where the tx is final on chain and the seller returned the data.",
+              zh: "上面的购买记录是用 Probe 自己的密钥付款的。这里列出的是运营者通过 AgentPay402 在人操作的钱包（Phantom、Rabby）中签名付款、tx 已在链上确认且卖家返回了数据的付款。",
+            })}
+          </p>
+        </SectionTitle>
+        {err && <p className="mt-3 text-sm text-muted-foreground">{t({ ja: "読み込めませんでした", en: "Could not load", zh: "无法加载" })}（{err}）</p>}
 
-        <h3 className="mt-8 text-sm font-medium text-white">{t({ ja: "ウォレットで払えた支払い", en: "Payments made with a wallet", zh: "用钱包完成的付款" })}</h3>
-        <div className="mt-3 overflow-x-auto rounded-2xl border border-white/10">
+        <h3 className="mb-3 mt-10 text-lg">{t({ ja: "ウォレットで払えた支払い", en: "Payments made with a wallet", zh: "用钱包完成的付款" })}</h3>
+        <div className="overflow-x-auto rounded-xl border bg-card/60">
           <table className="w-full min-w-[720px] text-left text-xs">
-            <thead className="text-white/50">
-              <tr className="border-b border-white/10">
+            <thead className="text-muted-foreground">
+              <tr className="border-b border-border">
                 {H.map((h) => (
                   <th key={h.en} className="px-3 py-2 font-normal">
                     {t(h)}
@@ -72,7 +71,7 @@ export function WalletSection() {
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5 text-white/80">
+            <tbody className="divide-y divide-border text-foreground">
               {(d?.records ?? []).map((r) => (
                 <tr key={r.tx}>
                   <td className="px-3 py-2">{r.seller ?? "—"}</td>
@@ -85,12 +84,12 @@ export function WalletSection() {
                       {short(r.tx)}
                     </a>
                   </td>
-                  <td className="px-3 py-2 tabular-nums text-white/50">{r.attempted_at ? r.attempted_at.slice(0, 16).replace("T", " ") : "—"}</td>
+                  <td className="px-3 py-2 tabular-nums text-muted-foreground">{r.attempted_at ? r.attempted_at.slice(0, 16).replace("T", " ") : "—"}</td>
                 </tr>
               ))}
               {!d && !err && (
                 <tr>
-                  <td colSpan={7} className="px-3 py-6 text-center text-white/50">
+                  <td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">
                     {t({ ja: "読み込み中…", en: "Loading…", zh: "加载中…" })}
                   </td>
                 </tr>
@@ -99,17 +98,17 @@ export function WalletSection() {
           </table>
         </div>
 
-        <h3 className="mt-8 text-sm font-medium text-white">{t({ ja: "facilitator ごとの件数", en: "By facilitator", zh: "按 facilitator 统计" })}</h3>
-        <div className="mt-3 overflow-x-auto rounded-2xl border border-white/10">
+        <h3 className="mb-3 mt-10 text-lg">{t({ ja: "facilitator ごとの件数", en: "By facilitator", zh: "按 facilitator 统计" })}</h3>
+        <div className="overflow-x-auto rounded-xl border bg-card/60">
           <table className="w-full min-w-[420px] text-left text-xs">
-            <thead className="text-white/50">
-              <tr className="border-b border-white/10">
+            <thead className="text-muted-foreground">
+              <tr className="border-b border-border">
                 <th className="px-3 py-2 font-normal">facilitator</th>
                 <th className="px-3 py-2 font-normal">{t({ ja: "network", en: "Network", zh: "网络" })}</th>
                 <th className="px-3 py-2 text-right font-normal">{t({ ja: "払えた件数", en: "Paid", zh: "付款成功" })}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5 text-white/80">
+            <tbody className="divide-y divide-border text-foreground">
               {(d?.by_facilitator ?? []).map((f) => (
                 <tr key={`${f.network}|${f.facilitator}`}>
                   <td className="px-3 py-2">{settled(f.facilitator, f.network, lang)}</td>
@@ -121,7 +120,7 @@ export function WalletSection() {
           </table>
         </div>
 
-        <p className="mt-4 text-[11px] leading-relaxed text-white/45">
+        <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">
           {t({
             ja: "Solana の facilitator は、その facilitator 自身の /supported で確かめたものだけ名前を出し、それ以外は feePayer の短縮表記です。Base は 402 に facilitator を示す欄がないため、settle の取引の送信元を短縮表記で出します。払う側のウォレットのアドレスは載せず、tx へのリンクだけを出します。",
             en: "On Solana a facilitator is named only when its own /supported confirms the fee payer; otherwise the fee payer is shown shortened. On Base the 402 names no facilitator, so the settle transaction's sender is shown shortened. The paying wallet's address is never shown; only links to the tx are.",
@@ -129,8 +128,8 @@ export function WalletSection() {
           })}
         </p>
 
-        <h3 className="mt-8 text-sm font-medium text-white">{t({ ja: "データの取得", en: "Get the data", zh: "获取数据" })}</h3>
-        <pre className="mt-3 overflow-x-auto rounded-xl border border-white/10 bg-white/[0.03] p-4 text-xs text-white/80">curl https://probe.x402jp.com/data/wallet-payments.json</pre>
+        <h3 className="mb-3 mt-10 text-lg">{t({ ja: "データの取得", en: "Get the data", zh: "获取数据" })}</h3>
+        <pre className="overflow-x-auto rounded-xl border bg-card/60 p-4 text-xs">curl https://probe.x402jp.com/data/wallet-payments.json</pre>
       </div>
     </section>
   );

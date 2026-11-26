@@ -179,28 +179,19 @@ export function OperatorCards({ limit, full = false }: { limit?: number; full?: 
   const items = open && d ? d.items.filter((i) => open.item_ids.includes(i.id)) : [];
   const date = fmtDate(d?.summary.purchased_on ?? null, lang);
   return (
-    <section
-      id="purchases"
-      className="relative overflow-hidden py-16 md:py-24"
-      style={{
-        backgroundColor: "rgb(12 12 12)",
-        backgroundImage:
-          "radial-gradient(60% 50% at 15% 0%, rgba(126,139,240,0.16), transparent 70%), radial-gradient(50% 45% at 90% 20%, rgba(245,124,230,0.10), transparent 70%), radial-gradient(60% 50% at 50% 100%, rgba(94,227,236,0.08), transparent 70%)",
-        fontFamily: "var(--font-body)",
-      }}
-    >
-      <div className="relative mx-auto max-w-5xl px-6">
+    <section id="purchases" className="mx-auto max-w-7xl scroll-mt-8 px-6 py-24 sm:px-8">
+      <div>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-widest text-white">Seller Probe</p>
-            <h2 className="mt-2 text-xl font-semibold tracking-tight text-white md:text-2xl">
+            <p className="mb-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">Seller Probe</p>
+            <h2 className="text-4xl font-normal leading-tight tracking-tight sm:text-5xl" style={{ fontFamily: "'Instrument Serif', serif" }}>
               {t({
                 ja: "使われている API を、使い方どおりに買った結果",
                 en: "APIs in real use, bought the way they are documented",
                 zh: "按说明的方式购买正在被使用的 API 的结果",
               })}
             </h2>
-            <p className="mt-2 text-sm text-white/55">
+            <p className="mt-4 max-w-3xl leading-relaxed text-muted-foreground">
               {d
                 ? t({
                     ja: `x402 Endpoint で使われている ${d.summary.operators} 事業者（${d.summary.endpoints} エンドポイント）を、実際に払って確かめた結果（${date}購入）。`,
